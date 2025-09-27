@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garbadrome - Order</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        
+        .main-container {
+            background: #0f0f23;
+            min-height: 100vh;
+            display: flex;
+            overflow: auto;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            width: 80px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        
+        .sidebar:hover, .sidebar.active {
+            width: 240px;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            right: -16px;
+            top: 20px;
+            background: #667eea;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .sidebar-icon {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            color: #a1b2ca;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sidebar-icon::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar-icon:hover {
+            background: rgba(102, 126, 234, 0.15);
+            color: #fff;
+        }
+        
+        .sidebar-icon:hover::before {
+            transform: translateX(0);
+        }
+        
+        .sidebar-icon svg {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+        }
+        
+        .sidebar-text {
+            margin-left: 16px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar.active .sidebar-text {
+            opacity: 1;
+        }
+        
+        .analytics-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 16px;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* Header Styles */
+        .header {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+        
+        /* Category Pills */
+        .category-btn {
+            padding: 10px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.08);
+            color: #a1b2ca;
+        }
+        
+        .category-btn:hover {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .category-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Menu Card */
+        .menu-card {
+            background: rgba(26, 26, 46, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+        
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .menu-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        /* Search Bar */
+        .search-bar {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .search-bar:focus-within {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+        
+        .search-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            width: 100%;
+            margin-left: 12px;
+        }
+        
+        .search-input::placeholder {
+            color: #94a3b8;
+        }
+        
+        /* Cart Button */
+        .cart-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .cart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(26, 26, 46, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Scrollbar Styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.4);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.6);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 0;
+            }
+            .sidebar.active {
+                width: 240px;
+            }
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-toggle" onclick="toggleSidebar()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </div>
+            <div class="analytics-card">
+                <div class="text-white text-xs font-medium opacity-80">Cart Items</div>
+                <div class="text-white text-2xl font-bold">3</div>
+                <div class="text-green-400 text-xs">Total: 9500 FCFA</div>
+            </div>
+            
+            <div class="sidebar-icon active" role="button" aria-label="Menu">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                </svg>
+                <span class="sidebar-text">Menu</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <!-- Header -->
+            <header class="header h-20 flex items-center justify-between px-6">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3">
+                        <span class="text-white font-bold text-lg">G</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Garbadrome</h1>
+                        <p class="text-xs text-gray-300">Place Your Order</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <span class="text-sm font-medium text-white">Table 5</span>
+                        <p class="text-xs text-gray-300">Onsite Customer</p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Filters -->
+            <nav class="px-6 py-4 flex space-x-3 overflow-x-auto" style="background: rgba(26, 26, 46, 0.5); flex-shrink: 0;">
+                <button class="category-btn active" data-category="all">All Items</button>
+                <button class="category-btn" data-category="mains">Mains</button>
+                <button class="category-btn" data-category="sides">Sides</button>
+                <button class="category-btn" data-category="drinks">Drinks</button>
+            </nav>
+
+            <!-- Menu Items -->
+            <main class="flex-1 p-6 overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-white">Menu <span class="text-gray-300" id="itemCount">(6)</span></h2>
+                    <div class="search-bar" style="width: 280px;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #94a3b8;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" placeholder="Search menu..." class="search-input" aria-label="Search menu items">
+                    </div>
+                </div>
+                
+                <div class="menu-grid grid grid-cols-2 gap-6">
+                    <div class="menu-card" data-category="mains">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-white font-semibold">Attiéké + Thon</div>
+                                <div class="text-gray-300 text-sm">Spicy tuna with attiéké</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-white font-semibold">3500 FCFA</div>
+                                <button class="text-blue-400 text-sm" onclick="addToCart(this)">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-card" data-category="mains">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-white font-semibold">Attiéké + Poulet</div>
+                                <div class="text-gray-300 text-sm">Grilled chicken with attiéké</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-white font-semibold">3000 FCFA</div>
+                                <button class="text-blue-400 text-sm" onclick="addToCart(this)">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-card" data-category="sides">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-white font-semibold">Caesar Salad</div>
+                                <div class="text-gray-300 text-sm">Fresh salad with dressing</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-white font-semibold">1500 FCFA</div>
+                                <button class="text-blue-400 text-sm" onclick="addToCart(this)">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-card" data-category="drinks">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-white font-semibold">Coca-Cola</div>
+                                <div class="text-gray-300 text-sm">330ml can</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-white font-semibold">1000 FCFA</div>
+                                <button class="text-blue-400 text-sm" onclick="addToCart(this)">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-card" data-category="mains">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-white font-semibold">Spicy Fried Chicken</div>
+                                <div class="text-gray-300 text-sm">Crispy chicken with spices</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-white font-semibold">4000 FCFA</div>
+                                <button class="text-blue-400 text-sm" onclick="addToCart(this)">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="menu-card" data-category="sides">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-white font-semibold">French Fries</div>
+                                <div class="text-gray-300 text-sm">Crispy golden fries</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-white font-semibold">1000 FCFA</div>
+                                <button class="text-blue-400 text-sm" onclick="addToCart(this)">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="cart-btn" onclick="showCart()">View Cart (3 items)</button>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let debounceTimeout;
+
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function addToCart(btn) {
+            const itemName = btn.closest('.menu-card').querySelector('.text-white.font-semibold').textContent;
+            showToast(`${itemName} added to cart`);
+        }
+
+        function showCart() {
+            showToast('Cart: 3 items - Proceed to checkout');
+            // Placeholder for cart modal or page
+        }
+
+        // Category filtering
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const category = this.dataset.category;
+                document.querySelectorAll('.menu-card').forEach(card => {
+                    if (category === 'all' || card.dataset.category === category) {
+                        card.style.display = 'block';
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transition = 'opacity 0.3s ease';
+                        }, 10);
+                    } else {
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.style.display = 'none';
+                        }, 300);
+                    }
+                });
+
+                const visibleItems = document.querySelectorAll('.menu-card[style*="block"]').length;
+                document.getElementById('itemCount').textContent = `(${visibleItems})`;
+
+                const ripple = document.createElement('div');
+                ripple.style.position = 'absolute';
+                ripple.style.width = '20px';
+                ripple.style.height = '20px';
+                ripple.style.background = 'rgba(255,255,255,0.5)';
+                ripple.style.borderRadius = '50%';
+                ripple.style.transform = 'translate(-50%, -50%)';
+                ripple.style.pointerEvents = 'none';
+                ripple.style.animation = 'ripple 0.6s ease-out';
+                this.style.position = 'relative';
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+
+                const rect = this.getBoundingClientRect();
+                ripple.style.left = '50%';
+                ripple.style.top = '50%';
+
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+
+        // Search functionality
+        document.querySelector('.search-input').addEventListener('input', function(e) {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                const searchTerm = e.target.value.toLowerCase();
+                document.querySelectorAll('.menu-card').forEach(card => {
+                    const itemName = card.querySelector('.text-white.font-semibold').textContent.toLowerCase();
+                    const description = card.querySelector('.text-gray-300').textContent.toLowerCase();
+
+                    if (itemName.includes(searchTerm) || description.includes(searchTerm)) {
+                        card.style.display = 'block';
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transition = 'opacity 0.3s ease';
+                        }, 10);
+                    } else {
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.style.display = 'none';
+                        }, 300);
+                    }
+                });
+
+                const visibleItems = document.querySelectorAll('.menu-card[style*="block"]').length;
+                document.getElementById('itemCount').textContent = `(${visibleItems})`;
+            }, 300);
+        });
+
+        // Add animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    width: 100px;
+                    height: 100px;
+                    opacity: 0;
+                }
+            }
+            .menu-card {
+                animation: slideIn 0.5s ease forwards;
+                opacity: 0;
+            }
+            .menu-card:nth-child(1) { animation-delay: 0.1s; }
+            .menu-card:nth-child(2) { animation-delay: 0.2s; }
+            .menu-card:nth-child(3) { animation-delay: 0.3s; }
+            .menu-card:nth-child(4) { animation-delay: 0.4s; }
+            .menu-card:nth-child(5) { animation-delay: 0.5s; }
+            .menu-card:nth-child(6) { animation-delay: 0.6s; }
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{
+  "name": "garbaking-pos",
+  "version": "1.0.0",
+  "description": "Modern offline-first Point of Sale system for restaurants",
+  "private": true,
+  "workspaces": [
+    "frontend/*",
+    "backend"
+  ],
+  "scripts": {
+    "setup": "npm install && npm run setup:frontend && npm run setup:backend",
+    "setup:frontend": "cd frontend/admin-pos && npm install && cd ../customer-app && npm install && cd ../kds-app && npm install",
+    "setup:backend": "cd backend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:customer\" \"npm run dev:kds\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:admin": "cd frontend/admin-pos && npm run dev",
+    "dev:customer": "cd frontend/customer-app && npm run dev",
+    "dev:kds": "cd frontend/kds-app && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend/admin-pos && npm run build && cd ../customer-app && npm run build && cd ../kds-app && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend/admin-pos && npm test && cd ../customer-app && npm test && cd ../kds-app && npm test",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend/admin-pos && npm run lint && cd ../customer-app && npm run lint && cd ../kds-app && npm run lint",
+    "format": "prettier --write \"**/*.{js,ts,vue,json,md}\"",
+    "clean": "rimraf **/node_modules **/dist **/build **/.vite",
+    "deploy:pi": "cd hardware && ./deploy-to-pi.sh",
+    "deploy:cloud": "cd backend && npm run deploy",
+    "deploy:frontend": "cd frontend && npm run deploy"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "prettier": "^3.0.3",
+    "rimraf": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/garbaking/pos-system.git"
+  },
+  "keywords": [
+    "pos",
+    "restaurant",
+    "vue3",
+    "nodejs",
+    "offline-first",
+    "point-of-sale"
+  ],
+  "author": "Garbaking Team",
+  "license": "MIT"
+}

@@ -1,0 +1,432 @@
+{
+  "designSystem": {
+    "metadata": {
+      "name": "GARBAKING POS Design System",
+      "version": "1.0.0",
+      "platform": "web",
+      "type": "point-of-sale"
+    },
+    "colors": {
+      "primary": {
+        "blue": "#4A90FF",
+        "blueHover": "#3A7FEE",
+        "bluePressed": "#2A6FDD"
+      },
+      "semantic": {
+        "success": "#4CAF50",
+        "warning": "#FF9800",
+        "error": "#F44336",
+        "info": "#2196F3"
+      },
+      "neutral": {
+        "white": "#FFFFFF",
+        "background": "#F5F5F7",
+        "surface": "#FFFFFF",
+        "surfaceHover": "#F8F9FA",
+        "border": "#E5E7EB",
+        "borderLight": "#F0F0F2",
+        "text": {
+          "primary": "#1F2937",
+          "secondary": "#6B7280",
+          "muted": "#9CA3AF",
+          "inverse": "#FFFFFF"
+        }
+      },
+      "surfaces": {
+        "card": "#FFFFFF",
+        "cardHover": "#FAFBFC",
+        "sidebar": "#FFFFFF",
+        "selected": "#4A90FF",
+        "disabled": "#F3F4F6"
+      }
+    },
+    "typography": {
+      "fontFamily": {
+        "primary": "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif",
+        "mono": "'SF Mono', 'Monaco', 'Inconsolata', monospace"
+      },
+      "sizes": {
+        "xs": "12px",
+        "sm": "14px",
+        "base": "16px",
+        "lg": "18px",
+        "xl": "20px",
+        "2xl": "24px",
+        "3xl": "32px",
+        "4xl": "48px"
+      },
+      "weights": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700
+      },
+      "lineHeight": {
+        "tight": 1.2,
+        "normal": 1.5,
+        "relaxed": 1.75
+      }
+    },
+    "spacing": {
+      "unit": 4,
+      "scale": {
+        "xs": "4px",
+        "sm": "8px",
+        "md": "12px",
+        "lg": "16px",
+        "xl": "20px",
+        "2xl": "24px",
+        "3xl": "32px",
+        "4xl": "48px",
+        "5xl": "64px"
+      }
+    },
+    "layout": {
+      "grid": {
+        "columns": 3,
+        "gap": "16px",
+        "responsive": {
+          "mobile": 1,
+          "tablet": 2,
+          "desktop": 3
+        }
+      },
+      "sidebar": {
+        "width": "80px",
+        "expandedWidth": "240px"
+      },
+      "invoice": {
+        "width": "360px",
+        "minWidth": "320px",
+        "maxWidth": "400px"
+      }
+    },
+    "components": {
+      "categoryCard": {
+        "height": "120px",
+        "borderRadius": "12px",
+        "padding": "16px",
+        "shadow": "0 1px 3px rgba(0,0,0,0.1)",
+        "hoverShadow": "0 4px 12px rgba(0,0,0,0.15)",
+        "transition": "all 0.2s ease",
+        "states": {
+          "default": {
+            "background": "#FFFFFF",
+            "border": "1px solid #E5E7EB"
+          },
+          "hover": {
+            "background": "#F8F9FA",
+            "transform": "translateY(-2px)"
+          },
+          "active": {
+            "background": "#4A90FF",
+            "color": "#FFFFFF",
+            "border": "1px solid #4A90FF"
+          }
+        }
+      },
+      "menuItemCard": {
+        "minHeight": "160px",
+        "borderRadius": "12px",
+        "padding": "12px",
+        "shadow": "0 1px 3px rgba(0,0,0,0.08)",
+        "imageSize": "80px",
+        "imageRadius": "8px",
+        "spacing": {
+          "image": "12px",
+          "title": "8px",
+          "description": "8px",
+          "price": "12px"
+        }
+      },
+      "button": {
+        "sizes": {
+          "sm": {
+            "height": "32px",
+            "padding": "0 12px",
+            "fontSize": "14px"
+          },
+          "md": {
+            "height": "40px",
+            "padding": "0 16px",
+            "fontSize": "16px"
+          },
+          "lg": {
+            "height": "48px",
+            "padding": "0 20px",
+            "fontSize": "18px"
+          }
+        },
+        "variants": {
+          "primary": {
+            "background": "#4A90FF",
+            "color": "#FFFFFF",
+            "hoverBackground": "#3A7FEE"
+          },
+          "secondary": {
+            "background": "#F3F4F6",
+            "color": "#1F2937",
+            "hoverBackground": "#E5E7EB"
+          },
+          "icon": {
+            "size": "40px",
+            "borderRadius": "50%"
+          }
+        },
+        "borderRadius": "8px"
+      },
+      "quantityControl": {
+        "height": "40px",
+        "buttonWidth": "40px",
+        "inputWidth": "60px",
+        "gap": "8px",
+        "borderRadius": "8px"
+      },
+      "searchBar": {
+        "height": "48px",
+        "borderRadius": "24px",
+        "padding": "0 20px",
+        "iconSize": "20px",
+        "background": "#F5F5F7",
+        "border": "2px solid transparent",
+        "focusBorder": "2px solid #4A90FF"
+      },
+      "sidebar": {
+        "itemSize": "60px",
+        "iconSize": "24px",
+        "borderRadius": "12px",
+        "activeIndicator": {
+          "width": "4px",
+          "color": "#4A90FF"
+        }
+      },
+      "invoice": {
+        "headerHeight": "80px",
+        "itemHeight": "72px",
+        "itemImageSize": "48px",
+        "padding": "20px",
+        "borderRadius": "0",
+        "dividerColor": "#E5E7EB"
+      }
+    },
+    "icons": {
+      "style": "outlined",
+      "sizes": {
+        "xs": "16px",
+        "sm": "20px",
+        "md": "24px",
+        "lg": "32px",
+        "xl": "40px"
+      },
+      "categories": {
+        "breakfast": "🍳",
+        "lunch": "🍔",
+        "dinner": "🍽️",
+        "soup": "🍜",
+        "desserts": "🍰",
+        "sideDish": "🍟",
+        "appetizer": "🥗",
+        "beverages": "🥤"
+      }
+    },
+    "animations": {
+      "duration": {
+        "fast": "150ms",
+        "normal": "250ms",
+        "slow": "350ms"
+      },
+      "easing": {
+        "default": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "easeIn": "cubic-bezier(0.4, 0, 1, 1)",
+        "easeOut": "cubic-bezier(0, 0, 0.2, 1)",
+        "bounce": "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+      }
+    },
+    "breakpoints": {
+      "mobile": "0px",
+      "tablet": "768px",
+      "desktop": "1024px",
+      "wide": "1440px"
+    },
+    "shadows": {
+      "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+      "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+      "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+      "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+    }
+  },
+  "uxPatterns": {
+    "interactions": {
+      "categorySelection": {
+        "type": "single-select",
+        "feedback": "instant",
+        "visualCue": "background-color-change",
+        "persistence": "session"
+      },
+      "quantityAdjustment": {
+        "type": "incremental",
+        "minValue": 0,
+        "maxValue": 99,
+        "step": 1,
+        "feedback": {
+          "visual": "button-state-change",
+          "numeric": "real-time-update"
+        }
+      },
+      "addToCart": {
+        "feedback": {
+          "immediate": "button-animation",
+          "persistent": "cart-badge-update",
+          "sound": "optional-success-chime"
+        },
+        "validation": "pre-add-availability-check"
+      },
+      "search": {
+        "type": "live-search",
+        "debounce": 300,
+        "minCharacters": 2,
+        "placeholder": "Search Your Menu Here",
+        "clearButton": true
+      }
+    },
+    "navigation": {
+      "primary": "sidebar",
+      "secondary": "category-tabs",
+      "structure": {
+        "sidebar": [
+          "menu",
+          "orders",
+          "inventory",
+          "reports",
+          "settings"
+        ],
+        "categoryFlow": "horizontal-scroll"
+      }
+    },
+    "layout": {
+      "pattern": "three-column",
+      "columns": {
+        "left": "navigation-sidebar",
+        "center": "content-area",
+        "right": "invoice-panel"
+      },
+      "responsive": {
+        "mobile": "stacked",
+        "tablet": "sidebar-collapsed",
+        "desktop": "full-three-column"
+      }
+    },
+    "feedback": {
+      "loading": {
+        "skeleton": true,
+        "shimmer": true
+      },
+      "success": {
+        "toast": "bottom-right",
+        "duration": 3000
+      },
+      "error": {
+        "inline": true,
+        "toast": "top-center"
+      }
+    },
+    "dataDisplay": {
+      "emptyState": {
+        "icon": true,
+        "message": "No items found",
+        "action": "add-new-item"
+      },
+      "pagination": {
+        "type": "infinite-scroll",
+        "itemsPerPage": 12
+      },
+      "sorting": {
+        "default": "category",
+        "options": ["name", "price", "popularity"]
+      }
+    },
+    "businessRules": {
+      "pricing": {
+        "currency": "$",
+        "decimalPlaces": 2,
+        "format": "prefix",
+        "thousandsSeparator": ","
+      },
+      "inventory": {
+        "showStock": true,
+        "stockFormat": "X Menu In Stock",
+        "lowStockThreshold": 5
+      },
+      "orderManagement": {
+        "minOrderValue": 0,
+        "maxItemQuantity": 99,
+        "allowNotes": true,
+        "allowModifications": true
+      }
+    },
+    "accessibility": {
+      "keyboardNavigation": {
+        "tab": "next-element",
+        "shiftTab": "previous-element",
+        "enter": "select",
+        "escape": "close-modal",
+        "arrows": "navigate-grid"
+      },
+      "aria": {
+        "landmarks": true,
+        "liveRegions": ["cart-total", "notifications"],
+        "labels": "all-interactive-elements"
+      },
+      "contrast": {
+        "minimum": "WCAG-AA",
+        "ratio": 4.5
+      }
+    },
+    "performance": {
+      "imageLoading": "lazy",
+      "virtualization": "menu-items-grid",
+      "caching": {
+        "images": true,
+        "menuData": "5-minutes"
+      },
+      "optimizations": {
+        "debounceSearch": 300,
+        "throttleScroll": 100,
+        "batchUpdates": true
+      }
+    }
+  },
+  "states": {
+    "menuItem": {
+      "available": {
+        "opacity": 1,
+        "interactive": true,
+        "cursor": "pointer"
+      },
+      "unavailable": {
+        "opacity": 0.5,
+        "interactive": false,
+        "cursor": "not-allowed",
+        "badge": "Out of Stock"
+      },
+      "selected": {
+        "border": "2px solid #4A90FF",
+        "background": "#F0F7FF"
+      }
+    },
+    "cart": {
+      "empty": {
+        "message": "No items in cart",
+        "icon": "empty-cart"
+      },
+      "active": {
+        "showSummary": true,
+        "showActions": true
+      },
+      "processing": {
+        "disableActions": true,
+        "showLoader": true
+      }
+    }
+  }
+}

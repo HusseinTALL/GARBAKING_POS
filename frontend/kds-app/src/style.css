@@ -1,0 +1,317 @@
+/**
+ * Global styles for the GARBAKING POS application - Dark Theme Design System
+ * Professional dark theme styling following comprehensive design system specifications
+ */
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Base styles for dark theme */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  font-variation-settings: 'opsz' 32;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0f172a; /* slate-900 */
+  color: #ffffff;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Custom dark scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e293b; /* slate-800 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569; /* slate-600 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* slate-500 */
+}
+
+/* High-performance transitions optimized for 60fps */
+.transition-all {
+  transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform, opacity;
+}
+
+.transition-transform {
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+
+.transition-colors {
+  transition: color 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             background-color 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             border-color 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Hardware-accelerated common transitions */
+.transition-fast {
+  transition: transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             opacity 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform, opacity;
+}
+
+.transition-smooth {
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+/* Focus styles for dark theme */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #4A90FF;
+  outline-offset: 2px;
+}
+
+/* Optimized button styles with hardware acceleration */
+.btn-primary {
+  @apply bg-blue-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg;
+  transition: background-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             box-shadow 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, background-color;
+}
+
+.btn-primary:hover {
+  @apply bg-blue-600;
+  transform: translate3d(0, -1px, 0);
+  box-shadow: 0 8px 20px rgba(74, 144, 255, 0.25);
+}
+
+.btn-primary:active {
+  @apply bg-blue-700;
+  transform: translate3d(0, 0, 0);
+}
+
+.btn-primary:focus {
+  @apply ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900;
+}
+
+.btn-secondary {
+  @apply bg-slate-700 text-white font-medium py-2 px-4 rounded-xl border border-slate-600;
+  transition: background-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             border-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, background-color;
+}
+
+.btn-secondary:hover {
+  @apply bg-slate-600 border-slate-500;
+  transform: translate3d(0, -1px, 0);
+}
+
+.btn-danger {
+  @apply bg-error-500 text-white font-medium py-2 px-4 rounded-xl;
+  transition: background-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, background-color;
+}
+
+.btn-danger:hover {
+  @apply bg-red-600;
+  transform: translate3d(0, -1px, 0);
+}
+
+/* Optimized dark theme card styles */
+.card {
+  @apply bg-slate-800 rounded-xl border border-slate-700 shadow-lg cursor-pointer;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             box-shadow 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             border-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, box-shadow;
+  backface-visibility: hidden;
+}
+
+.card:hover {
+  transform: translate3d(0, -2px, 0);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(74, 144, 255, 0.1);
+  border-color: rgba(74, 144, 255, 0.2);
+}
+
+.card-hover {
+  @apply cursor-pointer;
+  transition: transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             box-shadow 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, box-shadow;
+  backface-visibility: hidden;
+}
+
+.card-hover:hover {
+  transform: translate3d(0, -3px, 0) scale3d(1.02, 1.02, 1);
+  box-shadow: 0 16px 32px rgba(74, 144, 255, 0.15);
+}
+
+/* Dark theme status pills */
+.status-ready {
+  @apply bg-success-500/20 text-success-500 px-3 py-1 rounded-2xl text-xs font-medium border border-success-500/30;
+}
+
+.status-cooking {
+  @apply bg-warning-500/20 text-warning-500 px-3 py-1 rounded-2xl text-xs font-medium border border-warning-500/30;
+}
+
+.status-pending {
+  @apply bg-slate-700 text-slate-300 px-3 py-1 rounded-2xl text-xs font-medium border border-slate-600;
+}
+
+/* Loading animation for dark theme */
+.loading-spinner {
+  @apply animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500;
+}
+
+/* Dark theme offline indicator */
+.offline-banner {
+  @apply bg-warning-500/20 border-l-4 border-warning-500 text-warning-500 p-4 rounded-r-lg;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  /* Force light theme for printing */
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+}
+
+/* Enhanced responsive scroll optimization with performance improvements */
+@supports (-webkit-overflow-scrolling: touch) {
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    transform: translate3d(0, 0, 0);
+    will-change: scroll-position;
+  }
+}
+
+/* Performance optimizations for common UI elements */
+.performance-optimized {
+  contain: layout style paint;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+/* Fast interactive elements */
+.interactive-fast {
+  transition: transform 0.08s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+             opacity 0.08s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+}
+
+.interactive-fast:hover {
+  transform: translate3d(0, -1px, 0);
+}
+
+.interactive-fast:active {
+  transform: translate3d(0, 0, 0);
+  transition-duration: 0.04s;
+}
+
+/* Mobile responsiveness helpers */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+
+  .mobile-stack {
+    flex-direction: column;
+  }
+
+  /* Enhanced mobile scrollbars */
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #64748b;
+    border-radius: 2px;
+  }
+
+  /* Prevent zoom on double tap */
+  input, select, textarea {
+    touch-action: manipulation;
+  }
+
+  /* Improve tap targets */
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Smooth momentum scrolling for iOS */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Better horizontal scroll for categories */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+  }
+}
+
+/* Custom animations for dark theme */
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #1e293b 0px, #334155 40px, #1e293b 80px);
+  background-size: 200px;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Dark theme focus ring */
+.focus-ring {
+  @apply focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900;
+}
+
+/* Text selection styling for dark theme */
+::selection {
+  background-color: #4A90FF;
+  color: white;
+}
+
+::-moz-selection {
+  background-color: #4A90FF;
+  color: white;
+}

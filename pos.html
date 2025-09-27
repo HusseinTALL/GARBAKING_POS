@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin POS - Modern Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        
+        .main-container {
+            background: #0f0f23;
+            min-height: 100vh;
+            display: flex;
+            overflow: auto; /* Allow overflow for scrolling */
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            width: 80px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        
+        .sidebar:hover, .sidebar.active {
+            width: 240px;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            right: -16px;
+            top: 20px;
+            background: #667eea;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .sidebar-icon {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            color: #a1b2ca;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sidebar-icon::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar-icon:hover {
+            background: rgba(102, 126, 234, 0.15);
+            color: #fff;
+        }
+        
+        .sidebar-icon:hover::before {
+            transform: translateX(0);
+        }
+        
+        .sidebar-icon svg {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+        }
+        
+        .sidebar-text {
+            margin-left: 16px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar.active .sidebar-text {
+            opacity: 1;
+        }
+        
+        .analytics-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 16px;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* Header Styles */
+        .header {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0; /* Prevent header from shrinking */
+        }
+        
+        /* Category Pills */
+        .category-btn {
+            padding: 10px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.08);
+            color: #a1b2ca;
+        }
+        
+        .category-btn:hover {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .category-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* Menu Card Styles */
+        .menu-card {
+            background: rgba(26, 26, 46, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .menu-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+            border-color: rgba(102, 126, 234, 0.4);
+        }
+        
+        .menu-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .menu-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .menu-card:hover .menu-image {
+            transform: scale(1.1);
+        }
+        
+        .menu-content {
+            padding: 20px;
+        }
+        
+        .menu-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        
+        .menu-description {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+        
+        .menu-price {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Quantity Controls */
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .quantity-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #a1b2ca;
+            font-size: 20px;
+        }
+        
+        .quantity-btn:hover {
+            background: rgba(102, 126, 234, 0.25);
+            color: #fff;
+        }
+        
+        .quantity-value {
+            width: 48px;
+            text-align: center;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        /* Search Bar */
+        .search-bar {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .search-bar:focus-within {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+        
+        .search-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            width: 100%;
+            margin-left: 12px;
+        }
+        
+        .search-input::placeholder {
+            color: #94a3b8;
+        }
+        
+        /* Order Summary */
+        .order-summary {
+            background: rgba(26, 26, 46, 0.95);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+        }
+        
+        .order-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .order-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(102, 126, 234, 0.25);
+        }
+        
+        .order-item-image {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-right: 12px;
+        }
+        
+        .order-item-details {
+            flex: 1;
+        }
+        
+        .order-item-name {
+            color: #fff;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .order-item-qty {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+        
+        .order-item-price {
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .delete-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(239, 68, 68, 0.15);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 12px;
+        }
+        
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+            transform: scale(1.1);
+        }
+        
+        /* Checkout Button */
+        .checkout-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .checkout-btn:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+        }
+        
+        .checkout-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        
+        .checkout-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .checkout-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(26, 26, 46, 0.95);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .menu-card {
+            animation: slideIn 0.5s ease forwards;
+            opacity: 0;
+        }
+        
+        .menu-card:nth-child(1) { animation-delay: 0.1s; }
+        .menu-card:nth-child(2) { animation-delay: 0.2s; }
+        .menu-card:nth-child(3) { animation-delay: 0.3s; }
+        .menu-card:nth-child(4) { animation-delay: 0.4s; }
+        .menu-card:nth-child(5) { animation-delay: 0.5s; }
+        .menu-card:nth-child(6) { animation-delay: 0.6s; }
+        
+        /* Scrollbar Styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.4);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.6);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 0;
+            }
+            .sidebar.active {
+                width: 240px;
+            }
+            .menu-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .order-summary {
+                position: fixed;
+                right: -100%;
+                top: 0;
+                height: 100vh;
+                width: 360px;
+                z-index: 100;
+                transition: right 0.3s ease;
+            }
+            .order-summary.active {
+                right: 0;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+            .order-summary {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-toggle" onclick="toggleSidebar()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </div>
+            <div class="analytics-card">
+                <div class="text-white text-xs font-medium opacity-80">Today's Sales</div>
+                <div class="text-white text-2xl font-bold">$2,847</div>
+                <div class="text-green-400 text-xs">+12% from yesterday</div>
+            </div>
+            
+            <div class="sidebar-icon active" role="button" aria-label="Dashboard">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <span class="sidebar-text">Dashboard</span>
+            </div>
+            
+            <a href="orders.html" class="sidebar-icon" role="button" aria-label="Orders">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                </svg>
+                <span class="sidebar-text">Orders</span>
+            </a>
+            
+            <a href="kds.html" class="sidebar-icon" role="button" aria-label="Kitchen">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+                <span class="sidebar-text">Kitchen</span>
+            </a>
+            
+            <div class="sidebar-icon" role="button" aria-label="Messages">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
+                    <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
+                </svg>
+                <span class="sidebar-text">Messages</span>
+            </div>
+            
+            <div class="sidebar-icon" role="button" aria-label="Reports">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H6a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-1a1 1 0 100-2h1a4 4 0 014 4v6a4 4 0 01-4 4H6a4 4 0 01-4-4V7a4 4 0 014-4z" clip-rule="evenodd"/>
+                </svg>
+                <span class="sidebar-text">Reports</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <!-- Header -->
+            <header class="header h-20 flex items-center justify-between px-6">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mr-3">
+                        <span class="text-white font-bold text-lg">P</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Admin POS</h1>
+                        <p class="text-xs text-gray-300">Point of Sale System</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <span class="text-sm font-medium text-white">Admin Daboy</span>
+                        <p class="text-xs text-gray-300">Cashier 01</p>
+                    </div>
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <span class="text-white font-semibold">AD</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Categories -->
+            <nav class="px-6 py-4 flex space-x-3 overflow-x-auto" style="background: rgba(26, 26, 46, 0.5); flex-shrink: 0;">
+                <button class="category-btn active" data-category="all">All Menu</button>
+                <button class="category-btn" data-category="breakfast">Breakfast</button>
+                <button class="category-btn" data-category="lunch">Lunch</button>
+                <button class="category-btn" data-category="dinner">Dinner</button>
+                <button class="category-btn" data-category="beverages">Beverages</button>
+                <button class="category-btn" data-category="desserts">Desserts</button>
+            </nav>
+
+            <!-- Menu Grid -->
+            <main class="flex-1 p-6 overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-white">Menu Items <span class="text-gray-300" id="menuCount">(51)</span></h2>
+                    <div class="search-bar" style="width: 280px;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #94a3b8;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" placeholder="Search menu..." class="search-input" aria-label="Search menu items">
+                    </div>
+                </div>
+                
+                <div class="menu-grid grid grid-cols-3 gap-6">
+                    <div class="menu-card" data-category="dinner">
+                        <div style="overflow: hidden; height: 180px;">
+                            <img src="https://kelianfood.com/wp-content/uploads/2022/02/IMG_1261.jpg" alt="Pasta Bolognese" class="menu-image">
+                        </div>
+                        <div class="menu-content">
+                            <h3 class="menu-title">Pasta Bolognese</h3>
+                            <p class="menu-description">Rich meat sauce with fresh herbs and parmesan</p>
+                            <div class="flex justify-between items-center mt-4">
+                                <span class="menu-price">$50.5</span>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" onclick="updateQuantity(this, -1)" aria-label="Decrease quantity">−</button>
+                                    <span class="quantity-value">0</span>
+                                    <button class="quantity-btn" onclick="updateQuantity(this, 1)" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-card" data-category="lunch">
+                        <div style="overflow: hidden; height: 180px;">
+                            <img src="https://i.ytimg.com/vi/B_Caq4WKTM4/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAdbnEdhFhD8oDo3-d67Hx2U8RLjQ" alt="Spicy Fried Chicken" class="menu-image">
+                        </div>
+                        <div class="menu-content">
+                            <h3 class="menu-title">Spicy Fried Chicken</h3>
+                            <p class="menu-description">Crispy fried chicken with secret spicy coating</p>
+                            <div class="flex justify-between items-center mt-4">
+                                <span class="menu-price">$45.7</span>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" onclick="updateQuantity(this, -1)" aria-label="Decrease quantity">−</button>
+                                    <span class="quantity-value">0</span>
+                                    <button class="quantity-btn" onclick="updateQuantity(this, 1)" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-card" data-category="lunch">
+                        <div style="overflow: hidden; height: 180px;">
+                            <img src="https://img.freepik.com/photos-gratuite/vue-rapprochee-laterale-bols-poulet-epices-sauces-epices-poulet-frites-planche-decouper_140725-110408.jpg?semt=ais_hybrid&w=740&q=80" alt="Grilled Chicken" class="menu-image">
+                        </div>
+                        <div class="menu-content">
+                            <h3 class="menu-title">Grilled Chicken Platter</h3>
+                            <p class="menu-description">Juicy grilled chicken with golden fries</p>
+                            <div class="flex justify-between items-center mt-4">
+                                <span class="menu-price">$60.0</span>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" onclick="updateQuantity(this, -1)" aria-label="Decrease quantity">−</button>
+                                    <span class="quantity-value">0</span>
+                                    <button class="quantity-btn" onclick="updateQuantity(this, 1)" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-card" data-category="dinner">
+                        <div style="overflow: hidden; height: 180px;">
+                            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400" alt="Margherita Pizza" class="menu-image">
+                        </div>
+                        <div class="menu-content">
+                            <h3 class="menu-title">Margherita Pizza</h3>
+                            <p class="menu-description">Fresh mozzarella, basil, and tomato sauce</p>
+                            <div class="flex justify-between items-center mt-4">
+                                <span class="menu-price">$35.9</span>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" onclick="updateQuantity(this, -1)" aria-label="Decrease quantity">−</button>
+                                    <span class="quantity-value">0</span>
+                                    <button class="quantity-btn" onclick="updateQuantity(this, 1)" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-card" data-category="lunch">
+                        <div style="overflow: hidden; height: 180px;">
+                            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400" alt="Classic Burger" class="menu-image">
+                        </div>
+                        <div class="menu-content">
+                            <h3 class="menu-title">Classic Burger</h3>
+                            <p class="menu-description">Beef patty with lettuce, tomato, and cheese</p>
+                            <div class="flex justify-between items-center mt-4">
+                                <span class="menu-price">$28.5</span>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" onclick="updateQuantity(this, -1)" aria-label="Decrease quantity">−</button>
+                                    <span class="quantity-value">0</span>
+                                    <button class="quantity-btn" onclick="updateQuantity(this, 1)" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-card" data-category="lunch">
+                        <div style="overflow: hidden; height: 180px;">
+                            <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400" alt="Caesar Salad" class="menu-image">
+                        </div>
+                        <div class="menu-content">
+                            <h3 class="menu-title">Caesar Salad</h3>
+                            <p class="menu-description">Crisp romaine with parmesan and croutons</p>
+                            <div class="flex justify-between items-center mt-4">
+                                <span class="menu-price">$22.0</span>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" onclick="updateQuantity(this, -1)" aria-label="Decrease quantity">−</button>
+                                    <span class="quantity-value">0</span>
+                                    <button class="quantity-btn" onclick="updateQuantity(this, 1)" aria-label="Increase quantity">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Right Sidebar (Order Summary) -->
+        <aside class="order-summary w-96 p-6 flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-white">Order Summary</h2>
+                <button class="text-gray-300 hover:text-white transition-colors" onclick="toggleOrderSummary()" aria-label="Close order summary">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto" id="orderItems">
+                <!-- Order items will be dynamically added here -->
+            </div>
+            
+            <div class="mt-auto pt-4 border-t border-gray-700">
+                <div class="space-y-3 mb-4">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-300">Subtotal</span>
+                        <span class="text-white font-medium" id="subtotal">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-300">Tax (10%)</span>
+                        <span class="text-white font-medium" id="tax">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-lg pt-3 border-t border-gray-700">
+                        <span class="text-white font-semibold">Total</span>
+                        <span class="text-white font-bold text-xl" id="total">$0.00</span>
+                    </div>
+                </div>
+                <button class="checkout-btn w-full" id="checkoutBtn" disabled>
+                    Place Order
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        let orderItems = {};
+        let debounceTimeout;
+
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+        }
+
+        function toggleOrderSummary() {
+            document.querySelector('.order-summary').classList.toggle('active');
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function updateQuantity(btn, delta) {
+            const card = btn.closest('.menu-card');
+            const quantitySpan = card.querySelector('.quantity-value');
+            const title = card.querySelector('.menu-title').textContent;
+            const price = parseFloat(card.querySelector('.menu-price').textContent.replace('$', ''));
+            const image = card.querySelector('.menu-image').src;
+
+            let quantity = parseInt(quantitySpan.textContent) + delta;
+            quantity = Math.max(0, quantity);
+            quantitySpan.textContent = quantity;
+
+            // Animate button press
+            btn.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                btn.style.transform = 'scale(1)';
+            }, 100);
+
+            if (quantity > 0) {
+                orderItems[title] = {
+                    quantity: quantity,
+                    price: price,
+                    image: image,
+                    total: price * quantity
+                };
+                showToast(`${title} ${delta > 0 ? 'added to' : 'updated in'} cart`);
+            } else {
+                delete orderItems[title];
+                showToast(`${title} removed from cart`);
+            }
+
+            updateOrderSummary();
+        }
+
+        function updateOrderSummary() {
+            const container = document.getElementById('orderItems');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            container.innerHTML = '';
+
+            if (Object.keys(orderItems).length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="mx-auto text-gray-500 mb-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                        <p class="text-gray-400">Your cart is empty</p>
+                        <p class="text-gray-500 text-sm mt-2">Add items to get started</p>
+                    </div>
+                `;
+                checkoutBtn.disabled = true;
+            } else {
+                Object.entries(orderItems).forEach(([name, item]) => {
+                    const orderItemDiv = document.createElement('div');
+                    orderItemDiv.className = 'order-item';
+                    orderItemDiv.innerHTML = `
+                        <img src="${item.image}" alt="${name}" class="order-item-image">
+                        <div class="order-item-details">
+                            <div class="order-item-name">${name}</div>
+                            <div class="order-item-qty">${item.quantity} × $${item.price.toFixed(2)}</div>
+                        </div>
+                        <div class="order-item-price">$${item.total.toFixed(2)}</div>
+                        <button class="delete-btn" onclick="removeItem('${name}')" aria-label="Remove ${name} from cart">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20" style="color: #ef4444;">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    `;
+                    orderItemDiv.style.opacity = '0';
+                    orderItemDiv.style.transform = 'translateX(20px)';
+                    container.appendChild(orderItemDiv);
+
+                    setTimeout(() => {
+                        orderItemDiv.style.transition = 'all 0.3s ease';
+                        orderItemDiv.style.opacity = '1';
+                        orderItemDiv.style.transform = 'translateX(0)';
+                    }, 10);
+                });
+                checkoutBtn.disabled = false;
+            }
+
+            updateTotals();
+        }
+
+        function removeItem(name) {
+            delete orderItems[name];
+
+            document.querySelectorAll('.menu-card').forEach(card => {
+                if (card.querySelector('.menu-title').textContent === name) {
+                    card.querySelector('.quantity-value').textContent = '0';
+                }
+            });
+
+            showToast(`${name} removed from cart`);
+            updateOrderSummary();
+        }
+
+        function updateTotals() {
+            let subtotal = 0;
+            Object.values(orderItems).forEach(item => {
+                subtotal += item.total;
+            });
+
+            const tax = subtotal * 0.1;
+            const total = subtotal + tax;
+
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+
+            const totalElement = document.getElementById('total');
+            totalElement.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                totalElement.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        // Category filtering
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const category = this.dataset.category;
+                document.querySelectorAll('.menu-card').forEach(card => {
+                    if (category === 'all' || card.dataset.category === category) {
+                        card.style.display = 'block';
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                        }, 10);
+                    } else {
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.style.display = 'none';
+                        }, 300);
+                    }
+                });
+
+                const visibleCards = document.querySelectorAll('.menu-card[style*="block"]').length;
+                document.getElementById('menuCount').textContent = `(${visibleCards})`;
+
+                const ripple = document.createElement('div');
+                ripple.style.position = 'absolute';
+                ripple.style.width = '20px';
+                ripple.style.height = '20px';
+                ripple.style.background = 'rgba(255,255,255,0.5)';
+                ripple.style.borderRadius = '50%';
+                ripple.style.transform = 'translate(-50%, -50%)';
+                ripple.style.pointerEvents = 'none';
+                ripple.style.animation = 'ripple 0.6s ease-out';
+                this.style.position = 'relative';
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+
+                const rect = this.getBoundingClientRect();
+                ripple.style.left = '50%';
+                ripple.style.top = '50%';
+
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+
+        // Search functionality with debouncing
+        document.querySelector('.search-input').addEventListener('input', function(e) {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                const searchTerm = e.target.value.toLowerCase();
+                document.querySelectorAll('.menu-card').forEach(card => {
+                    const title = card.querySelector('.menu-title').textContent.toLowerCase();
+                    const description = card.querySelector('.menu-description').textContent.toLowerCase();
+
+                    if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                        card.style.display = 'block';
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                        }, 10);
+                    } else {
+                        card.style.opacity = '0';
+                        setTimeout(() => {
+                            card.style.display = 'none';
+                        }, 300);
+                    }
+                });
+
+                const visibleCards = document.querySelectorAll('.menu-card[style*="block"]').length;
+                document.getElementById('menuCount').textContent = `(${visibleCards})`;
+            }, 300);
+        });
+
+        // Checkout button
+        document.querySelector('.checkout-btn').addEventListener('click', function() {
+            if (Object.keys(orderItems).length === 0) {
+                this.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    this.style.animation = '';
+                }, 500);
+                showToast('Cart is empty');
+                return;
+            }
+
+            this.innerHTML = `
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="mx-auto animate-bounce">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            `;
+            this.disabled = true;
+
+            setTimeout(() => {
+                this.innerHTML = 'Place Order';
+                orderItems = {};
+                updateOrderSummary();
+                document.querySelectorAll('.quantity-value').forEach(q => q.textContent = '0');
+                showToast('Order placed successfully!');
+                this.disabled = false;
+            }, 2000);
+        });
+
+        // Add animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+            @keyframes ripple {
+                to {
+                    width: 100px;
+                    height: 100px;
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize
+        updateOrderSummary();
+
+        // Mobile menu toggle
+        if (window.innerWidth <= 1024) {
+            const orderSummary = document.querySelector('.order-summary');
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white shadow-lg z-50';
+            toggleBtn.innerHTML = `
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+            `;
+            toggleBtn.onclick = toggleOrderSummary;
+            document.body.appendChild(toggleBtn);
+        }
+    </script>
+</body>
+</html>

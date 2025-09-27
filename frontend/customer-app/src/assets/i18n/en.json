@@ -1,0 +1,84 @@
+{
+  "welcome": "Welcome to Garbaking",
+  "place_order": "Place Order",
+  "cart": "Your Cart",
+  "menu": "Menu",
+  "order_history": "Order History",
+  "order": "Order",
+  "order_items": "Order Items",
+  "total": "Total",
+  "subtotal": "Subtotal",
+  "add_to_cart": "Add to Cart",
+  "remove_from_cart": "Remove from Cart",
+  "table_number": "Table Number",
+  "customer_name": "Customer Name",
+  "order_submitted": "Order Submitted Successfully",
+  "order_accepted": "Order Accepted",
+  "order_preparing": "Order Being Prepared",
+  "order_ready": "Order Ready for Pickup",
+  "order_ready_pickup": "Your order is ready for pickup!",
+  "estimated_time": "Estimated time",
+  "minutes": "minutes",
+  "loading": "Loading...",
+  "no_orders": "No Orders Yet",
+  "no_orders_description": "Your order history will appear here",
+  "mark_collected": "Mark as Collected",
+  "retry_sync": "Retry Sync",
+  "syncing": "Syncing...",
+  "categories": {
+    "mains": "Main Dishes",
+    "drinks": "Beverages",
+    "desserts": "Desserts",
+    "appetizers": "Appetizers"
+  },
+  "dietary_tags": {
+    "vegetarian": "Vegetarian",
+    "vegan": "Vegan",
+    "gluten_free": "Gluten Free",
+    "spicy": "Spicy",
+    "dairy_free": "Dairy Free"
+  },
+  "status": {
+    "queued": "Queued",
+    "synced": "Synced"
+  },
+  "time": {
+    "just_now": "Just now",
+    "minutes_ago": "{count} min ago",
+    "hours_ago": "{count}h ago",
+    "days_ago": "{count}d ago",
+    "yesterday": "Yesterday"
+  },
+  "notifications": {
+    "item_added": "Item added to cart",
+    "item_removed": "Item removed from cart",
+    "order_queued": "Order queued for sync",
+    "order_synced": "Order synced successfully",
+    "offline_mode": "You are currently offline",
+    "pending_sync": "Pending sync"
+  },
+  "buttons": {
+    "submit": "Submit Order",
+    "cancel": "Cancel",
+    "clear_cart": "Clear Cart",
+    "back": "Back",
+    "continue": "Continue",
+    "close": "Close",
+    "refresh": "Refresh",
+    "switch_language": "Switch Language"
+  },
+  "placeholders": {
+    "enter_table": "Enter table number (1-20)",
+    "enter_name": "Enter your name"
+  },
+  "errors": {
+    "table_required": "Table number is required",
+    "name_required": "Name is required",
+    "invalid_table": "Please enter a valid table number (1-20)",
+    "cart_empty": "Your cart is empty"
+  },
+  "no_items": "No items in this category",
+  "cart_cleared": "Cart cleared",
+  "submitting_order": "Submitting order...",
+  "all": "All"
+}

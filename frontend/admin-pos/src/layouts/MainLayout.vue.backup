@@ -1,0 +1,722 @@
+<!--
+  GARBAKING POS Layout - Dark Theme Design System Implementation
+  Professional point-of-sale interface following comprehensive design system specifications
+-->
+
+<template>
+  <div class="min-h-screen bg-slate-900 relative">
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 z-50 safe-area-inset-bottom">
+      <div class="grid grid-cols-5 h-16">
+        <button
+          v-for="item in sidebarItems"
+          :key="item.name"
+          class="flex flex-col items-center justify-center space-y-1 text-xs font-medium transition-colors duration-200 relative"
+          :class="{ 'text-blue-400': item.active, 'text-slate-400': !item.active }"
+          @click="setActiveTab(item.name)"
+        >
+          <div
+            v-if="item.active"
+            class="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-blue-400 rounded-b-full"
+          ></div>
+          <FontAwesomeIcon :icon="item.icon" class="text-lg" />
+          <span class="capitalize">{{ item.name }}</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Floating Cart Button (Mobile) -->
+    <button
+      v-if="totalItems > 0"
+      @click="showMobileCart = true"
+      class="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-blue-500 hover:bg-blue-600 rounded-full shadow-2xl z-40 flex items-center justify-center transition-all duration-300 animate-bounce"
+    >
+      <FontAwesomeIcon :icon="['fas', 'shopping-cart']" class="text-white text-xl" />
+      <div class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+        <span class="text-white text-xs font-bold">{{ totalItems }}</span>
+      </div>
+    </button>
+
+    <!-- Mobile Cart Modal -->
+    <div
+      v-if="showMobileCart"
+      class="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+      @click="showMobileCart = false"
+    >
+      <div
+        class="absolute bottom-0 left-0 right-0 bg-slate-800 rounded-t-2xl max-h-[80vh] animate-slide-up"
+        @click.stop
+      >
+        <OrderSummary @close="showMobileCart = false" :is-mobile="true" />
+      </div>
+    </div>
+
+    <div class="flex h-screen pb-16 md:pb-0">
+      <!-- Desktop Sidebar -->
+      <aside class="hidden md:flex w-20 bg-slate-800 border-r border-slate-700 flex-col items-center py-6">
+        <!-- Logo -->
+        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-8 shadow-lg">
+          <FontAwesomeIcon :icon="['fas', 'utensils']" class="text-white text-xl" />
+        </div>
+
+        <!-- Navigation Icons -->
+        <nav class="flex flex-col space-y-3">
+          <button
+            v-for="item in sidebarItems"
+            :key="item.name"
+            class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-slate-700 transition-all duration-200 relative"
+            :class="{ 'bg-blue-500 text-white shadow-lg': item.active }"
+            @click="setActiveTab(item.name)"
+          >
+            <!-- Active Indicator -->
+            <div
+              v-if="item.active"
+              class="absolute left-0 w-1 h-8 bg-blue-400 rounded-r-full"
+            ></div>
+            <FontAwesomeIcon
+              :icon="item.icon"
+              class="text-xl"
+              :class="{ 'text-white': item.active, 'text-slate-400': !item.active }"
+            />
+          </button>
+        </nav>
+
+        <!-- Bottom Icons -->
+        <div class="mt-auto flex flex-col space-y-3">
+          <button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-slate-700 transition-all duration-200">
+            <FontAwesomeIcon :icon="['fas', 'message']" class="text-xl text-slate-400" />
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 flex flex-col bg-slate-900 overflow-hidden">
+        <!-- Mobile Header -->
+        <div class="md:hidden bg-slate-800 border-b border-slate-700 p-4 flex items-center justify-between sticky top-0 z-30">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <FontAwesomeIcon :icon="['fas', 'utensils']" class="text-white text-lg" />
+            </div>
+            <h1 class="text-xl font-bold text-white">Garbaking POS</h1>
+          </div>
+          <button
+            @click="showMobileCart = true"
+            class="relative p-3 rounded-xl bg-slate-700 hover:bg-slate-600 transition-colors"
+          >
+            <FontAwesomeIcon :icon="['fas', 'shopping-cart']" class="text-white" />
+            <div
+              v-if="totalItems > 0"
+              class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+            >
+              <span class="text-white text-xs font-bold">{{ totalItems }}</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Content Container -->
+        <div class="flex-1 flex overflow-hidden">
+          <!-- Menu Section -->
+          <div class="flex-1 flex flex-col bg-slate-900 overflow-hidden">
+            <!-- Sticky Search Bar -->
+            <div class="sticky top-0 z-20 bg-slate-900 p-4 md:p-6 border-b border-slate-700/50 backdrop-blur-sm">
+              <div class="relative">
+                <FontAwesomeIcon
+                  :icon="['fas', 'search']"
+                  class="absolute left-4 md:left-5 top-1/2 transform -translate-y-1/2 text-slate-400 text-lg"
+                />
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search Your Menu Here"
+                  class="w-full pl-12 md:pl-14 pr-6 py-3 md:py-4 bg-slate-800 border-2 border-slate-700 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-slate-400 text-base md:text-lg font-medium transition-all duration-200 touch-manipulation"
+                />
+                <button
+                  v-if="searchQuery"
+                  @click="searchQuery = ''"
+                  class="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <FontAwesomeIcon :icon="['fas', 'times']" class="text-lg" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Horizontal Scrollable Categories -->
+            <div class="px-4 md:px-6 py-4">
+              <div
+                ref="categoriesContainer"
+                class="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2"
+                style="scroll-behavior: smooth;"
+              >
+                <button
+                  v-for="(category, index) in categories"
+                  :key="category.id"
+                  @click="selectCategory(category.id, index)"
+                  class="flex-shrink-0 snap-start bg-slate-800 rounded-xl p-3 md:p-4 border border-slate-700 hover:shadow-lg transition-all duration-200 text-left group min-w-[140px] md:min-w-[160px] touch-manipulation"
+                  :class="{ 'bg-blue-500 border-blue-500 shadow-lg shadow-blue-500/25': selectedCategory === category.id }"
+                >
+                  <div class="flex items-center justify-between mb-3">
+                    <div
+                      class="w-10 md:w-12 h-10 md:h-12 rounded-xl flex items-center justify-center transition-colors duration-200"
+                      :class="selectedCategory === category.id ? 'bg-blue-600' : 'bg-slate-700 group-hover:bg-slate-600'"
+                    >
+                      <FontAwesomeIcon
+                        :icon="category.icon"
+                        class="text-lg md:text-xl"
+                        :class="selectedCategory === category.id ? 'text-white' : 'text-slate-300'"
+                      />
+                    </div>
+                    <FontAwesomeIcon
+                      :icon="['fas', 'chevron-right']"
+                      :class="selectedCategory === category.id ? 'text-white' : 'text-slate-400'"
+                      class="text-sm md:text-lg"
+                    />
+                  </div>
+                  <div>
+                    <h3
+                      class="font-semibold text-sm md:text-lg mb-1 md:mb-2"
+                      :class="selectedCategory === category.id ? 'text-white' : 'text-white'"
+                    >
+                      {{ category.name }}
+                    </h3>
+                    <p
+                      class="text-xs md:text-sm"
+                      :class="selectedCategory === category.id ? 'text-blue-100' : 'text-slate-400'"
+                    >
+                      {{ category.count }} Available
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Scrollable Menu Content -->
+            <div class="flex-1 overflow-y-auto">
+              <!-- Menu Title with Scroll Progress -->
+              <div class="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm px-4 md:px-6 py-4 border-b border-slate-700/30">
+                <div class="flex items-center justify-between">
+                  <h2 class="text-xl md:text-3xl font-bold text-white">{{ selectedCategoryName }} Menu</h2>
+                  <div class="text-sm text-slate-400">{{ filteredMenuItems.length }} items</div>
+                </div>
+                <!-- Scroll Progress Bar -->
+                <div class="mt-2 w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-blue-500 transition-all duration-300 ease-out"
+                    :style="{ width: scrollProgress + '%' }"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Dynamic Grid Menu Items -->
+              <div class="p-4 md:p-6">
+                <div
+                  class="grid gap-4 md:gap-6"
+                  :class="gridClass"
+                >
+                  <div
+                    v-for="item in filteredMenuItems"
+                    :key="item.id"
+                    class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:shadow-2xl hover:shadow-blue-500/10 hover:border-slate-600 transition-all duration-300 group touch-manipulation"
+                    :class="{ 'ring-2 ring-blue-500': getItemQuantity(item.id) > 0 }"
+                  >
+                    <!-- Item Image -->
+                    <div class="h-32 md:h-40 bg-slate-700 relative overflow-hidden">
+                      <img
+                        v-if="item.image"
+                        :src="item.image"
+                        :alt="item.name"
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
+                        <!-- Background Pattern -->
+                        <div class="absolute inset-0 opacity-30">
+                          <div class="absolute top-3 right-3 w-4 md:w-6 h-4 md:h-6 bg-blue-500/20 rounded-full"></div>
+                          <div class="absolute bottom-3 md:bottom-4 left-3 md:left-4 w-3 md:w-4 h-3 md:h-4 bg-blue-400/20 rounded-full"></div>
+                          <div class="absolute top-1/2 left-1/3 w-2 md:w-3 h-2 md:h-3 bg-blue-300/20 rounded-full"></div>
+                        </div>
+                        <!-- Food Icon -->
+                        <div class="relative z-10 p-4 md:p-6 bg-slate-700/80 backdrop-blur-sm rounded-xl shadow-lg border border-slate-600/50">
+                          <FontAwesomeIcon :icon="getFoodIcon(item.name)" class="text-blue-400 text-xl md:text-3xl" />
+                        </div>
+                      </div>
+                      <!-- Quantity Badge -->
+                      <div
+                        v-if="getItemQuantity(item.id) > 0"
+                        class="absolute top-3 right-3 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-pulse"
+                      >
+                        <span class="text-white text-sm font-bold">{{ getItemQuantity(item.id) }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Item Details -->
+                    <div class="p-3 md:p-4">
+                      <h3 class="font-semibold text-lg md:text-xl text-white mb-2 md:mb-3 line-clamp-1">{{ item.name }}</h3>
+                      <p class="text-slate-400 text-xs md:text-sm mb-3 md:mb-5 line-clamp-2">{{ item.description }}</p>
+
+                      <!-- Price and Controls -->
+                      <div class="flex items-center justify-between">
+                        <div class="text-lg md:text-2xl font-bold text-white">
+                          ${{ item.price.toFixed(1) }}
+                        </div>
+                        <div class="flex items-center space-x-2 md:space-x-3">
+                          <button
+                            @click="decrementItem(item.id)"
+                            class="w-9 h-9 md:w-10 md:h-10 rounded-xl border-2 border-slate-600 flex items-center justify-center hover:bg-slate-700 active:bg-slate-600 transition-colors duration-200 touch-manipulation"
+                            :disabled="getItemQuantity(item.id) <= 0"
+                            :class="{ 'opacity-50 cursor-not-allowed': getItemQuantity(item.id) <= 0 }"
+                          >
+                            <FontAwesomeIcon :icon="['fas', 'minus']" class="text-slate-300 text-sm md:text-lg" />
+                          </button>
+                          <div class="w-8 md:w-10 text-center">
+                            <span class="font-bold text-lg md:text-xl text-white">{{ getItemQuantity(item.id) }}</span>
+                          </div>
+                          <button
+                            @click="incrementItem(item.id)"
+                            class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-blue-500 flex items-center justify-center hover:bg-blue-600 active:bg-blue-700 transition-colors duration-200 shadow-lg touch-manipulation"
+                          >
+                            <FontAwesomeIcon :icon="['fas', 'plus']" class="text-white text-sm md:text-lg" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Sidebar - Invoice (Desktop Only) -->
+          <div class="hidden lg:block">
+            <OrderSummary />
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import OrderSummary from '@/components/OrderSummary.vue'
+
+// Reactive data
+const searchQuery = ref('')
+const selectedCategory = ref('lunch')
+const showMobileCart = ref(false)
+const scrollProgress = ref(0)
+const categoriesContainer = ref<HTMLElement>()
+
+// Responsive grid configuration
+const windowWidth = ref(window.innerWidth)
+
+// Sidebar items
+const sidebarItems = ref([
+  { name: 'menu', icon: ['fas', 'th-large'], active: true },
+  { name: 'orders', icon: ['fas', 'receipt'], active: false },
+  { name: 'calendar', icon: ['fas', 'calendar'], active: false },
+  { name: 'analytics', icon: ['fas', 'chart-line'], active: false },
+  { name: 'list', icon: ['fas', 'list'], active: false }
+])
+
+// Categories matching the Restoe design
+const categories = ref([
+  {
+    id: 'breakfast',
+    name: 'Breakfast',
+    icon: ['fas', 'coffee'],
+    count: 12
+  },
+  {
+    id: 'lunch',
+    name: 'Lunch',
+    icon: ['fas', 'hamburger'],
+    count: 12
+  },
+  {
+    id: 'dinner',
+    name: 'Dinner',
+    icon: ['fas', 'utensils'],
+    count: 12
+  },
+  {
+    id: 'soup',
+    name: 'Soup',
+    icon: ['fas', 'bowl-hot'],
+    count: 12
+  },
+  {
+    id: 'desserts',
+    name: 'Desserts',
+    icon: ['fas', 'ice-cream'],
+    count: 12
+  },
+  {
+    id: 'sidedish',
+    name: 'Side Dish',
+    icon: ['fas', 'pepper-hot'],
+    count: 12
+  },
+  {
+    id: 'appetizer',
+    name: 'Appetizer',
+    icon: ['fas', 'shrimp'],
+    count: 12
+  },
+  {
+    id: 'beverages',
+    name: 'Beverages',
+    icon: ['fas', 'wine-glass'],
+    count: 12
+  }
+])
+
+// Menu items matching the design
+const menuItems = ref([
+  {
+    id: 1,
+    name: 'Pasta Bolognese',
+    description: 'Delicious beef lasagna with double chilli Delicious beef',
+    price: 50.5,
+    image: null,
+    category: 'lunch'
+  },
+  {
+    id: 2,
+    name: 'Spicy Fried Chicken',
+    description: 'Delicious beef lasagna with double chilli Delicious beef',
+    price: 45.7,
+    image: null,
+    category: 'lunch'
+  },
+  {
+    id: 3,
+    name: 'Grilled Steak',
+    description: 'Delicious beef lasagna with double chilli Delicious beef',
+    price: 80.0,
+    image: null,
+    category: 'lunch'
+  },
+  {
+    id: 4,
+    name: 'Fish And Chips',
+    description: 'Delicious beef lasagna with double chilli Delicious beef',
+    price: 90.4,
+    image: null,
+    category: 'lunch'
+  },
+  {
+    id: 5,
+    name: 'Beef Bourguignon',
+    description: 'Delicious beef lasagna with double chilli Delicious beef',
+    price: 75.5,
+    image: null,
+    category: 'lunch'
+  },
+  {
+    id: 6,
+    name: 'Spaghetti Carbonara',
+    description: 'Delicious beef lasagna with double chilli Delicious beef',
+    price: 35.3,
+    image: null,
+    category: 'lunch'
+  },
+  {
+    id: 7,
+    name: 'Ratatouille',
+    description: 'Delicious beef lasagna with double chilli Delicious beef',
+    price: 42.8,
+    image: null,
+    category: 'lunch'
+  },
+  {
+    id: 8,
+    name: 'Kimchi Jjigae',
+    description: 'Delicious beef lasagna with double chilli Delicious beef',
+    price: 38.9,
+    image: null,
+    category: 'lunch'
+  },
+  {
+    id: 9,
+    name: 'Tofu Scramble',
+    description: 'Delicious beef lasagna with double chilli Delicious beef',
+    price: 28.5,
+    image: null,
+    category: 'lunch'
+  }
+])
+
+// Order items for quantity tracking
+const orderItems = ref<Record<number, number>>({})
+
+// Computed properties for responsive design
+const selectedCategoryName = computed(() => {
+  const category = categories.value.find(c => c.id === selectedCategory.value)
+  return category?.name || 'Menu'
+})
+
+const filteredMenuItems = computed(() => {
+  let items = menuItems.value.filter(item => item.category === selectedCategory.value)
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    items = items.filter(item =>
+      item.name.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query)
+    )
+  }
+
+  return items
+})
+
+// Dynamic grid class based on screen size and content
+const gridClass = computed(() => {
+  if (windowWidth.value < 640) {
+    // Mobile: 1 column
+    return 'grid-cols-1'
+  } else if (windowWidth.value < 768) {
+    // Small tablet: 2 columns
+    return 'grid-cols-2'
+  } else if (windowWidth.value < 1024) {
+    // Tablet: 2-3 columns based on content
+    return filteredMenuItems.value.length > 6 ? 'grid-cols-3' : 'grid-cols-2'
+  } else if (windowWidth.value < 1280) {
+    // Small desktop: 3 columns
+    return 'grid-cols-3'
+  } else {
+    // Large desktop: 4 columns
+    return 'grid-cols-4'
+  }
+})
+
+// Total items in cart
+const totalItems = computed(() => {
+  return Object.values(orderItems.value).reduce((total, quantity) => total + quantity, 0)
+})
+
+// Methods
+const getItemQuantity = (itemId: number): number => {
+  return orderItems.value[itemId] || 0
+}
+
+const incrementItem = (itemId: number) => {
+  if (orderItems.value[itemId]) {
+    orderItems.value[itemId]++
+  } else {
+    orderItems.value[itemId] = 1
+  }
+}
+
+const decrementItem = (itemId: number) => {
+  if (orderItems.value[itemId] && orderItems.value[itemId] > 0) {
+    orderItems.value[itemId]--
+    if (orderItems.value[itemId] === 0) {
+      delete orderItems.value[itemId]
+    }
+  }
+}
+
+// Enhanced category selection with smooth scrolling
+const selectCategory = async (categoryId: string, index: number) => {
+  selectedCategory.value = categoryId
+
+  // Smooth scroll the selected category into view
+  if (categoriesContainer.value) {
+    const categoryElement = categoriesContainer.value.children[index] as HTMLElement
+    if (categoryElement) {
+      categoryElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      })
+    }
+  }
+}
+
+// Set active tab for navigation
+const setActiveTab = (tabName: string) => {
+  sidebarItems.value.forEach(item => {
+    item.active = item.name === tabName
+  })
+}
+
+// Handle window resize for responsive grid
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
+}
+
+// Throttled scroll handler for progress bar
+let scrollTimeout: number | null = null
+const handleScroll = (event: Event) => {
+  if (scrollTimeout) return
+
+  scrollTimeout = setTimeout(() => {
+    const element = event.target as HTMLElement
+    const scrollTop = element.scrollTop
+    const scrollHeight = element.scrollHeight - element.clientHeight
+    scrollProgress.value = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0
+    scrollTimeout = null
+  }, 16) // ~60fps
+}
+
+// Lifecycle hooks
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+
+  // Add scroll listener to menu content
+  nextTick(() => {
+    const menuContent = document.querySelector('.flex-1.overflow-y-auto')
+    if (menuContent) {
+      menuContent.addEventListener('scroll', handleScroll, { passive: true })
+    }
+  })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (scrollTimeout) {
+    clearTimeout(scrollTimeout)
+  }
+})
+
+const getFoodIcon = (itemName: string): [string, string] => {
+  const name = itemName.toLowerCase()
+
+  if (name.includes('pasta') || name.includes('spaghetti')) {
+    return ['fas', 'wheat-awn']
+  } else if (name.includes('chicken') || name.includes('fried')) {
+    return ['fas', 'drumstick-bite']
+  } else if (name.includes('steak') || name.includes('beef')) {
+    return ['fas', 'cow']
+  } else if (name.includes('fish')) {
+    return ['fas', 'fish']
+  } else if (name.includes('soup') || name.includes('jjigae')) {
+    return ['fas', 'bowl-hot']
+  } else if (name.includes('tofu')) {
+    return ['fas', 'leaf']
+  } else if (name.includes('kimchi')) {
+    return ['fas', 'pepper-hot']
+  } else {
+    return ['fas', 'utensils']
+  }
+}
+</script>
+
+<style scoped>
+/* Text truncation utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Hide scrollbars for horizontal category scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll behavior */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Safe area handling for mobile */
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Mobile slide-up animation */
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Touch manipulation for better mobile interactions */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+/* Enhanced scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: theme('colors.slate.800');
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: theme('colors.slate.600');
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.slate.500');
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  /* Reduce margins and padding on mobile */
+  .mobile-compact {
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+  }
+
+  /* Ensure touch targets are at least 44px */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better spacing for mobile cards */
+  .grid-cols-1 > * {
+    min-height: 200px;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  .pb-16 {
+    padding-bottom: 4rem;
+  }
+
+  .h-16 {
+    height: 3.5rem;
+  }
+}
+
+/* High DPI screens optimization */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  }
+}
+</style>

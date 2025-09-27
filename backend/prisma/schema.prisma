@@ -1,0 +1,644 @@
+// Database schema for Garbaking POS system
+// Supports both local SQLite and cloud PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+
+model UserSession {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+// Menu Management
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?
+  color       String?  // Hex color for UI theming
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  isVisible   Boolean  @default(true) // Hide from customer menu without deleting
+  storeId     String   // Multi-store support
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  menuItems MenuItem[]
+
+  @@map("categories")
+}
+
+// Modifier Groups (add-ons, customizations)
+model ModifierGroup {
+  id          String   @id @default(uuid())
+  name        String   // e.g., "Size", "Extras", "Sauce"
+  description String?
+  isRequired  Boolean  @default(false)
+  minSelection Int     @default(0)
+  maxSelection Int?    // null = unlimited
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  menuItems MenuItem[]
+  modifiers Modifier[]
+
+  @@map("modifier_groups")
+}
+
+// Customer Management
+model Customer {
+  id          String   @id @default(uuid())
+  firstName   String?
+  lastName    String?
+  email       String?  @unique
+  phone       String?  @unique
+  dateOfBirth DateTime?
+  address     String?
+  city        String?
+  zipCode     String?
+  isActive    Boolean  @default(true)
+  loyaltyPoints Int    @default(0)
+  totalSpent    Float  @default(0)
+  visitCount    Int    @default(0)
+  lastVisit     DateTime?
+  notes         String?
+  storeId       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  orders         Order[]
+  loyaltyRewards LoyaltyReward[]
+
+  @@map("customers")
+}
+
+// Order Management (Enhanced)
+model Order {
+  id                String      @id @default(uuid())
+  clientOrderId     String?     @unique // For offline sync
+  orderNumber       String      @unique
+  storeId           String
+  customerId        String?
+  customerName      String?
+  customerPhone     String?
+  customerEmail     String?
+  tableNumber       String?
+  orderType         String      @default("DINE_IN") // DINE_IN, TAKEOUT, DELIVERY, ONLINE
+  status            String      @default("PENDING") // PENDING, CONFIRMED, PREPARING, READY, COMPLETED, CANCELLED
+  priority          String      @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  subtotal          Float
+  tax               Float       @default(0)
+  taxRate           Float       @default(0)
+  discount          Float       @default(0)
+  discountType      String?     // PERCENTAGE, FIXED, COUPON
+  discountReason    String?
+  serviceCharge     Float       @default(0)
+  deliveryFee       Float       @default(0)
+  tip               Float       @default(0)
+  total             Float
+  paymentStatus     String      @default("PENDING") // PENDING, PARTIAL, PAID, REFUNDED, FAILED
+  notes             String?
+  userId            String
+  kitchenNotes      String?
+  specialRequests   String?
+  estimatedTime     Int?        // minutes
+  actualTime        Int?        // minutes
+  deliveryTime      DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  cancelReason      String?
+  idempotencyKey    String?     @unique
+  syncStatus        String      @default("PENDING")
+  cloudOrderId      String?
+  source            String      @default("POS") // POS, ONLINE, MOBILE, KIOSK
+  deviceId          String?
+  sessionId         String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  user           User             @relation(fields: [userId], references: [id])
+  customer       Customer?        @relation(fields: [customerId], references: [id])
+  orderItems     OrderItem[]
+  payments       Payment[]
+  orderModifiers OrderModifier[]
+  refunds        Refund[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id               String  @id @default(uuid())
+  orderId          String
+  menuItemId       String
+  variantId        String?
+  quantity         Int
+  unitPrice        Float
+  originalPrice    Float?  // Price before any item-level discounts
+  totalPrice       Float
+  discount         Float   @default(0)
+  discountReason   String?
+  tax              Float   @default(0)
+  notes            String?
+  kitchenNotes     String?
+  status           String  @default("PENDING") // PENDING, PREPARING, READY, SERVED
+  prepStartTime    DateTime?
+  prepCompleteTime DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  order              Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem           MenuItem             @relation(fields: [menuItemId], references: [id])
+  variant            MenuItemVariant?     @relation(fields: [variantId], references: [id])
+  orderItemModifiers OrderItemModifier[]
+
+  @@map("order_items")
+}
+
+// Order Modifiers (applied to entire order)
+model OrderModifier {
+  id       String @id @default(uuid())
+  orderId  String
+  name     String
+  type     String // DISCOUNT, SURCHARGE, TAX
+  value    Float
+  isPercent Boolean @default(false)
+  reason   String?
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_modifiers")
+}
+
+// Order Item Modifiers (applied to specific items)
+model OrderItemModifier {
+  id            String @id @default(uuid())
+  orderItemId   String
+  modifierId    String
+  name          String
+  price         Float
+  quantity      Int    @default(1)
+
+  // Relations
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifier  Modifier  @relation(fields: [modifierId], references: [id])
+
+  @@map("order_item_modifiers")
+}
+
+// Enhanced Relations for Modifiers
+model Modifier {
+  id              String  @id @default(uuid())
+  modifierGroupId String
+  name            String  // e.g., "Extra Cheese", "No Onions"
+  price           Float   @default(0)
+  isActive        Boolean @default(true)
+  sortOrder       Int     @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  modifierGroup      ModifierGroup       @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+  orderItemModifiers OrderItemModifier[]
+
+  @@map("modifiers")
+}
+
+// Enhanced Relations for Menu Item Variants
+model MenuItemVariant {
+  id           String  @id @default(uuid())
+  menuItemId   String
+  name         String  // e.g., "Large", "Extra Hot", "Decaf"
+  priceModifier Float  @default(0) // Price difference from base item
+  sku          String? @unique
+  isDefault    Boolean @default(false)
+  isActive     Boolean @default(true)
+  sortOrder    Int     @default(0)
+  stockCount   Int?    // Variant-specific inventory
+  minStock     Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  menuItem       MenuItem        @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  orderItems     OrderItem[]
+  inventoryItems InventoryItem[]
+  recipes        Recipe[]
+
+  @@map("menu_item_variants")
+}
+
+// Payment Management
+model Payment {
+  id                String   @id @default(uuid())
+  orderId           String
+  paymentNumber     String   @unique
+  method            String   // CASH, CARD, DIGITAL_WALLET, GIFT_CARD, STORE_CREDIT, SPLIT
+  subMethod         String?  // VISA, MASTERCARD, AMEX, PAYPAL, APPLE_PAY, etc.
+  amount            Float
+  amountTendered    Float?   // For cash payments
+  changeGiven       Float?   // For cash payments
+  status            String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED, REFUNDED, CANCELLED
+  processorId       String?  // External payment processor reference
+  transactionId     String?  // Processor transaction ID
+  authCode          String?  // Authorization code
+  lastFourDigits    String?  // Last 4 digits of card
+  cardBrand         String?  // VISA, MASTERCARD, etc.
+  isPreAuth         Boolean  @default(false)
+  preAuthAmount     Float?
+  capturedAmount    Float?
+  tipAmount         Float    @default(0)
+  processingFee     Float    @default(0)
+  currency          String   @default("USD")
+  exchangeRate      Float    @default(1.0)
+  gatewayResponse   String?  // JSON response from payment gateway
+  failureReason     String?
+  retryAttempts     Int      @default(0)
+  processedAt       DateTime?
+  voidedAt          DateTime?
+  deviceId          String?
+  terminalId        String?
+  batchId           String?
+  receiptNumber     String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  order   Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refunds Refund[]
+
+  @@map("payments")
+}
+
+// Refund Management
+model Refund {
+  id            String   @id @default(uuid())
+  orderId       String
+  paymentId     String?
+  refundNumber  String   @unique
+  amount        Float
+  reason        String
+  method        String   // ORIGINAL_PAYMENT, CASH, STORE_CREDIT
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  processorId   String?
+  transactionId String?
+  authorizedBy  String   // User ID who authorized the refund
+  processedAt   DateTime?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@map("refunds")
+}
+
+// Inventory Management
+model InventoryItem {
+  id                String    @id @default(uuid())
+  menuItemId        String?   // Link to menu item if applicable
+  variantId         String?   // Link to variant if applicable
+  sku               String    @unique
+  name              String
+  description       String?
+  category          String?   // INGREDIENT, FINISHED_GOOD, PACKAGING, SUPPLY
+  unit              String    @default("each") // each, kg, lbs, liters, gallons, etc.
+  currentStock      Float     @default(0)
+  minStock          Float     @default(0)
+  maxStock          Float?
+  reorderPoint      Float?
+  reorderQuantity   Float?
+  avgCost           Float     @default(0)
+  lastCost          Float     @default(0)
+  totalValue        Float     @default(0)
+  isTrackable       Boolean   @default(true)
+  isActive          Boolean   @default(true)
+  supplierId        String?
+  barcode           String?
+  location          String?   // Storage location
+  shelfLife         Int?      // Days
+  expirationDate    DateTime?
+  lastCountDate     DateTime?
+  lastOrderDate     DateTime?
+  storeId           String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  menuItem           MenuItem?               @relation(fields: [menuItemId], references: [id])
+  variant            MenuItemVariant?        @relation(fields: [variantId], references: [id])
+  supplier           Supplier?               @relation(fields: [supplierId], references: [id])
+  stockMovements     StockMovement[]
+  purchaseOrderItems PurchaseOrderItem[]
+  stockCounts        StockCount[]
+  recipes            Recipe[]
+  recipeIngredients  RecipeIngredient[]
+
+  @@map("inventory_items")
+}
+
+// Stock Movement Tracking
+model StockMovement {
+  id               String   @id @default(uuid())
+  inventoryItemId  String
+  type             String   // IN, OUT, ADJUSTMENT, WASTE, TRANSFER, PRODUCTION
+  quantity         Float
+  unit             String
+  cost             Float?
+  reason           String?
+  reference        String?  // Order ID, PO ID, etc.
+  fromLocation     String?
+  toLocation       String?
+  batchNumber      String?
+  expirationDate   DateTime?
+  userId           String
+  deviceId         String?
+  notes            String?
+  createdAt        DateTime @default(now())
+
+  // Relations
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@map("stock_movements")
+}
+
+// Stock Count/Audit
+model StockCount {
+  id              String   @id @default(uuid())
+  inventoryItemId String
+  expectedQty     Float
+  actualQty       Float
+  variance        Float
+  cost            Float?
+  reason          String?
+  countedBy       String   // User ID
+  verifiedBy      String?  // User ID
+  status          String   @default("PENDING") // PENDING, VERIFIED, ADJUSTED
+  countDate       DateTime @default(now())
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@map("stock_counts")
+}
+
+// Recipe/Bill of Materials
+model Recipe {
+  id              String   @id @default(uuid())
+  menuItemId      String?
+  variantId       String?
+  inventoryItemId String?  // For composite inventory items
+  name            String
+  description     String?
+  yield           Float    @default(1) // How many units this recipe produces
+  yieldUnit       String   @default("each")
+  laborTime       Int?     // Minutes
+  isActive        Boolean  @default(true)
+  version         String   @default("1.0")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  menuItem      MenuItem?        @relation(fields: [menuItemId], references: [id])
+  variant       MenuItemVariant? @relation(fields: [variantId], references: [id])
+  inventoryItem InventoryItem?   @relation(fields: [inventoryItemId], references: [id])
+  ingredients   RecipeIngredient[]
+
+  @@map("recipes")
+}
+
+// Recipe Ingredients
+model RecipeIngredient {
+  id              String @id @default(uuid())
+  recipeId        String
+  inventoryItemId String
+  quantity        Float
+  unit            String
+  cost            Float? @default(0)
+  notes           String?
+  isOptional      Boolean @default(false)
+
+  // Relations
+  recipe        Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@map("recipe_ingredients")
+}
+
+// Suppliers
+model Supplier {
+  id            String   @id @default(uuid())
+  name          String
+  contact       String?
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  country       String   @default("US")
+  taxId         String?
+  paymentTerms  String?  // NET30, NET15, COD, etc.
+  isActive      Boolean  @default(true)
+  rating        Float?   // 1-5 star rating
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  inventoryItems  InventoryItem[]
+  purchaseOrders  PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+// Purchase Orders
+model PurchaseOrder {
+  id             String   @id @default(uuid())
+  poNumber       String   @unique
+  supplierId     String
+  status         String   @default("DRAFT") // DRAFT, SENT, CONFIRMED, RECEIVED, CANCELLED
+  orderDate      DateTime @default(now())
+  expectedDate   DateTime?
+  receivedDate   DateTime?
+  subtotal       Float    @default(0)
+  tax            Float    @default(0)
+  shipping       Float    @default(0)
+  total          Float    @default(0)
+  notes          String?
+  createdBy      String   // User ID
+  receivedBy     String?  // User ID
+  storeId        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  items    PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+// Purchase Order Items
+model PurchaseOrderItem {
+  id              String  @id @default(uuid())
+  purchaseOrderId String
+  inventoryItemId String
+  quantity        Float
+  unit            String
+  unitCost        Float
+  totalCost       Float
+  receivedQty     Float   @default(0)
+  notes           String?
+
+  // Relations
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@map("purchase_order_items")
+}
+
+// Loyalty and Rewards
+model LoyaltyReward {
+  id         String   @id @default(uuid())
+  customerId String
+  type       String   // POINTS_EARNED, POINTS_REDEEMED, REWARD_ISSUED, REWARD_REDEEMED
+  points     Int      @default(0)
+  value      Float?   // Monetary value if applicable
+  orderId    String?  // Associated order
+  reason     String?
+  expiresAt  DateTime?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("loyalty_rewards")
+}
+
+// Enhanced User Relations
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("CASHIER")
+  storeId   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  orders         Order[]
+  sessions       UserSession[]
+  stockMovements StockMovement[]
+
+  @@map("users")
+}
+
+// Enhanced MenuItem Relations
+model MenuItem {
+  id            String   @id @default(uuid())
+  sku           String   @unique
+  name          String
+  description   String?
+  shortDesc     String?  // Brief description for POS display
+  price         Float
+  cost          Float?   // Cost price for profit margin calculation
+  salePrice     Float?   // Discounted price if on sale
+  imageUrl      String?
+  categoryId    String
+  tags          String?  // JSON array of tags (spicy, vegan, etc.)
+  allergens     String?  // JSON array of allergen info
+  nutritionInfo String?  // JSON object with nutrition data
+  prepTime      Int?     // Preparation time in minutes
+  calories      Int?     // Calorie information
+  isAvailable   Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  isVisible     Boolean  @default(true) // Hide from customer menu
+  isFeatured    Boolean  @default(false) // Highlight as featured item
+  isSpicy       Boolean  @default(false)
+  isVegetarian  Boolean  @default(false)
+  isVegan       Boolean  @default(false)
+  isGlutenFree  Boolean  @default(false)
+  stockCount    Int?     // Inventory count (null = unlimited)
+  minStock      Int?     // Minimum stock alert threshold
+  maxPerOrder   Int?     // Maximum quantity per order
+  sortOrder     Int      @default(0)
+  storeId       String   // Multi-store support
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  category        Category         @relation(fields: [categoryId], references: [id])
+  orderItems      OrderItem[]
+  modifierGroups  ModifierGroup[]
+  variants        MenuItemVariant[]
+  inventoryItems  InventoryItem[]
+  recipes         Recipe[]
+
+  @@map("menu_items")
+}
+
+// Analytics & Reporting
+model DailySales {
+  id             String   @id @default(uuid())
+  date           DateTime @unique
+  storeId        String
+  totalOrders    Int      @default(0)
+  totalRevenue   Float    @default(0)
+  totalTax       Float    @default(0)
+  totalDiscount  Float    @default(0)
+  averageOrder   Float    @default(0)
+  cashSales      Float    @default(0)
+  cardSales      Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("daily_sales")
+}
+
+// System Configuration
+model Settings {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// Note: SQLite doesn't support enums, using strings with constraints instead

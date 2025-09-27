@@ -1,0 +1,84 @@
+{
+  "welcome": "Bienvenue chez Garbaking",
+  "place_order": "Passer la commande",
+  "cart": "Votre panier",
+  "menu": "Menu",
+  "order_history": "Historique des commandes",
+  "order": "Commande",
+  "order_items": "Articles commandés",
+  "total": "Total",
+  "subtotal": "Sous-total",
+  "add_to_cart": "Ajouter au panier",
+  "remove_from_cart": "Retirer du panier",
+  "table_number": "Numéro de table",
+  "customer_name": "Nom du client",
+  "order_submitted": "Commande soumise avec succès",
+  "order_accepted": "Commande acceptée",
+  "order_preparing": "Commande en préparation",
+  "order_ready": "Commande prête",
+  "order_ready_pickup": "Votre commande est prête à récupérer !",
+  "estimated_time": "Temps estimé",
+  "minutes": "minutes",
+  "loading": "Chargement...",
+  "no_orders": "Aucune commande",
+  "no_orders_description": "Votre historique de commandes apparaîtra ici",
+  "mark_collected": "Marquer comme récupérée",
+  "retry_sync": "Réessayer la sync",
+  "syncing": "Synchronisation...",
+  "categories": {
+    "mains": "Plats principaux",
+    "drinks": "Boissons",
+    "desserts": "Desserts",
+    "appetizers": "Entrées"
+  },
+  "dietary_tags": {
+    "vegetarian": "Végétarien",
+    "vegan": "Végan",
+    "gluten_free": "Sans gluten",
+    "spicy": "Épicé",
+    "dairy_free": "Sans lactose"
+  },
+  "status": {
+    "queued": "En attente",
+    "synced": "Synchronisée"
+  },
+  "time": {
+    "just_now": "À l'instant",
+    "minutes_ago": "Il y a {count} min",
+    "hours_ago": "Il y a {count}h",
+    "days_ago": "Il y a {count}j",
+    "yesterday": "Hier"
+  },
+  "notifications": {
+    "item_added": "Article ajouté au panier",
+    "item_removed": "Article retiré du panier",
+    "order_queued": "Commande en file d'attente",
+    "order_synced": "Commande synchronisée",
+    "offline_mode": "Vous êtes actuellement hors ligne",
+    "pending_sync": "Synchronisation en attente"
+  },
+  "buttons": {
+    "submit": "Soumettre la commande",
+    "cancel": "Annuler",
+    "clear_cart": "Vider le panier",
+    "back": "Retour",
+    "continue": "Continuer",
+    "close": "Fermer",
+    "refresh": "Actualiser",
+    "switch_language": "Changer de langue"
+  },
+  "placeholders": {
+    "enter_table": "Entrez le numéro de table (1-20)",
+    "enter_name": "Entrez votre nom"
+  },
+  "errors": {
+    "table_required": "Le numéro de table est requis",
+    "name_required": "Le nom est requis",
+    "invalid_table": "Veuillez entrer un numéro de table valide (1-20)",
+    "cart_empty": "Votre panier est vide"
+  },
+  "no_items": "Aucun article dans cette catégorie",
+  "cart_cleared": "Panier vidé",
+  "submitting_order": "Envoi de la commande...",
+  "all": "Tous"
+}
