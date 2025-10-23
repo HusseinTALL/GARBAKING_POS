@@ -16,10 +16,51 @@
           <option value="today">Today</option>
           <option value="week">This Week</option>
           <option value="month">This Month</option>
+          <option value="custom">Custom Range</option>
         </select>
-        <button @click="refreshData" :disabled="isLoading" class="refresh-btn">
+        <button @click="exportData" :disabled="isExporting" class="export-btn" title="Export to CSV">
+          <Download :class="{ 'animate-pulse': isExporting }" class="w-5 h-5" />
+        </button>
+        <button @click="refreshData" :disabled="isLoading" class="refresh-btn" title="Refresh Data">
           <RefreshCw :class="{ 'animate-spin': isLoading }" class="w-5 h-5" />
         </button>
+      </div>
+    </div>
+
+    <!-- Custom Date Range Picker Modal -->
+    <div v-if="showCustomDatePicker" class="modal-overlay" @click.self="showCustomDatePicker = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Select Custom Date Range</h3>
+          <button @click="showCustomDatePicker = false" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="date-input-group">
+            <label for="start-date">Start Date</label>
+            <input
+              id="start-date"
+              v-model="customStartDate"
+              type="date"
+              class="date-input"
+            />
+          </div>
+          <div class="date-input-group">
+            <label for="end-date">End Date</label>
+            <input
+              id="end-date"
+              v-model="customEndDate"
+              type="date"
+              class="date-input"
+              :min="customStartDate"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="showCustomDatePicker = false" class="btn-secondary">Cancel</button>
+          <button @click="applyCustomDateRange" class="btn-primary" :disabled="!customStartDate || !customEndDate">
+            Apply
+          </button>
+        </div>
       </div>
     </div>
 
@@ -27,16 +68,16 @@
     <div class="metrics-row">
       <MetricCard
         label="Total Revenue"
-        :value="ordersStore.orderStats.revenue"
-        :change="32.40"
+        :value="totalRevenue"
+        :change="revenueChange"
         :icon="DollarSign"
         icon-color="orange"
         format-as="currency"
       />
       <MetricCard
-        label="Total Dishes Ordered"
-        :value="totalDishesOrdered"
-        :change="-12.40"
+        label="Total Orders"
+        :value="totalOrders"
+        :change="ordersChange"
         :icon="ShoppingBag"
         icon-color="green"
       />
@@ -79,33 +120,68 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrdersStore } from '@/stores/orders'
+import { useAnalyticsStore } from '@/stores/analytics'
 import MetricCard from '@/components/dashboard/MetricCard.vue'
 import OrderReportTable from '@/components/dashboard/OrderReportTable.vue'
 import MostOrderedPanel from '@/components/dashboard/MostOrderedPanel.vue'
 import OrderTypeChart from '@/components/dashboard/OrderTypeChart.vue'
 import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue'
-import { DollarSign, ShoppingBag, Users, RefreshCw } from 'lucide-vue-next'
+import { DollarSign, ShoppingBag, Users, RefreshCw, Download, Calendar } from 'lucide-vue-next'
 
 const router = useRouter()
 const ordersStore = useOrdersStore()
+const analyticsStore = useAnalyticsStore()
 
 const isLoading = ref(false)
 const currentTime = ref('')
 const dateFilter = ref('today')
 const showOrderModal = ref(false)
 const selectedOrderForModal = ref(null)
+const showCustomDatePicker = ref(false)
+const customStartDate = ref('')
+const customEndDate = ref('')
+const isExporting = ref(false)
 
-// Computed properties for metrics
+// Computed properties for metrics from analytics store
+const totalRevenue = computed(() => {
+  return analyticsStore.dashboardData?.today?.revenue || 0
+})
+
+const revenueChange = computed(() => {
+  const change = analyticsStore.dashboardData?.today?.comparison?.revenueChange || 0
+  const prevRevenue = totalRevenue.value - change
+  return prevRevenue !== 0 ? (change / prevRevenue) * 100 : 0
+})
+
+const totalOrders = computed(() => {
+  return analyticsStore.dashboardData?.today?.orders || 0
+})
+
+const ordersChange = computed(() => {
+  const change = analyticsStore.dashboardData?.today?.comparison?.ordersChange || 0
+  const prevOrders = totalOrders.value - change
+  return prevOrders !== 0 ? (change / prevOrders) * 100 : 0
+})
+
 const totalDishesOrdered = computed(() => {
+  // Calculate from menu performance or fall back to orders
+  if (analyticsStore.menuPerformance.length > 0) {
+    return analyticsStore.menuPerformance.reduce((sum, item) => sum + (item.total_quantity || 0), 0)
+  }
   return ordersStore.orders.reduce((total, order) => {
     return total + (order.orderItems?.length || order.items?.length || 0)
   }, 0)
 })
 
 const totalCustomers = computed(() => {
+  // Use customer insights if available
+  if (analyticsStore.customerInsightsData) {
+    return analyticsStore.customerInsightsData.returningCustomers?.length || 0
+  }
+  // Fallback to orders count
   const uniqueCustomers = new Set()
   ordersStore.orders.forEach(order => {
     if (order.customerName) {
@@ -133,8 +209,22 @@ const recentOrdersForTable = computed(() => {
     }))
 })
 
-// Most ordered dishes data
+// Most ordered dishes data from analytics
 const mostOrderedDishes = computed(() => {
+  if (analyticsStore.menuPerformance.length > 0) {
+    return analyticsStore.menuPerformance
+      .slice(0, 3)
+      .map(item => ({
+        id: item.id,
+        name: item.name,
+        image: item.imageUrl || '/placeholder-dish.png',
+        count: item.times_ordered || 0,
+        revenue: item.total_revenue || 0,
+        trending: 'up' // Could be calculated based on historical data
+      }))
+  }
+
+  // Fallback to computing from orders
   const dishCounts = new Map()
 
   ordersStore.orders.forEach(order => {
@@ -218,11 +308,68 @@ const closeOrderModal = () => {
 const refreshData = async () => {
   isLoading.value = true
   try {
-    await ordersStore.fetchOrders()
+    // Fetch both orders and analytics data
+    await Promise.all([
+      ordersStore.fetchOrders(),
+      analyticsStore.fetchDashboardData(),
+      analyticsStore.fetchMenuPerformance(30),
+      analyticsStore.fetchCustomerInsights(30)
+    ])
   } catch (error) {
     console.error('Error refreshing data:', error)
   } finally {
     isLoading.value = false
+  }
+}
+
+const handleDateFilterChange = async () => {
+  if (dateFilter.value === 'custom') {
+    showCustomDatePicker.value = true
+    return
+  }
+
+  showCustomDatePicker.value = false
+  await refreshData()
+}
+
+const applyCustomDateRange = async () => {
+  if (!customStartDate.value || !customEndDate.value) {
+    console.warn('Please select both start and end dates')
+    return
+  }
+
+  isLoading.value = true
+  try {
+    await analyticsStore.setCustomDateRange(customStartDate.value, customEndDate.value)
+    showCustomDatePicker.value = false
+  } catch (error) {
+    console.error('Error applying custom date range:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const exportData = async () => {
+  isExporting.value = true
+  try {
+    let startDate, endDate
+
+    if (dateFilter.value === 'custom' && customStartDate.value && customEndDate.value) {
+      startDate = customStartDate.value
+      endDate = customEndDate.value
+    }
+
+    const success = await analyticsStore.exportData(startDate, endDate, 'csv')
+
+    if (success) {
+      console.log('Export successful')
+    } else {
+      console.error('Export failed')
+    }
+  } catch (error) {
+    console.error('Error exporting data:', error)
+  } finally {
+    isExporting.value = false
   }
 }
 
@@ -231,11 +378,38 @@ const updateTime = () => {
   currentTime.value = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
+// Watch for date filter changes
+watch(dateFilter, handleDateFilterChange)
+
+// Set up WebSocket listener for real-time updates
+const setupRealtimeUpdates = () => {
+  // Listen for order updates and refresh analytics
+  ordersStore.connectWebSocket()
+
+  // Refresh analytics every 5 minutes
+  const analyticsInterval = setInterval(async () => {
+    await analyticsStore.fetchDashboardData()
+  }, 5 * 60 * 1000)
+
+  return () => {
+    clearInterval(analyticsInterval)
+    ordersStore.disconnectWebSocket()
+  }
+}
+
 onMounted(async () => {
   updateTime()
   timeInterval = window.setInterval(updateTime, 60000)
   await refreshData()
-  ordersStore.connectWebSocket()
+
+  // Setup real-time updates
+  const cleanup = setupRealtimeUpdates()
+
+  // Store cleanup function
+  onUnmounted(() => {
+    if (timeInterval) clearInterval(timeInterval)
+    cleanup()
+  })
 })
 
 onUnmounted(() => {
@@ -301,7 +475,8 @@ onUnmounted(() => {
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
-.refresh-btn {
+.refresh-btn,
+.export-btn {
   padding: 10px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
@@ -314,15 +489,166 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.refresh-btn:hover:not(:disabled) {
+.refresh-btn:hover:not(:disabled),
+.export-btn:hover:not(:disabled) {
   border-color: var(--accent-orange);
   color: var(--accent-orange);
   background: rgba(255, 107, 53, 0.1);
 }
 
-.refresh-btn:disabled {
+.refresh-btn:disabled,
+.export-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.export-btn {
+  background: var(--accent-orange);
+  color: white;
+  border-color: var(--accent-orange);
+}
+
+.export-btn:hover:not(:disabled) {
+  background: #e65a2e;
+  border-color: #e65a2e;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-input-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.date-input {
+  padding: 10px 14px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--accent-orange);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #e65a2e;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-primary);
 }
 
 .metrics-row {
