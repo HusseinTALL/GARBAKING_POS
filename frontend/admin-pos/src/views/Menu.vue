@@ -14,6 +14,45 @@
           </p>
         </div>
         <div class="flex gap-3">
+          <!-- Import/Export Dropdown -->
+          <div class="relative" ref="importExportDropdown">
+            <button
+              @click="showImportExportMenu = !showImportExportMenu"
+              class="btn btn-secondary"
+            >
+              <FileDown class="w-4 h-4 mr-2" />
+              Import/Export
+            </button>
+            <!-- Dropdown Menu -->
+            <div
+              v-if="showImportExportMenu"
+              class="absolute right-0 mt-2 w-56 rounded-lg bg-gray-800 border border-gray-700 shadow-lg z-10"
+            >
+              <div class="p-2">
+                <button
+                  @click="exportToCSV"
+                  class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center gap-2"
+                >
+                  <Download class="w-4 h-4" />
+                  Export to CSV
+                </button>
+                <button
+                  @click="downloadTemplate"
+                  class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center gap-2"
+                >
+                  <FileText class="w-4 h-4" />
+                  Download Template
+                </button>
+                <button
+                  @click="triggerImport"
+                  class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded flex items-center gap-2"
+                >
+                  <Upload class="w-4 h-4" />
+                  Import from CSV
+                </button>
+              </div>
+            </div>
+          </div>
           <button @click="showCategoryModal = true" class="btn btn-secondary">
             <Plus class="w-4 h-4 mr-2" />
             Add Category
@@ -397,14 +436,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from 'vue-router';
-import { Plus, RotateCcw, Utensils, Check, Edit, Trash2, Search, X, Copy, Calendar, AlertTriangle } from "lucide-vue-next";
+import {
+  Plus, RotateCcw, Utensils, Check, Edit, Trash2, Search, X, Copy, Calendar,
+  AlertTriangle, FileDown, Download, Upload, FileText
+} from "lucide-vue-next";
 import { useMenuStore, type MenuCategory, type MenuItem } from '@/stores/menu'
 import CategoryModal from '@/components/CategoryModal.vue'
 import MenuItemModal from '@/components/MenuItemModal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
 import { useToast } from 'vue-toastification'
+import {
+  exportMenuItemsToCSV,
+  parseCSVToMenuItems,
+  downloadCSV,
+  generateCSVTemplate
+} from '@/utils/menuCsvUtils'
 
 // Stores and composables
 const menuStore = useMenuStore()
@@ -415,6 +463,7 @@ const router = useRouter()
 const showCategoryModal = ref(false)
 const showItemModal = ref(false)
 const showDeleteConfirm = ref(false)
+const showImportExportMenu = ref(false)
 
 const editingCategory = ref<MenuCategory | null>(null)
 const editingItem = ref<MenuItem | null>(null)
@@ -426,6 +475,8 @@ const sortBy = ref('name')
 const availabilityFilter = ref('all')
 const selectedItems = ref<string[]>([])
 const isBulkDeleting = ref(false)
+const importExportDropdown = ref<HTMLElement | null>(null)
+const csvFileInput = ref<HTMLInputElement | null>(null)
 
 // Filtering + Sorting
 const filteredAndSortedItems = computed(() => {
@@ -656,11 +707,6 @@ const goToLogin = () => {
   router.push('/login')
 }
 
-// Initialize data on mount
-onMounted(async () => {
-  await refreshMenu()
-})
-
 const deleteConfirmTitle = computed(() => {
   if (!deletingItem.value) return 'Delete Item'
   if (deletingItem.value.id === 'bulk-delete') {
@@ -675,6 +721,130 @@ const deleteConfirmMessage = computed(() => {
     return `Are you sure you want to delete ${selectedItems.value.length} selected items? This will remove them from all future orders and cannot be undone.`
   }
   return `Are you sure you want to delete "${deletingItem.value.name}"? This will remove it from all future orders and cannot be undone.`
+})
+
+// Import/Export Functions
+const exportToCSV = () => {
+  try {
+    const itemsToExport = selectedItems.value.length > 0
+      ? menuStore.menuItems.filter(item => selectedItems.value.includes(item.id))
+      : filteredAndSortedItems.value
+
+    if (itemsToExport.length === 0) {
+      toast.warning('No items to export')
+      return
+    }
+
+    const csvContent = exportMenuItemsToCSV(itemsToExport, menuStore.categories)
+    const filename = `menu-items-${new Date().toISOString().split('T')[0]}.csv`
+    downloadCSV(csvContent, filename)
+
+    toast.success(`Exported ${itemsToExport.length} items to CSV`)
+    showImportExportMenu.value = false
+  } catch (error: any) {
+    console.error('Export error:', error)
+    toast.error('Failed to export menu items')
+  }
+}
+
+const downloadTemplate = () => {
+  try {
+    const csvContent = generateCSVTemplate(menuStore.categories)
+    downloadCSV(csvContent, 'menu-items-template.csv')
+    toast.success('Downloaded CSV template')
+    showImportExportMenu.value = false
+  } catch (error: any) {
+    console.error('Template download error:', error)
+    toast.error('Failed to download template')
+  }
+}
+
+const triggerImport = () => {
+  // Create hidden file input if it doesn't exist
+  if (!csvFileInput.value) {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.csv'
+    input.style.display = 'none'
+    input.addEventListener('change', handleCSVImport)
+    document.body.appendChild(input)
+    csvFileInput.value = input
+  }
+
+  csvFileInput.value.click()
+  showImportExportMenu.value = false
+}
+
+const handleCSVImport = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (!file) return
+
+  try {
+    const fileContent = await file.text()
+    const { items, errors } = parseCSVToMenuItems(fileContent, menuStore.categories)
+
+    if (errors.length > 0) {
+      console.warn('CSV parsing errors:', errors)
+      toast.warning(`Import completed with ${errors.length} warnings. Check console for details.`)
+    }
+
+    if (items.length === 0) {
+      toast.error('No valid items found in CSV file')
+      return
+    }
+
+    // Import items
+    let successCount = 0
+    let errorCount = 0
+
+    for (const item of items) {
+      try {
+        await menuStore.createMenuItem(item as any)
+        successCount++
+      } catch (error: any) {
+        console.error(`Failed to import item ${item.name}:`, error)
+        errorCount++
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Successfully imported ${successCount} menu items`)
+      await refreshMenu()
+    }
+
+    if (errorCount > 0) {
+      toast.error(`Failed to import ${errorCount} items`)
+    }
+  } catch (error: any) {
+    console.error('Import error:', error)
+    toast.error('Failed to read CSV file')
+  } finally {
+    // Reset file input
+    target.value = ''
+  }
+}
+
+// Close dropdown when clicking outside
+const handleClickOutside = (event: MouseEvent) => {
+  if (importExportDropdown.value && !importExportDropdown.value.contains(event.target as Node)) {
+    showImportExportMenu.value = false
+  }
+}
+
+// Initialize data on mount
+onMounted(async () => {
+  await refreshMenu()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+  // Clean up file input if it exists
+  if (csvFileInput.value && csvFileInput.value.parentNode) {
+    csvFileInput.value.parentNode.removeChild(csvFileInput.value)
+  }
 })
 </script>
 
