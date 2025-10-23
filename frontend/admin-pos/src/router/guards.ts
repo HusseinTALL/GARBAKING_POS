@@ -144,10 +144,10 @@ export const roleRedirectGuard = (
       break
     case 'ADMIN':
     case 'SUPER_ADMIN':
-      next('/dashboard')
+      next() // Stay on root path '/' (dashboard)
       break
     default:
-      next('/dashboard')
+      next() // Stay on root path '/' (dashboard)
       break
   }
 }

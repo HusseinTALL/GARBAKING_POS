@@ -25,6 +25,7 @@ export interface MenuItem {
   description?: string
   price: number
   imageUrl?: string
+  image?: string  // Alias pour compatibilité avec MenuItemCard
   categoryId: string
   category?: Category
   isAvailable: boolean
@@ -144,10 +145,14 @@ export const useMenuStore = defineStore('menu', () => {
         // Flatten menu items from all categories
         menuItems.value = response.data.categories.reduce((items: MenuItem[], category: Category) => {
           if (category.menuItems) {
-            category.menuItems.forEach(item => {
-              item.category = category
-            })
-            items.push(...category.menuItems)
+            // Map items and add image property for compatibility
+            const mappedItems = category.menuItems.map(item => ({
+              ...item,
+              category,
+              // Map imageUrl to image for MenuItemCard compatibility
+              image: item.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'
+            }))
+            items.push(...mappedItems)
           }
           return items
         }, [])

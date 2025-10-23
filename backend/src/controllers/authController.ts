@@ -11,17 +11,16 @@ class AuthController {
   /**
    * Register a new user
    */
-  async register(req: Request, res: Response): Promise<void> {
+  async register(req: Request, res: Response): Promise<Response | void> {
     try {
       // Validate input
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        res.status(400).json({
+        return res.status(400).json({
           success: false,
           message: 'Validation failed',
           errors: errors.array()
         });
-        return;
       }
 
       const { email, password, name, role, storeId }: RegisterData = req.body;
@@ -36,8 +35,7 @@ class AuthController {
       });
 
       if (!result.success) {
-        res.status(400).json(result) as any;
-        return;
+        return res.status(400).json(result);
       }
 
       // Set HTTP-only cookies for tokens
@@ -55,7 +53,7 @@ class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message: result.message,
         user: result.user,
@@ -64,7 +62,7 @@ class AuthController {
 
     } catch (error) {
       console.error('Register controller error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });
@@ -74,17 +72,16 @@ class AuthController {
   /**
    * Login user
    */
-  async login(req: Request, res: Response): Promise<void> {
+  async login(req: Request, res: Response): Promise<Response | void> {
     try {
       // Validate input
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        res.status(400).json({
+        return res.status(400).json({
           success: false,
           message: 'Validation failed',
           errors: errors.array()
         });
-        return;
       }
 
       const { email, password }: LoginCredentials = req.body;
@@ -93,8 +90,7 @@ class AuthController {
       const result = await authService.login({ email, password });
 
       if (!result.success) {
-        res.status(401).json(result) as any;
-        return;
+        return res.status(401).json(result);
       }
 
       // Set HTTP-only cookies for tokens
@@ -112,7 +108,7 @@ class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: result.message,
         user: result.user,
@@ -121,7 +117,7 @@ class AuthController {
 
     } catch (error) {
       console.error('Login controller error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });
@@ -131,17 +127,17 @@ class AuthController {
   /**
    * Refresh access token
    */
-  async refreshToken(req: Request, res: Response): Promise<void> {
+  async refreshToken(req: Request, res: Response): Promise<Response | void> {
     try {
       // Get refresh token from cookie or body
-      const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+      const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
       if (!refreshToken) {
-        res.status(401).json({
+        return res.status(401).json({
           success: false,
-          message: 'Refresh token required'
+          message: 'Refresh token required',
+          code: 'REFRESH_TOKEN_REQUIRED'
         });
-        return;
       }
 
       const result = await authService.refreshToken(refreshToken);
@@ -150,8 +146,7 @@ class AuthController {
         // Clear cookies if refresh failed
         res.clearCookie('accessToken');
         res.clearCookie('refreshToken');
-        res.status(401).json(result) as any;
-        return;
+        return res.status(401).json(result);
       }
 
       // Set new access token cookie
@@ -162,7 +157,7 @@ class AuthController {
         maxAge: 15 * 60 * 1000 // 15 minutes
       });
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: result.message,
         user: result.user,
@@ -171,7 +166,7 @@ class AuthController {
 
     } catch (error) {
       console.error('Refresh token controller error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });
@@ -181,7 +176,7 @@ class AuthController {
   /**
    * Logout user
    */
-  async logout(req: Request, res: Response): Promise<void> {
+  async logout(req: Request, res: Response): Promise<Response | void> {
     try {
       const sessionId = req.user?.sessionId;
 
@@ -193,14 +188,14 @@ class AuthController {
       res.clearCookie('accessToken');
       res.clearCookie('refreshToken');
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Logged out successfully'
       });
 
     } catch (error) {
       console.error('Logout controller error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });
@@ -210,10 +205,10 @@ class AuthController {
   /**
    * Get current user profile
    */
-  async getProfile(req: Request, res: Response): Promise<void> {
+  async getProfile(req: Request, res: Response): Promise<Response | void> {
     try {
       if (!req.user) {
-        res.status(401).json({
+        return res.status(401).json({
           success: false,
           message: 'Authentication required'
         });
@@ -223,21 +218,21 @@ class AuthController {
       const user = await authService.getUserById(req.user.userId);
 
       if (!user) {
-        res.status(404).json({
+        return res.status(404).json({
           success: false,
           message: 'User not found'
         });
         return;
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         user
       });
 
     } catch (error) {
       console.error('Get profile controller error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });
@@ -247,21 +242,20 @@ class AuthController {
   /**
    * Change user password
    */
-  async changePassword(req: Request, res: Response): Promise<void> {
+  async changePassword(req: Request, res: Response): Promise<Response | void> {
     try {
       // Validate input
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        res.status(400).json({
+        return res.status(400).json({
           success: false,
           message: 'Validation failed',
           errors: errors.array()
         });
-        return;
       }
 
       if (!req.user) {
-        res.status(401).json({
+        return res.status(401).json({
           success: false,
           message: 'Authentication required'
         });
@@ -277,7 +271,7 @@ class AuthController {
       );
 
       if (!result.success) {
-        res.status(400).json(result) as any;
+        return res.status(400).json(result) as any;
         return;
       }
 
@@ -285,11 +279,11 @@ class AuthController {
       res.clearCookie('accessToken');
       res.clearCookie('refreshToken');
 
-      res.status(200).json(result);
+      return res.status(200).json(result);
 
     } catch (error) {
       console.error('Change password controller error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });
@@ -299,17 +293,17 @@ class AuthController {
   /**
    * Verify token (health check for authentication)
    */
-  async verifyToken(req: Request, res: Response): Promise<void> {
+  async verifyToken(req: Request, res: Response): Promise<Response | void> {
     try {
       if (!req.user) {
-        res.status(401).json({
+        return res.status(401).json({
           success: false,
           message: 'Invalid token'
         });
         return;
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Token is valid',
         user: {
@@ -322,7 +316,7 @@ class AuthController {
 
     } catch (error) {
       console.error('Verify token controller error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });

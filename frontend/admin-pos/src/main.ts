@@ -10,6 +10,11 @@ import App from './App.vue'
 
 // Styles
 import './style.css'
+import './styles/admin-theme.css'
+
+// Toast notifications
+import Toast from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
 
 // PWA
 import { registerSW } from 'virtual:pwa-register'
@@ -24,6 +29,21 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.use(permissionDirective)
+
+// Configure toast notifications
+app.use(Toast, {
+  timeout: 3000,
+  closeOnClick: true,
+  pauseOnFocusLoss: true,
+  pauseOnHover: true,
+  draggable: true,
+  draggablePercent: 0.6,
+  showCloseButtonOnHover: false,
+  hideProgressBar: false,
+  closeButton: "button",
+  icon: true,
+  rtl: false
+})
 
 app.mount('#app')
 

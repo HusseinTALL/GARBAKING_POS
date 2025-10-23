@@ -18,10 +18,10 @@ declare global {
   namespace Express {
     interface Request {
       user?: {
-        id: string;
+        id?: string;
         userId: string;
         email: string;
-        name: string;
+        name?: string;
         role: string;
         storeId: string;
         sessionId: string;
@@ -35,6 +35,28 @@ declare global {
  */
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    // Development bypass - auto-authenticate with mock admin user
+    if (process.env.NODE_ENV === 'development') {
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(' ')[1];
+
+      // Only bypass if no token provided
+      if (!token) {
+        console.log('[DEV] Auto-authenticating with mock admin user');
+        req.user = {
+          id: 'dev-admin-001',
+          userId: 'dev-admin-001',
+          email: 'admin@garbaking.dev',
+          name: 'Development Admin',
+          role: 'ADMIN',
+          storeId: 'store_001',
+          sessionId: 'dev-session-' + Date.now()
+        };
+        next();
+        return;
+      }
+    }
+
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -64,7 +86,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       id: tokenPayload.userId,
       userId: tokenPayload.userId,
       email: tokenPayload.email,
-      name: '', // Will be populated from getUserById if needed
+      name: tokenPayload.name,
       role: tokenPayload.role,
       storeId: tokenPayload.storeId,
       sessionId: tokenPayload.sessionId
@@ -161,7 +183,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
           id: tokenPayload.userId,
           userId: tokenPayload.userId,
           email: tokenPayload.email,
-          name: '', // Will be populated from getUserById if needed
+          name: tokenPayload.name,
           role: tokenPayload.role,
           storeId: tokenPayload.storeId,
           sessionId: tokenPayload.sessionId

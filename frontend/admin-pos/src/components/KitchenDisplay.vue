@@ -168,10 +168,7 @@
       </div>
     </div>
 
-    <!-- Sound notifications -->
-    <audio ref="newOrderSound" preload="auto">
-      <source src="/sounds/new-order.mp3" type="audio/mpeg">
-    </audio>
+    <!-- Sound notifications disabled - audio files not provided -->
   </div>
 </template>
 
@@ -218,7 +215,8 @@ const {
 const activeOrders = ref<Order[]>([])
 const selectedOrder = ref<Order | null>(null)
 const currentTime = ref('')
-const newOrderSound = ref<HTMLAudioElement>()
+// Audio disabled - sound files not provided
+// const newOrderSound = ref<HTMLAudioElement>()
 
 // Computed properties
 const connectionStatusClass = computed(() => ({
@@ -317,10 +315,10 @@ function closeOrderDetails() {
 }
 
 function playNewOrderSound() {
-  if (newOrderSound.value) {
-    newOrderSound.value.currentTime = 0
-    newOrderSound.value.play().catch(console.warn)
-  }
+  // Audio notification disabled - sound files not provided
+  // In a production environment, you would add sound files to /public/sounds/
+  // and uncomment the audio element in the template
+  console.log('🔔 New order received (audio notification disabled)')
 }
 
 function updateCurrentTime() {

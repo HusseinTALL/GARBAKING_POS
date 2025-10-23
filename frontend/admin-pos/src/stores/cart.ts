@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { MenuItem } from './menu'
+import { loyaltyService, type CustomerLoyaltyProfile, type RedemptionRequest } from '@/services/loyalty'
 
 // Cart item interface
 export interface CartItem {
@@ -16,6 +17,25 @@ export interface CartItem {
   addedAt: Date
 }
 
+// Customer interface for orders
+export interface Customer {
+  id: string
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  loyaltyPoints?: number
+}
+
+// Applied discount interface
+export interface AppliedDiscount {
+  id: string
+  type: 'LOYALTY_REDEMPTION' | 'PROMO_CODE' | 'MANUAL'
+  description: string
+  amount: number
+  pointsUsed?: number
+}
+
 // Order interface
 export interface Order {
   id: string
@@ -23,10 +43,14 @@ export interface Order {
   subtotal: number
   tax: number
   total: number
+  finalTotal: number // After discounts
   paymentMethod?: 'cash' | 'card' | 'mobile'
   status: 'pending' | 'processing' | 'completed' | 'cancelled'
   createdAt: Date
   completedAt?: Date
+  customer?: Customer
+  appliedDiscounts: AppliedDiscount[]
+  loyaltyPointsEarned?: number
   customerInfo?: {
     name?: string
     phone?: string
@@ -50,6 +74,13 @@ export const useCartStore = defineStore('cart', () => {
   const taxRate = ref(0.1) // 10% tax rate
   const paymentMethod = ref<'cash' | 'card' | 'mobile'>('card')
 
+  // Loyalty-related state
+  const selectedCustomer = ref<Customer | null>(null)
+  const customerLoyaltyProfile = ref<CustomerLoyaltyProfile | null>(null)
+  const appliedDiscounts = ref<AppliedDiscount[]>([])
+  const isLoadingLoyalty = ref(false)
+  const loyaltyError = ref<string | null>(null)
+
   // Computed values
   const itemCount = computed(() => {
     return items.value.reduce((total, item) => total + item.quantity, 0)
@@ -67,6 +98,24 @@ export const useCartStore = defineStore('cart', () => {
     return subtotal.value + tax.value
   })
 
+  // Loyalty-related computed values
+  const totalDiscounts = computed(() => {
+    return appliedDiscounts.value.reduce((sum, discount) => sum + discount.amount, 0)
+  })
+
+  const finalTotal = computed(() => {
+    return Math.max(0, total.value - totalDiscounts.value)
+  })
+
+  const loyaltyPointsToEarn = computed(() => {
+    if (!selectedCustomer.value || !customerLoyaltyProfile.value) return 0
+
+    // Assuming 1 point per dollar spent (this could be configurable)
+    // Note: This would come from the loyalty program settings once backend integration is complete
+    const pointsPerDollar = 1
+    return Math.floor(finalTotal.value * pointsPerDollar)
+  })
+
   const isEmpty = computed(() => {
     return items.value.length === 0
   })
@@ -81,6 +130,14 @@ export const useCartStore = defineStore('cart', () => {
 
   const formattedTotal = computed(() => {
     return total.value.toFixed(2)
+  })
+
+  const formattedFinalTotal = computed(() => {
+    return finalTotal.value.toFixed(2)
+  })
+
+  const formattedTotalDiscounts = computed(() => {
+    return totalDiscounts.value.toFixed(2)
   })
 
   // Actions
@@ -169,7 +226,83 @@ export const useCartStore = defineStore('cart', () => {
   const clearCart = () => {
     items.value = []
     currentOrder.value = null
+    appliedDiscounts.value = []
     saveToLocalStorage()
+  }
+
+  // Loyalty-related actions
+  const setCustomer = async (customer: Customer) => {
+    selectedCustomer.value = customer
+    isLoadingLoyalty.value = true
+    loyaltyError.value = null
+
+    try {
+      const response = await loyaltyService.getCustomerLoyalty(customer.id)
+      if (response.success) {
+        customerLoyaltyProfile.value = response.data
+      } else {
+        loyaltyError.value = response.message || 'Failed to load customer loyalty profile'
+        customerLoyaltyProfile.value = null
+      }
+    } catch (error) {
+      loyaltyError.value = error instanceof Error ? error.message : 'Failed to load loyalty data'
+      customerLoyaltyProfile.value = null
+    } finally {
+      isLoadingLoyalty.value = false
+    }
+  }
+
+  const clearCustomer = () => {
+    selectedCustomer.value = null
+    customerLoyaltyProfile.value = null
+    appliedDiscounts.value = []
+    loyaltyError.value = null
+  }
+
+  const applyLoyaltyDiscount = async (redemptionRequest: RedemptionRequest) => {
+    if (!selectedCustomer.value) {
+      throw new Error('No customer selected')
+    }
+
+    try {
+      const response = await loyaltyService.redeemPoints(selectedCustomer.value.id, redemptionRequest)
+      if (response.success) {
+        const discount: AppliedDiscount = {
+          id: response.data.redemption.id,
+          type: 'LOYALTY_REDEMPTION',
+          description: redemptionRequest.description,
+          amount: response.data.redemption.discountValue,
+          pointsUsed: redemptionRequest.pointsToRedeem
+        }
+
+        appliedDiscounts.value.push(discount)
+
+        // Update customer loyalty profile
+        if (customerLoyaltyProfile.value) {
+          customerLoyaltyProfile.value.customer.loyaltyPoints -= redemptionRequest.pointsToRedeem
+        }
+
+        return response.data
+      } else {
+        throw new Error(response.message || 'Failed to apply loyalty discount')
+      }
+    } catch (error) {
+      throw error instanceof Error ? error : new Error('Failed to apply loyalty discount')
+    }
+  }
+
+  const removeDiscount = (discountId: string) => {
+    const discountIndex = appliedDiscounts.value.findIndex(d => d.id === discountId)
+    if (discountIndex !== -1) {
+      const discount = appliedDiscounts.value[discountIndex]
+
+      // If it's a loyalty redemption, restore the points
+      if (discount.type === 'LOYALTY_REDEMPTION' && discount.pointsUsed && customerLoyaltyProfile.value) {
+        customerLoyaltyProfile.value.customer.loyaltyPoints += discount.pointsUsed
+      }
+
+      appliedDiscounts.value.splice(discountIndex, 1)
+    }
   }
 
   const createOrder = (): Order => {
@@ -179,9 +312,13 @@ export const useCartStore = defineStore('cart', () => {
       subtotal: subtotal.value,
       tax: tax.value,
       total: total.value,
+      finalTotal: finalTotal.value,
       paymentMethod: paymentMethod.value,
       status: 'pending',
-      createdAt: new Date()
+      createdAt: new Date(),
+      customer: selectedCustomer.value || undefined,
+      appliedDiscounts: [...appliedDiscounts.value],
+      loyaltyPointsEarned: loyaltyPointsToEarn.value
     }
 
     currentOrder.value = order
@@ -214,14 +351,32 @@ export const useCartStore = defineStore('cart', () => {
         order.status = 'completed'
         order.completedAt = new Date()
 
+        // Award loyalty points if customer is selected
+        if (selectedCustomer.value && order.loyaltyPointsEarned && order.loyaltyPointsEarned > 0) {
+          try {
+            await loyaltyService.awardPointsForOrder(order.id)
+
+            // Update local customer loyalty profile
+            if (customerLoyaltyProfile.value) {
+              customerLoyaltyProfile.value.customer.loyaltyPoints += order.loyaltyPointsEarned
+            }
+          } catch (error) {
+            console.error('Failed to award loyalty points:', error)
+            // Don't fail the payment if loyalty points can't be awarded
+          }
+        }
+
         const result: PaymentResult = {
           success: true,
           transactionId: generateTransactionId(),
           order
         }
 
-        // Clear cart after successful payment
-        clearCart()
+        // Clear cart after successful payment (but keep customer for next order)
+        items.value = []
+        appliedDiscounts.value = []
+        currentOrder.value = null
+        saveToLocalStorage()
 
         return result
       } else {
@@ -308,15 +463,27 @@ export const useCartStore = defineStore('cart', () => {
     taxRate,
     paymentMethod,
 
+    // Loyalty state
+    selectedCustomer,
+    customerLoyaltyProfile,
+    appliedDiscounts,
+    isLoadingLoyalty,
+    loyaltyError,
+
     // Computed
     itemCount,
     subtotal,
     tax,
     total,
+    totalDiscounts,
+    finalTotal,
+    loyaltyPointsToEarn,
     isEmpty,
     formattedSubtotal,
     formattedTax,
     formattedTotal,
+    formattedFinalTotal,
+    formattedTotalDiscounts,
 
     // Actions
     addItem,
@@ -329,6 +496,12 @@ export const useCartStore = defineStore('cart', () => {
     clearCart,
     createOrder,
     processPayment,
+
+    // Loyalty actions
+    setCustomer,
+    clearCustomer,
+    applyLoyaltyDiscount,
+    removeDiscount,
 
     // Utilities
     saveToLocalStorage,

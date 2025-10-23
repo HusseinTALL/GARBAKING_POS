@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { getDB } from '../database/init'
 import {
   validateOrder,
+  validatePublicOrder,
   validateOrderStatus,
   validatePayment,
   validatePagination,
@@ -193,16 +194,34 @@ router.post('/',
     paymentMethod
   } = req.body
 
-  // Generate order number
-  const orderCount = await db.order.count({
-    where: {
-      storeId: req.user!.storeId,
-      createdAt: {
-        gte: new Date(new Date().setHours(0, 0, 0, 0))
-      }
-    }
-  })
-  const orderNumber = `${String(orderCount + 1).padStart(3, '0')}`
+  // Generate unique order number with timestamp and random component
+  const generateOrderNumber = () => {
+    const now = new Date()
+    const datePrefix = now.toISOString().slice(0, 10).replace(/-/g, '') // YYYYMMDD
+    const timeComponent = now.getHours().toString().padStart(2, '0') +
+                         now.getMinutes().toString().padStart(2, '0') +
+                         now.getSeconds().toString().padStart(2, '0')
+    const microsecondComponent = now.getMilliseconds().toString().padStart(3, '0')
+    const randomComponent = Math.floor(Math.random() * 999).toString().padStart(3, '0')
+    return `${datePrefix}${timeComponent}${microsecondComponent}${randomComponent}`
+  }
+
+  let orderNumber = generateOrderNumber()
+
+  // Ensure uniqueness - if collision occurs, regenerate
+  let attempts = 0
+  while (attempts < 5) {
+    const existingOrder = await db.order.findFirst({
+      where: { orderNumber }
+    })
+    if (!existingOrder) break
+    orderNumber = generateOrderNumber()
+    attempts++
+  }
+
+  if (attempts >= 5) {
+    throw createError('Failed to generate unique order number', 500)
+  }
 
   // Generate idempotency key for sync
   const idempotencyKey = uuidv4()
@@ -250,7 +269,7 @@ router.post('/',
       tax,
       total,
       notes: notes?.trim(),
-      userId: req.user!.id,
+      userId: req.user!.userId,
       idempotencyKey,
       syncStatus: 'PENDING',
       orderItems: {
@@ -310,6 +329,235 @@ router.post('/',
     success: true,
     data: { order },
     message: 'Order created successfully'
+  })
+}))
+
+/**
+ * POST /api/orders/public
+ * Create order from customer app (no authentication required)
+ * Public endpoint for customer self-service ordering
+ */
+router.post('/public',
+  validatePublicOrder,
+  asyncHandler(async (req: Request, res: Response) => {
+  const db = getDB()
+  const {
+    storeId = process.env.STORE_ID || 'store_001',
+    customerName,
+    customerPhone,
+    tableNumber,
+    orderType = 'DINE_IN',
+    orderItems,
+    notes,
+    paymentMethod = 'CASH'
+  } = req.body
+
+  // Generate unique order number
+  const generateOrderNumber = () => {
+    const now = new Date()
+    const datePrefix = now.toISOString().slice(0, 10).replace(/-/g, '')
+    const timeComponent = now.getHours().toString().padStart(2, '0') +
+                         now.getMinutes().toString().padStart(2, '0') +
+                         now.getSeconds().toString().padStart(2, '0')
+    const microsecondComponent = now.getMilliseconds().toString().padStart(3, '0')
+    const randomComponent = Math.floor(Math.random() * 999).toString().padStart(3, '0')
+    return `${datePrefix}${timeComponent}${microsecondComponent}${randomComponent}`
+  }
+
+  let orderNumber = generateOrderNumber()
+
+  // Ensure uniqueness
+  let attempts = 0
+  while (attempts < 5) {
+    const existingOrder = await db.order.findFirst({
+      where: { orderNumber }
+    })
+    if (!existingOrder) break
+    orderNumber = generateOrderNumber()
+    attempts++
+  }
+
+  if (attempts >= 5) {
+    throw createError('Failed to generate unique order number', 500)
+  }
+
+  // Use first available user for public orders (system user)
+  // In production, you should create a dedicated "Guest" or "Public Orders" user
+  const guestUser = await db.user.findFirst({
+    where: {
+      storeId: String(storeId),
+      isActive: true
+    },
+    orderBy: {
+      createdAt: 'asc'
+    }
+  })
+
+  if (!guestUser) {
+    throw createError('No user found for store. Please contact administrator.', 500)
+  }
+
+  // Generate idempotency key
+  const idempotencyKey = uuidv4()
+
+  // Calculate totals and validate menu items
+  let subtotal = 0
+  const processedItems = []
+
+  for (const item of orderItems) {
+    const menuItem = await db.menuItem.findUnique({
+      where: { id: item.menuItemId }
+    })
+
+    if (!menuItem || !menuItem.isActive || !menuItem.isAvailable) {
+      throw createError(`Menu item ${item.menuItemId} is not available`, 400)
+    }
+
+    const itemTotal = menuItem.price * item.quantity
+    subtotal += itemTotal
+
+    processedItems.push({
+      menuItemId: item.menuItemId,
+      quantity: item.quantity,
+      unitPrice: menuItem.price,
+      totalPrice: itemTotal,
+      notes: item.notes
+    })
+  }
+
+  // Calculate tax and total
+  const taxRate = 0.1 // 10% tax
+  const tax = subtotal * taxRate
+  const total = subtotal + tax
+
+  // Create order with items
+  const order = await db.order.create({
+    data: {
+      orderNumber,
+      storeId: String(storeId),
+      customerName: customerName?.trim() || 'Guest',
+      customerPhone: customerPhone?.trim(),
+      tableNumber: tableNumber?.trim(),
+      orderType,
+      subtotal,
+      tax,
+      taxRate,
+      total,
+      notes: notes?.trim(),
+      userId: guestUser.id,
+      idempotencyKey,
+      syncStatus: 'PENDING',
+      source: 'ONLINE', // Mark as online order from customer app
+      orderItems: {
+        create: processedItems
+      }
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
+      orderItems: {
+        include: {
+          menuItem: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              price: true,
+              imageUrl: true
+            }
+          }
+        }
+      }
+    }
+  })
+
+  // Note: Payment will be recorded by staff when order is completed
+  // For now, payment method is tracked in validation for customer preference
+
+  // Emit WebSocket event for real-time updates
+  emitToStore(String(storeId), 'order:created', {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    orderType: order.orderType,
+    total: order.total,
+    customerName: order.customerName,
+    tableNumber: order.tableNumber,
+    orderItemsCount: orderItems.length,
+    createdAt: order.createdAt
+  })
+
+  res.status(201).json({
+    success: true,
+    data: {
+      order,
+      orderNumber: order.orderNumber
+    },
+    message: 'Order created successfully'
+  })
+}))
+
+/**
+ * GET /api/orders/track/:orderNumber
+ * Track order by order number (public endpoint for customers)
+ * No authentication required
+ */
+router.get('/track/:orderNumber', asyncHandler(async (req: Request, res: Response) => {
+  const db = getDB()
+  const { orderNumber } = req.params
+
+  const order = await db.order.findUnique({
+    where: { orderNumber },
+    include: {
+      orderItems: {
+        include: {
+          menuItem: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              price: true,
+              imageUrl: true
+            }
+          }
+        }
+      }
+    }
+  })
+
+  if (!order) {
+    throw createError('Order not found', 404)
+  }
+
+  // Return public order information (exclude sensitive data)
+  res.json({
+    success: true,
+    data: {
+      order: {
+        orderNumber: order.orderNumber,
+        status: order.status,
+        orderType: order.orderType,
+        customerName: order.customerName,
+        tableNumber: order.tableNumber,
+        subtotal: order.subtotal,
+        tax: order.tax,
+        total: order.total,
+        estimatedTime: order.estimatedTime,
+        createdAt: order.createdAt,
+        items: order.orderItems.map(item => ({
+          name: item.menuItem.name,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          imageUrl: item.menuItem.imageUrl
+        }))
+      }
+    }
   })
 }))
 

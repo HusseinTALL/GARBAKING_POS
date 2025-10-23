@@ -8,8 +8,10 @@ import { useToast } from 'vue-toastification'
 import { useNetworkStore } from '@/stores/network'
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
-const LOCAL_API_URL = 'http://192.168.4.1' // Local restaurant network
+// Use relative URLs to leverage Vite proxy in development
+// Vite proxy forwards /api/* requests to backend (localhost:3001)
+const API_BASE_URL = ''
+const LOCAL_API_URL = ''
 
 // Create axios instance
 const apiClient = axios.create({
@@ -81,7 +83,7 @@ export const menuApi = {
    */
   async getPublicMenu(): Promise<ApiResponse<{ categories: any[] }>> {
     try {
-      return await makeRequest('/local/menu', { method: 'GET' })
+      return await makeRequest('/api/menu/public', { method: 'GET' })
     } catch (error: any) {
       return {
         success: false,
@@ -134,26 +136,46 @@ export const ordersApi = {
   async createOrder(orderData: {
     customerName?: string
     customerPhone?: string
+    customerEmail?: string
     tableNumber?: string
     orderType: string
-    orderItems: Array<{
+    items: Array<{
       menuItemId: string
+      sku?: string
+      name?: string
+      price?: number
       quantity: number
       notes?: string
     }>
     notes?: string
-  }): Promise<ApiResponse<{ order: any }>> {
+    specialRequests?: string
+    paymentMethod?: string
+  }): Promise<ApiResponse<{ order: any; orderNumber: string }>> {
     try {
-      // Try local endpoint first for offline capability
-      return await makeRequest('/local/orders', {
+      // Transform items to orderItems format expected by backend
+      // Backend only needs: menuItemId, quantity, notes
+      const orderItems = orderData.items.map(item => ({
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        notes: item.notes || undefined
+      }))
+
+      // Prepare payload for public order endpoint
+      const payload = {
+        storeId: import.meta.env.VITE_STORE_ID || 'store_001',
+        customerName: orderData.customerName,
+        customerPhone: orderData.customerPhone,
+        tableNumber: orderData.tableNumber,
+        orderType: orderData.orderType,
+        orderItems, // Use transformed orderItems
+        notes: orderData.notes || orderData.specialRequests, // Combine notes
+        paymentMethod: orderData.paymentMethod || 'CASH'
+      }
+
+      // Call public order endpoint (no auth required)
+      return await makeRequest('/api/orders/public', {
         method: 'POST',
-        data: {
-          ...orderData,
-          clientOrderId: `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          idempotencyKey: `idem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          storeId: 'store_001',
-          createdAt: new Date().toISOString()
-        }
+        data: payload
       })
     } catch (error: any) {
       // Add to offline queue if request fails
@@ -198,6 +220,40 @@ export const ordersApi = {
         error: error.message || 'Failed to track order'
       }
     }
+  },
+
+  /**
+   * Get customer order history by phone number
+   */
+  async getCustomerOrderHistory(phone: string): Promise<ApiResponse<{ orders: any[]; count: number }>> {
+    try {
+      return await makeRequest('/api/orders/customer/history', {
+        method: 'GET',
+        params: { phone }
+      })
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch order history'
+      }
+    }
+  },
+
+  /**
+   * Cancel an order by order number
+   */
+  async cancelOrder(orderNumber: string, reason?: string): Promise<ApiResponse<{ order: any; message: string }>> {
+    try {
+      return await makeRequest(`/api/orders/${orderNumber}/cancel`, {
+        method: 'POST',
+        data: { reason: reason || 'Cancelled by customer' }
+      })
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Failed to cancel order'
+      }
+    }
   }
 }
 
@@ -208,7 +264,7 @@ export const healthApi = {
    */
   async checkHealth(): Promise<ApiResponse<{ status: string }>> {
     try {
-      return await makeRequest('/health', { method: 'GET' })
+      return await makeRequest('/api/health', { method: 'GET' })
     } catch (error: any) {
       return {
         success: false,

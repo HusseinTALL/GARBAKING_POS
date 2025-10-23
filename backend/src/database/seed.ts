@@ -68,7 +68,8 @@ async function seedDatabase() {
         name: 'Plats Principaux',
         description: 'Nos délicieux plats traditionnels ivoiriens',
         sortOrder: 1,
-        imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop'
+        imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+        storeId: process.env.STORE_ID || 'store_001'
       }
     })
 
@@ -77,7 +78,8 @@ async function seedDatabase() {
         name: 'Entrées',
         description: 'Entrées et accompagnements savoureux',
         sortOrder: 2,
-        imageUrl: 'https://images.unsplash.com/photo-1597643303045-ba3a2bd075b5?w=400&h=300&fit=crop'
+        imageUrl: 'https://images.unsplash.com/photo-1597643303045-ba3a2bd075b5?w=400&h=300&fit=crop',
+        storeId: process.env.STORE_ID || 'store_001'
       }
     })
 
@@ -86,7 +88,8 @@ async function seedDatabase() {
         name: 'Boissons',
         description: 'Boissons fraîches et chaudes',
         sortOrder: 3,
-        imageUrl: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop'
+        imageUrl: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop',
+        storeId: process.env.STORE_ID || 'store_001'
       }
     })
 
@@ -95,7 +98,8 @@ async function seedDatabase() {
         name: 'Desserts',
         description: 'Douceurs et desserts traditionnels',
         sortOrder: 4,
-        imageUrl: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=300&fit=crop'
+        imageUrl: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=300&fit=crop',
+        storeId: process.env.STORE_ID || 'store_001'
       }
     })
 
@@ -256,7 +260,12 @@ async function seedDatabase() {
     ]
 
     const createdMenuItems = await Promise.all(
-      menuItems.map(item => db.menuItem.create({ data: item }))
+      menuItems.map(item => db.menuItem.create({
+        data: {
+          ...item,
+          storeId: process.env.STORE_ID || 'store_001'
+        }
+      }))
     )
 
     console.log('✅ Menu items created')
@@ -278,7 +287,6 @@ async function seedDatabase() {
         tableNumber: 'T01',
         orderType: 'DINE_IN',
         status: 'SERVED',
-        paymentMethod: 'CASH',
         paymentStatus: 'PAID',
         userId: cashierUser.id,
         items: [
@@ -293,7 +301,6 @@ async function seedDatabase() {
         customerPhone: '+225 05 98 76 54 32',
         orderType: 'TAKEAWAY',
         status: 'READY',
-        paymentMethod: 'CARD',
         paymentStatus: 'PAID',
         userId: cashierUser.id,
         items: [
@@ -308,7 +315,6 @@ async function seedDatabase() {
         tableNumber: 'T05',
         orderType: 'DINE_IN',
         status: 'PREPARING',
-        paymentMethod: 'CASH',
         paymentStatus: 'PENDING',
         userId: cashierUser.id,
         items: [
@@ -365,7 +371,6 @@ async function seedDatabase() {
         customerName: 'Fatou Diallo',
         orderType: 'DINE_IN',
         status: 'SERVED',
-        paymentMethod: 'CASH',
         paymentStatus: 'PAID',
         userId: cashierUser.id,
         createdAt: yesterday,
@@ -449,7 +454,6 @@ async function seedDatabase() {
           gte: todayStart,
           lt: tomorrowStart
         },
-        paymentMethod: 'CASH',
         paymentStatus: 'PAID'
       },
       _sum: {
@@ -464,7 +468,6 @@ async function seedDatabase() {
           gte: todayStart,
           lt: tomorrowStart
         },
-        paymentMethod: 'CARD',
         paymentStatus: 'PAID'
       },
       _sum: {
@@ -480,8 +483,8 @@ async function seedDatabase() {
         totalRevenue: todayStats._sum.total || 0,
         totalTax: todayStats._sum.tax || 0,
         averageOrder: todayStats._avg.total || 0,
-        cashSales: cashSales._sum.total || 0,
-        cardSales: cardSales._sum.total || 0
+        cashSales: cashSales._sum?.total || 0,
+        cardSales: cardSales._sum?.total || 0
       }
     })
 

@@ -8,37 +8,56 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Modern green food delivery theme
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#e8f9ed',
+          100: '#c7f2d4',
+          200: '#9de9b5',
+          300: '#6fdf95',
+          400: '#4cd964', // Main green - iOS style
+          500: '#4cd964',
+          600: '#3ec757',
+          700: '#2eb848',
+          800: '#25a23d',
+          900: '#1d8933',
         },
-        accent: {
-          50: '#fef7e6',
-          100: '#fdecc2',
-          200: '#fbd98a',
-          300: '#f9c74f',
-          400: '#f7b32b',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f',
+        background: {
+          DEFAULT: '#FFFFFF', // Pure white
+          gray: '#F8F8F8', // Very light gray for subtle backgrounds
+        },
+        text: {
+          DEFAULT: '#1C1C1E', // Near black - primary text
+          secondary: '#8E8E93', // Gray - secondary text
+          tertiary: '#C7C7CC', // Light gray - disabled/placeholder
+        },
+        border: {
+          DEFAULT: '#E5E5EA', // Light gray borders
+          dark: '#D1D1D6', // Slightly darker borders
         },
         success: {
-          500: '#10b981',
-          600: '#059669',
+          500: '#4cd964',
+          600: '#3ec757',
         },
         danger: {
-          500: '#ef4444',
-          600: '#dc2626',
+          500: '#FF3B30',
+          600: '#e6352a',
+        },
+        warning: {
+          500: '#FF9500',
+          600: '#e68600',
+        },
+        // Neutral grays matching iOS design system
+        gray: {
+          50: '#F8F8F8',
+          100: '#F2F2F7',
+          200: '#E5E5EA',
+          300: '#D1D1D6',
+          400: '#C7C7CC',
+          500: '#AEAEB2',
+          600: '#8E8E93',
+          700: '#636366',
+          800: '#48484A',
+          900: '#1C1C1E',
         }
       },
       fontFamily: {

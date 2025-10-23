@@ -363,7 +363,7 @@ const handleLogin = async () => {
 const handleDevLogin = async () => {
   // Set development credentials
   credentials.value.employeeId = 'admin@garbaking.com'
-  credentials.value.password = 'SecurePassword123!'
+  credentials.value.password = 'admin123'
   authMethod.value = 'password'
 
   // Trigger login

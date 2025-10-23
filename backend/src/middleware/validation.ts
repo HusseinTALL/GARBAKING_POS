@@ -153,6 +153,57 @@ export const validateOrder = [
   handleValidationErrors
 ]
 
+// Public order validation (for customer app - no auth required)
+export const validatePublicOrder = [
+  body('storeId')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Invalid store ID'),
+  body('customerName')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Customer name must be between 2 and 100 characters'),
+  body('customerPhone')
+    .optional()
+    .trim()
+    .matches(/^[\+]?[\d\s\-\(\)]{7,15}$/)
+    .withMessage('Invalid phone number format'),
+  body('tableNumber')
+    .optional()
+    .trim()
+    .isLength({ max: 10 })
+    .withMessage('Table number must not exceed 10 characters'),
+  body('orderType')
+    .isIn(['DINE_IN', 'TAKEAWAY', 'DELIVERY'])
+    .withMessage('Invalid order type'),
+  body('orderItems')
+    .isArray({ min: 1 })
+    .withMessage('At least one order item is required'),
+  body('orderItems.*.menuItemId')
+    .isUUID()
+    .withMessage('Valid menu item ID is required'),
+  body('orderItems.*.quantity')
+    .isInt({ min: 1, max: 100 })
+    .withMessage('Quantity must be between 1 and 100'),
+  body('orderItems.*.notes')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Notes must not exceed 200 characters'),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Order notes must not exceed 500 characters'),
+  body('paymentMethod')
+    .optional()
+    .isIn(['CASH', 'CARD', 'MOBILE_MONEY', 'OTHER'])
+    .withMessage('Invalid payment method'),
+  handleValidationErrors
+]
+
 // Order status update validation
 export const validateOrderStatus = [
   body('status')

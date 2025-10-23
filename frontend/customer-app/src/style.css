@@ -89,7 +89,7 @@ textarea:focus {
 }
 
 .btn-accent {
-  @apply bg-accent-500 text-white font-medium py-4 px-6 rounded-2xl shadow-button hover:bg-accent-600 active:bg-accent-700 transition-all duration-200;
+  @apply bg-primary-500 text-white font-medium py-4 px-6 rounded-2xl shadow-button hover:bg-primary-600 active:bg-primary-700 transition-all duration-200;
   min-height: 48px;
 }
 
@@ -217,7 +217,7 @@ textarea:focus {
 }
 
 .floating-cart.has-items {
-  @apply bg-accent-500;
+  @apply bg-primary-600;
 }
 
 /* Cart badge */

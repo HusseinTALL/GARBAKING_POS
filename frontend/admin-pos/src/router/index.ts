@@ -11,20 +11,22 @@ import { authGuard, permissionGuard, roleRedirectGuard, storeAccessGuard } from 
 import MainLayout from '@/layouts/MainLayout.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Orders from '@/views/Orders.vue'
+import NewOrder from '@/views/NewOrder.vue'
 import Menu from '@/views/Menu.vue'
 import Analytics from '@/views/Analytics.vue'
 import Settings from '@/views/Settings.vue'
 import Tables from '@/views/Tables.vue'
 import Payment from '@/views/Payment.vue'
 import Receipts from '@/views/Receipts.vue'
+import Loyalty from '@/views/Loyalty.vue'
 import Login from '@/views/Login.vue'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: Login,
-    meta: { requiresAuth: false }
+    // Redirect to dashboard for development (auth not implemented yet)
+    redirect: '/'
   },
   {
     path: '/',
@@ -56,7 +58,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/orders/new',
         name: 'new-order',
-        component: Orders,
+        component: NewOrder,
         meta: {
           title: 'New Order',
           permission: 'orders:create'
@@ -92,7 +94,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/kitchen',
         name: 'kitchen',
-        component: () => import('@/views/Kitchen.vue'),
+        component: () => import('@/components/KitchenDisplay.vue'),
         meta: {
           title: 'Kitchen Display',
           feature: 'kitchen-display'
@@ -133,6 +135,15 @@ const routes: RouteRecordRaw[] = [
           title: 'Receipt Management',
           feature: 'reports'
         }
+      },
+      {
+        path: '/loyalty',
+        name: 'loyalty',
+        component: Loyalty,
+        meta: {
+          title: 'Loyalty Program',
+          feature: 'loyalty-management'
+        }
       }
     ]
   }
@@ -143,8 +154,14 @@ const router = createRouter({
   routes
 })
 
-// Navigation guards - Applied in order
+// Navigation guards - TEMPORARILY DISABLED FOR DEVELOPMENT
+// TODO: Re-enable when backend auth endpoints are implemented
 router.beforeEach(async (to, from, next) => {
+  // Bypass all auth for development - allow direct access to dashboard
+  next()
+  return
+
+  /* DISABLED FOR DEVELOPMENT
   const { useAuthStore } = await import('@/stores/auth')
   const authStore = useAuthStore()
 
@@ -186,6 +203,7 @@ router.beforeEach(async (to, from, next) => {
       })
     })
   })
+  */
 })
 
 // Set page title

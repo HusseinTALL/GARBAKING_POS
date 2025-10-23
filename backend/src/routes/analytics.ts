@@ -154,7 +154,7 @@ router.get('/dashboard',
  * GET /api/analytics/sales
  * Get sales analytics with date range filtering
  */
-router.get('/sales', validatePagination, asyncHandler(async (req: Request, res: Response) => {
+router.get('/sales', authenticateToken, validatePagination, asyncHandler(async (req: Request, res: Response) => {
   const db = getDB()
   const {
     startDate,
@@ -179,8 +179,17 @@ router.get('/sales', validatePagination, asyncHandler(async (req: Request, res: 
     }
   }
 
+  // Ensure user is authenticated and has storeId
+  if (!req.user || !req.user.storeId) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required',
+      code: 'AUTH_REQUIRED'
+    })
+  }
+
   const where: any = {
-    storeId: req.user!.storeId,
+    storeId: req.user.storeId,
     createdAt: dateFilter,
     status: { not: 'CANCELLED' }
   }
@@ -189,42 +198,83 @@ router.get('/sales', validatePagination, asyncHandler(async (req: Request, res: 
     where.orderType = String(orderType)
   }
 
-  // Get sales data grouped by specified period
+  // Get sales data grouped by specified period (SQLite syntax)
   let groupByQuery: string
   switch (groupBy) {
     case 'hour':
-      groupByQuery = `DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00')`
+      groupByQuery = `strftime('%Y-%m-%d %H:00:00', createdAt)`
       break
     case 'week':
-      groupByQuery = `DATE_FORMAT(created_at, '%Y-%u')`
+      groupByQuery = `strftime('%Y-%W', createdAt)`
       break
     case 'month':
-      groupByQuery = `DATE_FORMAT(created_at, '%Y-%m')`
+      groupByQuery = `strftime('%Y-%m', createdAt)`
       break
     default:
-      groupByQuery = `DATE(created_at)`
+      groupByQuery = `date(createdAt)`
   }
 
-  const salesData = await db.$queryRaw`
-    SELECT
-      ${groupByQuery} as period,
-      COUNT(*) as order_count,
-      SUM(total) as total_revenue,
-      SUM(tax) as total_tax,
-      AVG(total) as average_order,
-      SUM(CASE WHEN payment_method = 'CASH' THEN total ELSE 0 END) as cash_revenue,
-      SUM(CASE WHEN payment_method = 'CARD' THEN total ELSE 0 END) as card_revenue
-    FROM orders
-    WHERE store_id = ${req.user!.storeId}
-      AND created_at >= ${dateFilter.gte}
-      ${dateFilter.lte ? `AND created_at <= ${dateFilter.lte}` : ''}
-      AND status != 'CANCELLED'
-      ${orderType ? `AND order_type = '${orderType}'` : ''}
-    GROUP BY ${groupByQuery}
-    ORDER BY period DESC
-  `
+  // Use Prisma's findMany with aggregation instead of raw SQL for better compatibility
+  const orders = await db.order.findMany({
+    where: {
+      storeId: req.user!.storeId,
+      createdAt: dateFilter,
+      status: { not: 'CANCELLED' },
+      ...(orderType && { orderType: String(orderType) })
+    },
+    select: {
+      createdAt: true,
+      total: true,
+      tax: true
+    }
+  })
 
-  res.json({
+  // Group and aggregate in JavaScript for SQLite compatibility
+  const salesData = orders.reduce((acc: any[], order) => {
+    let period: string
+    const date = new Date(order.createdAt)
+
+    switch (groupBy) {
+      case 'hour':
+        period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:00:00`
+        break
+      case 'week':
+        const weekNumber = Math.ceil(date.getDate() / 7)
+        period = `${date.getFullYear()}-${String(weekNumber).padStart(2, '0')}`
+        break
+      case 'month':
+        period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        break
+      default:
+        period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    }
+
+    const existing = acc.find(item => item.period === period)
+    if (existing) {
+      existing.order_count++
+      existing.total_revenue += order.total
+      existing.total_tax += order.tax
+    } else {
+      acc.push({
+        period,
+        order_count: 1,
+        total_revenue: order.total,
+        total_tax: order.tax,
+        average_order: order.total
+      })
+    }
+    return acc
+  }, [])
+
+  // Calculate average orders
+  salesData.forEach(item => {
+    item.average_order = item.total_revenue / item.order_count
+  })
+
+  // Sort by period descending
+  salesData.sort((a, b) => b.period.localeCompare(a.period))
+
+  return res.json({
     success: true,
     data: {
       period: {
@@ -249,27 +299,56 @@ router.get('/menu-performance', asyncHandler(async (req: Request, res: Response)
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - daysBack)
 
-  const menuPerformance = await db.$queryRaw`
-    SELECT
-      mi.id,
-      mi.sku,
-      mi.name,
-      mi.price,
-      c.name as category_name,
-      COUNT(oi.id) as times_ordered,
-      SUM(oi.quantity) as total_quantity,
-      SUM(oi.total_price) as total_revenue,
-      AVG(oi.quantity) as avg_quantity_per_order
-    FROM menu_items mi
-    LEFT JOIN order_items oi ON mi.id = oi.menu_item_id
-    LEFT JOIN orders o ON oi.order_id = o.id
-    LEFT JOIN categories c ON mi.category_id = c.id
-    WHERE o.store_id = ${req.user!.storeId}
-      AND o.created_at >= ${startDate}
-      AND o.status != 'CANCELLED'
-    GROUP BY mi.id, mi.sku, mi.name, mi.price, c.name
-    ORDER BY total_revenue DESC
-  `
+  // Get order items with menu items and orders using Prisma relations
+  const orderItems = await db.orderItem.findMany({
+    where: {
+      order: {
+        storeId: req.user!.storeId,
+        createdAt: {
+          gte: startDate
+        },
+        status: { not: 'CANCELLED' }
+      }
+    },
+    include: {
+      menuItem: {
+        include: {
+          category: true
+        }
+      }
+    }
+  })
+
+  // Aggregate performance data in JavaScript
+  const performanceMap = new Map()
+
+  orderItems.forEach(item => {
+    const key = item.menuItemId
+    if (!performanceMap.has(key)) {
+      performanceMap.set(key, {
+        id: item.menuItem.id,
+        sku: item.menuItem.sku,
+        name: item.menuItem.name,
+        price: item.menuItem.price,
+        category_name: item.menuItem.category?.name || 'Uncategorized',
+        times_ordered: 0,
+        total_quantity: 0,
+        total_revenue: 0,
+        avg_quantity_per_order: 0
+      })
+    }
+
+    const performance = performanceMap.get(key)
+    performance.times_ordered++
+    performance.total_quantity += item.quantity
+    performance.total_revenue += item.totalPrice
+  })
+
+  // Calculate averages and convert to array
+  const menuPerformance = Array.from(performanceMap.values()).map(item => ({
+    ...item,
+    avg_quantity_per_order: item.total_quantity / item.times_ordered
+  })).sort((a, b) => b.total_revenue - a.total_revenue)
 
   res.json({
     success: true,
@@ -292,34 +371,70 @@ router.get('/peak-hours', asyncHandler(async (req: Request, res: Response) => {
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - daysBack)
 
-  const peakHours = await db.$queryRaw`
-    SELECT
-      HOUR(created_at) as hour,
-      COUNT(*) as order_count,
-      SUM(total) as total_revenue,
-      AVG(total) as average_order
-    FROM orders
-    WHERE store_id = ${req.user!.storeId}
-      AND created_at >= ${startDate}
-      AND status != 'CANCELLED'
-    GROUP BY HOUR(created_at)
-    ORDER BY hour
-  `
+  // Get orders and aggregate by hour and day using Prisma
+  const orders = await db.order.findMany({
+    where: {
+      storeId: req.user!.storeId,
+      createdAt: {
+        gte: startDate
+      },
+      status: { not: 'CANCELLED' }
+    },
+    select: {
+      createdAt: true,
+      total: true
+    }
+  })
 
-  const peakDays = await db.$queryRaw`
-    SELECT
-      DAYNAME(created_at) as day_name,
-      DAYOFWEEK(created_at) as day_number,
-      COUNT(*) as order_count,
-      SUM(total) as total_revenue,
-      AVG(total) as average_order
-    FROM orders
-    WHERE store_id = ${req.user!.storeId}
-      AND created_at >= ${startDate}
-      AND status != 'CANCELLED'
-    GROUP BY DAYOFWEEK(created_at), DAYNAME(created_at)
-    ORDER BY day_number
-  `
+  // Aggregate by hour
+  const hourlyData = new Map()
+  const dailyData = new Map()
+
+  orders.forEach(order => {
+    const date = new Date(order.createdAt)
+    const hour = date.getHours()
+    const dayOfWeek = date.getDay() // 0 = Sunday, 1 = Monday, etc.
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const dayName = dayNames[dayOfWeek]
+
+    // Hour aggregation
+    if (!hourlyData.has(hour)) {
+      hourlyData.set(hour, {
+        hour,
+        order_count: 0,
+        total_revenue: 0,
+        average_order: 0
+      })
+    }
+    const hourStats = hourlyData.get(hour)
+    hourStats.order_count++
+    hourStats.total_revenue += order.total
+
+    // Day aggregation
+    if (!dailyData.has(dayOfWeek)) {
+      dailyData.set(dayOfWeek, {
+        day_name: dayName,
+        day_number: dayOfWeek + 1, // MySQL DAYOFWEEK returns 1-7
+        order_count: 0,
+        total_revenue: 0,
+        average_order: 0
+      })
+    }
+    const dayStats = dailyData.get(dayOfWeek)
+    dayStats.order_count++
+    dayStats.total_revenue += order.total
+  })
+
+  // Calculate averages and convert to arrays
+  const peakHours = Array.from(hourlyData.values()).map(item => ({
+    ...item,
+    average_order: item.total_revenue / item.order_count
+  })).sort((a, b) => a.hour - b.hour)
+
+  const peakDays = Array.from(dailyData.values()).map(item => ({
+    ...item,
+    average_order: item.total_revenue / item.order_count
+  })).sort((a, b) => a.day_number - b.day_number)
 
   res.json({
     success: true,
@@ -394,27 +509,65 @@ router.get('/customer-insights', asyncHandler(async (req: Request, res: Response
   const startDate = new Date()
   startDate.setDate(startDate.getDate() - daysBack)
 
-  // Customer frequency (returning customers)
-  const customerFrequency = await db.$queryRaw`
-    SELECT
-      customer_phone,
-      customer_name,
-      COUNT(*) as visit_count,
-      SUM(total) as total_spent,
-      AVG(total) as average_order,
-      MIN(created_at) as first_visit,
-      MAX(created_at) as last_visit
-    FROM orders
-    WHERE store_id = ${req.user!.storeId}
-      AND created_at >= ${startDate}
-      AND customer_phone IS NOT NULL
-      AND customer_phone != ''
-      AND status != 'CANCELLED'
-    GROUP BY customer_phone, customer_name
-    HAVING visit_count > 1
-    ORDER BY total_spent DESC
-    LIMIT 50
-  `
+  // Customer frequency (returning customers) - using Prisma for SQLite compatibility
+  const orders = await db.order.findMany({
+    where: {
+      storeId: req.user!.storeId,
+      createdAt: {
+        gte: startDate
+      },
+      AND: [
+        { customerPhone: { not: null } },
+        { customerPhone: { not: '' } }
+      ],
+      status: { not: 'CANCELLED' }
+    },
+    select: {
+      customerPhone: true,
+      customerName: true,
+      total: true,
+      createdAt: true
+    }
+  })
+
+  // Group by customer phone and aggregate in JavaScript
+  const customerMap = new Map()
+  orders.forEach(order => {
+    const key = `${order.customerPhone}-${order.customerName || ''}`
+    if (!customerMap.has(key)) {
+      customerMap.set(key, {
+        customer_phone: order.customerPhone,
+        customer_name: order.customerName,
+        visit_count: 0,
+        total_spent: 0,
+        first_visit: order.createdAt,
+        last_visit: order.createdAt,
+        orders: []
+      })
+    }
+
+    const customer = customerMap.get(key)
+    customer.visit_count++
+    customer.total_spent += order.total
+    customer.orders.push(order.total)
+    if (order.createdAt < customer.first_visit) customer.first_visit = order.createdAt
+    if (order.createdAt > customer.last_visit) customer.last_visit = order.createdAt
+  })
+
+  // Filter customers with more than 1 visit and calculate averages
+  const customerFrequency = Array.from(customerMap.values())
+    .filter(customer => customer.visit_count > 1)
+    .map(customer => ({
+      customer_phone: customer.customer_phone,
+      customer_name: customer.customer_name,
+      visit_count: customer.visit_count,
+      total_spent: customer.total_spent,
+      average_order: customer.total_spent / customer.visit_count,
+      first_visit: customer.first_visit,
+      last_visit: customer.last_visit
+    }))
+    .sort((a, b) => b.total_spent - a.total_spent)
+    .slice(0, 50)
 
   // Order type distribution
   const orderTypes = await db.order.groupBy({
@@ -511,7 +664,7 @@ router.get('/export',
         order.subtotal,
         order.tax,
         order.total,
-        order.paymentMethod || '',
+        'cash', // Default payment method since Order model doesn't have paymentMethod field
         order.paymentStatus
       ])
 

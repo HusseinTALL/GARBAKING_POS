@@ -1,16 +1,12 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
-import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    VueI18nPlugin({
-      include: resolve(__dirname, 'src/assets/i18n/**'),
-    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
@@ -79,15 +75,15 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3001,
+    port: 3002,
     host: '0.0.0.0',
     proxy: {
       '/local': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:3001',
         changeOrigin: true
       },
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:3001',
         changeOrigin: true
       }
     }

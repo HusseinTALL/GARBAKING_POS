@@ -331,20 +331,21 @@ const confirmOrder = async () => {
   isSubmitting.value = true
 
   try {
-    // Prepare order data
+    // Prepare order data matching backend expectations
     const orderData = {
       customerName: customerInfo.value.name,
-      customerPhone: customerInfo.value.phone,
-      tableNumber: customerInfo.value.tableNumber,
+      customerPhone: customerInfo.value.phone || undefined,
+      customerEmail: undefined, // Optional for now
+      tableNumber: customerInfo.value.tableNumber || undefined,
       orderType: customerInfo.value.orderType,
-      orderItems: items.value.map(item => ({
+      items: items.value.map(item => ({
         menuItemId: item.menuItemId,
         quantity: item.quantity,
-        notes: item.notes
+        notes: item.notes || undefined
       })),
-      notes: customerInfo.value.notes,
-      paymentMethod: selectedPaymentMethod.value,
-      estimatedTime: estimatedTime.value
+      notes: customerInfo.value.notes || undefined,
+      specialRequests: undefined,
+      paymentMethod: selectedPaymentMethod.value
     }
 
     // Submit order

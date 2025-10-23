@@ -469,15 +469,32 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     try {
       const dateRange = selectedPeriod.value === 'custom' ? customDateRange.value : undefined
 
-      await Promise.all([
-        fetchSalesData(period, dateRange),
-        fetchProductAnalytics(period),
-        fetchCategoryAnalytics(period),
-        fetchStaffPerformance(period),
-        fetchCustomerAnalytics(period),
-        fetchTimeAnalytics(period),
-        fetchComparisonData(period),
-        fetchInventoryAnalytics()
+      // Silently handle 404s for endpoints that don't exist yet
+      await Promise.allSettled([
+        fetchSalesData(period, dateRange).catch(err => {
+          if (err.response?.status !== 404) console.error('Sales data error:', err)
+        }),
+        fetchProductAnalytics(period).catch(err => {
+          if (err.response?.status !== 404) console.error('Product analytics error:', err)
+        }),
+        fetchCategoryAnalytics(period).catch(err => {
+          if (err.response?.status !== 404) console.error('Category analytics error:', err)
+        }),
+        fetchStaffPerformance(period).catch(err => {
+          if (err.response?.status !== 404) console.error('Staff performance error:', err)
+        }),
+        fetchCustomerAnalytics(period).catch(err => {
+          if (err.response?.status !== 404) console.error('Customer analytics error:', err)
+        }),
+        fetchTimeAnalytics(period).catch(err => {
+          if (err.response?.status !== 404) console.error('Time analytics error:', err)
+        }),
+        fetchComparisonData(period).catch(err => {
+          if (err.response?.status !== 404) console.error('Comparison data error:', err)
+        }),
+        fetchInventoryAnalytics().catch(err => {
+          if (err.response?.status !== 404) console.error('Inventory analytics error:', err)
+        })
       ])
 
       return true

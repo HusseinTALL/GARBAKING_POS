@@ -524,9 +524,30 @@ const refreshOrder = async () => {
 }
 
 const cancelOrder = async () => {
-  // Implementation would depend on backend API
-  showCancelConfirm.value = false
-  toast.info('Demande d\'annulation envoyée')
+  try {
+    // Close confirmation modal first
+    showCancelConfirm.value = false
+
+    // Call backend to cancel order
+    const response = await ordersApi.cancelOrder(orderNumber.value, 'Cancelled by customer')
+
+    if (response.success) {
+      // Update local order status
+      if (order.value) {
+        order.value.status = 'CANCELLED'
+      }
+
+      toast.success('Commande annulée avec succès')
+
+      // Disconnect from realtime updates since order is cancelled
+      disconnectFromRealTimeUpdates()
+    } else {
+      throw new Error(response.error || 'Failed to cancel order')
+    }
+  } catch (error: any) {
+    console.error('Error cancelling order:', error)
+    toast.error(error.message || 'Impossible d\'annuler la commande')
+  }
 }
 
 const contactSupport = () => {

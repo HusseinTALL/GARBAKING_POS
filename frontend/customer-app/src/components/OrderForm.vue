@@ -4,11 +4,19 @@
 -->
 
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" v-if="isVisible">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-md max-h-screen overflow-y-auto">
-      <!-- Header -->
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-gray-900">{{ $t('place_order') }}</h2>
+  <div
+    class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+    v-if="isVisible"
+    @click.self="closeForm"
+    style="touch-action: none;"
+  >
+    <div
+      class="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-md my-auto max-h-[90vh] overflow-y-auto"
+      @click.stop
+    >
+      <!-- Header - responsive -->
+      <div class="flex items-center justify-between mb-4 sm:mb-6">
+        <h2 class="text-lg sm:text-xl font-bold text-gray-900">{{ $t('place_order') }}</h2>
         <button
           @click="closeForm"
           :aria-label="$t('buttons.cancel')"
@@ -136,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { v4 as uuidv4 } from 'uuid'
 import type { MenuItem, OrderItem } from '@/services/mockApi'
@@ -271,8 +279,20 @@ const onInputChange = () => {
 }
 
 // Watch for input changes
-import { watch } from 'vue'
 watch(() => customerInfo.value, onInputChange)
+
+// Lock/unlock body scroll when modal opens/closes
+watch(() => props.isVisible, (isVisible) => {
+  if (isVisible) {
+    // Lock body scroll
+    document.body.style.overflow = 'hidden'
+    document.body.style.touchAction = 'none'
+  } else {
+    // Unlock body scroll
+    document.body.style.overflow = ''
+    document.body.style.touchAction = ''
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>

@@ -23,6 +23,10 @@ import menuRoutes from './routes/menu'
 import analyticsRoutes from './routes/analytics'
 import syncRoutes from './routes/sync'
 import userRoutes from './routes/users'
+import loyaltyRoutes from './routes/loyalty'
+import paymentRoutes from './routes/payment'
+import tablesRoutes from './routes/tables'
+import receiptsRoutes from './routes/receipts'
 import { errorHandler } from './middleware/errorHandler'
 import { authenticateToken } from './middleware/authMiddleware'
 import { setupWebSocket } from './services/websocket'
@@ -42,24 +46,31 @@ const io = new SocketIOServer(server, {
 
 const PORT = process.env.PORT || 8000
 
-// Rate limiting
+// Rate limiting - more lenient for development
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000'), // Increased to 1000 requests
+  message: 'Too many requests from this IP, please try again later.',
+  skip: (req) => {
+    // Skip rate limiting for auth routes in development
+    if (process.env.NODE_ENV !== 'production' && req.path.startsWith('/api/auth')) {
+      return true
+    }
+    return false
+  }
 })
 
 // Middleware
 app.use(helmet())
 app.use(cors())
 app.use(compression())
-app.use(morgan('combined'))
+app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'))
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(limiter)
 
-// Health check endpoint
-app.get('/health', (req, res) => {
+// Health check endpoints
+const healthCheck = (req: express.Request, res: express.Response) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -67,7 +78,10 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV,
     version: process.env.npm_package_version || '1.0.0'
   })
-})
+}
+
+app.get('/health', healthCheck)
+app.get('/api/health', healthCheck)
 
 // API Routes
 app.use('/api/auth', authRoutes)
@@ -76,6 +90,11 @@ app.use('/api/menu', menuRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/sync', syncRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/loyalty', loyaltyRoutes)
+app.use('/api/payment', paymentRoutes)
+app.use('/api/tables', tablesRoutes)
+app.use('/api/floor-plans', tablesRoutes) // Floor plans use the same router
+app.use('/api/receipts', receiptsRoutes)
 
 // Local endpoints (for restaurant devices)
 app.use('/local', orderRoutes)

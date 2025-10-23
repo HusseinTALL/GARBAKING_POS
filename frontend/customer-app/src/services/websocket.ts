@@ -1,16 +1,10 @@
 /**
- * WebSocket service for real-time communication
+ * WebSocket service for real-time communication using Socket.io
  * Handles order status updates, notifications, and live updates
  */
 
+import { io, Socket } from 'socket.io-client'
 import { useToast } from 'vue-toastification'
-import { useNetworkStore } from '@/stores/network'
-
-interface SocketMessage {
-  type: string
-  data: any
-  timestamp: string
-}
 
 interface OrderUpdateMessage {
   orderId: string
@@ -21,130 +15,124 @@ interface OrderUpdateMessage {
 }
 
 class WebSocketService {
-  private socket: WebSocket | null = null
-  private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
-  private reconnectInterval = 1000 // Start with 1 second
-  private maxReconnectInterval = 30000 // Max 30 seconds
-  private heartbeatInterval: ReturnType<typeof setInterval> | null = null
+  private socket: Socket | null = null
   private isIntentionallyClosed = false
   private listeners: Map<string, Set<(data: any) => void>> = new Map()
+  private toast = useToast()
 
   constructor() {
-    this.initializeEventListeners()
+    // Initialize service
   }
 
   /**
-   * Connect to WebSocket server
+   * Connect to Socket.io server
    */
   connect(orderNumber?: string): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-        const host = window.location.hostname
-        const port = import.meta.env.VITE_SOCKET_PORT || '8001'
+        // Use Vite proxy - connect to same host/port as API
+        const socketUrl = window.location.origin
 
-        // Try local network first, then fallback to configured URL
-        const socketUrl = `${protocol}//${host}:${port}/customer`
+        console.log('[Socket.io] Connecting to:', socketUrl)
 
-        console.log('[WS] Connecting to:', socketUrl)
+        this.socket = io(socketUrl, {
+          path: '/socket.io',
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
+          timeout: 10000
+        })
 
-        this.socket = new WebSocket(socketUrl)
         this.isIntentionallyClosed = false
 
-        this.socket.onopen = () => {
-          console.log('[WS] Connected successfully')
-          this.reconnectAttempts = 0
-          this.reconnectInterval = 1000
+        this.socket.on('connect', () => {
+          console.log('[Socket.io] Connected successfully, ID:', this.socket?.id)
 
-          // Send authentication/identification
-          this.send('CUSTOMER_CONNECT', {
-            clientId: this.generateClientId(),
-            orderNumber: orderNumber || null,
-            timestamp: new Date().toISOString()
-          })
-
-          // Start heartbeat
-          this.startHeartbeat()
+          // Subscribe to order updates if order number provided
+          if (orderNumber) {
+            this.subscribeToOrder(orderNumber)
+          }
 
           resolve()
-        }
+        })
 
-        this.socket.onmessage = (event) => {
-          this.handleMessage(event.data)
-        }
+        this.socket.on('disconnect', (reason) => {
+          console.log('[Socket.io] Disconnected:', reason)
+        })
 
-        this.socket.onclose = (event) => {
-          console.log('[WS] Connection closed:', event.code, event.reason)
-          this.cleanup()
-
-          if (!this.isIntentionallyClosed) {
-            this.scheduleReconnect()
-          }
-        }
-
-        this.socket.onerror = (error) => {
-          console.error('[WS] Connection error:', error)
+        this.socket.on('connect_error', (error) => {
+          console.error('[Socket.io] Connection error:', error)
           reject(error)
-        }
+        })
+
+        // Listen for order status updates
+        this.socket.on('order_status', (data) => {
+          console.log('[Socket.io] Order status update:', data)
+          this.handleOrderUpdate(data)
+        })
+
+        // Listen for order updates (broadcasted when status changes)
+        this.socket.on('order_updated', (data) => {
+          console.log('[Socket.io] Order updated:', data)
+          this.handleOrderUpdate(data)
+        })
+
+        // Listen for errors
+        this.socket.on('error', (error) => {
+          console.error('[Socket.io] Server error:', error)
+          this.toast.error(error.message || 'Une erreur est survenue')
+        })
 
       } catch (error) {
-        console.error('[WS] Failed to create WebSocket:', error)
+        console.error('[Socket.io] Failed to create socket:', error)
         reject(error)
       }
     })
   }
 
   /**
-   * Disconnect from WebSocket server
+   * Disconnect from Socket.io server
    */
   disconnect(): void {
-    console.log('[WS] Disconnecting...')
+    console.log('[Socket.io] Disconnecting...')
     this.isIntentionallyClosed = true
 
     if (this.socket) {
-      this.socket.close(1000, 'Client disconnect')
-    }
-
-    this.cleanup()
-  }
-
-  /**
-   * Send message to server
-   */
-  send(type: string, data: any): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      const message: SocketMessage = {
-        type,
-        data,
-        timestamp: new Date().toISOString()
-      }
-
-      this.socket.send(JSON.stringify(message))
-      console.log('[WS] Sent:', type, data)
-    } else {
-      console.warn('[WS] Cannot send message, socket not connected')
+      this.socket.disconnect()
+      this.socket = null
     }
   }
 
   /**
    * Subscribe to specific message types
    */
-  subscribe(messageType: string, callback: (data: any) => void): () => void {
-    if (!this.listeners.has(messageType)) {
-      this.listeners.set(messageType, new Set())
+  subscribe(eventName: string, callback: (data: any) => void): () => void {
+    if (!this.listeners.has(eventName)) {
+      this.listeners.set(eventName, new Set())
     }
 
-    this.listeners.get(messageType)!.add(callback)
+    this.listeners.get(eventName)!.add(callback)
+
+    // Also listen on socket if connected
+    if (this.socket) {
+      this.socket.on(eventName, callback)
+    }
 
     // Return unsubscribe function
     return () => {
-      const callbacks = this.listeners.get(messageType)
+      const callbacks = this.listeners.get(eventName)
       if (callbacks) {
         callbacks.delete(callback)
         if (callbacks.size === 0) {
-          this.listeners.delete(messageType)
+          this.listeners.delete(eventName)
         }
+      }
+
+      // Remove from socket
+      if (this.socket) {
+        this.socket.off(eventName, callback)
       }
     }
   }
@@ -152,18 +140,37 @@ class WebSocketService {
   /**
    * Subscribe to order updates for a specific order
    */
-  subscribeToOrder(orderNumber: string, callback: (data: OrderUpdateMessage) => void): () => void {
-    // Subscribe to order updates
-    const unsubscribe = this.subscribe('ORDER_UPDATE', (data) => {
-      if (data.orderNumber === orderNumber) {
-        callback(data)
-      }
-    })
+  subscribeToOrder(orderNumber: string, callback?: (data: OrderUpdateMessage) => void): () => void {
+    console.log('[Socket.io] Subscribing to order:', orderNumber)
 
-    // Request to track specific order
-    this.send('TRACK_ORDER', { orderNumber })
+    // Request order status updates
+    if (this.socket?.connected) {
+      this.socket.emit('get_order_status', orderNumber)
+    }
 
-    return unsubscribe
+    // Subscribe to order_status and order_updated events
+    const unsubscribeFuncs: Array<() => void> = []
+
+    if (callback) {
+      const unsubscribe1 = this.subscribe('order_status', (data) => {
+        if (data.orderNumber === orderNumber) {
+          callback(data)
+        }
+      })
+
+      const unsubscribe2 = this.subscribe('order_updated', (data) => {
+        if (data.orderNumber === orderNumber) {
+          callback(data)
+        }
+      })
+
+      unsubscribeFuncs.push(unsubscribe1, unsubscribe2)
+    }
+
+    // Return combined unsubscribe function
+    return () => {
+      unsubscribeFuncs.forEach(fn => fn())
+    }
   }
 
   /**
@@ -171,264 +178,116 @@ class WebSocketService {
    */
   getConnectionStatus(): string {
     if (!this.socket) return 'disconnected'
-
-    switch (this.socket.readyState) {
-      case WebSocket.CONNECTING:
-        return 'connecting'
-      case WebSocket.OPEN:
-        return 'connected'
-      case WebSocket.CLOSING:
-        return 'disconnecting'
-      case WebSocket.CLOSED:
-        return 'disconnected'
-      default:
-        return 'unknown'
-    }
+    return this.socket.connected ? 'connected' : 'disconnected'
   }
 
   /**
    * Check if connected
    */
   isConnected(): boolean {
-    return this.socket?.readyState === WebSocket.OPEN
-  }
-
-  /**
-   * Handle incoming messages
-   */
-  private handleMessage(rawData: string): void {
-    try {
-      const message: SocketMessage = JSON.parse(rawData)
-      console.log('[WS] Received:', message.type, message.data)
-
-      // Emit to specific listeners
-      const callbacks = this.listeners.get(message.type)
-      if (callbacks) {
-        callbacks.forEach(callback => {
-          try {
-            callback(message.data)
-          } catch (error) {
-            console.error('[WS] Error in message callback:', error)
-          }
-        })
-      }
-
-      // Handle specific message types
-      switch (message.type) {
-        case 'ORDER_UPDATE':
-          this.handleOrderUpdate(message.data)
-          break
-
-        case 'KITCHEN_MESSAGE':
-          this.handleKitchenMessage(message.data)
-          break
-
-        case 'SYSTEM_NOTIFICATION':
-          this.handleSystemNotification(message.data)
-          break
-
-        case 'PONG':
-          // Heartbeat response
-          break
-
-        default:
-          console.log('[WS] Unhandled message type:', message.type)
-      }
-
-    } catch (error) {
-      console.error('[WS] Failed to parse message:', error, rawData)
-    }
+    return this.socket?.connected || false
   }
 
   /**
    * Handle order status updates
    */
-  private handleOrderUpdate(data: OrderUpdateMessage): void {
-    const toast = useToast()
-
-    // Show notification based on status
-    switch (data.status) {
-      case 'CONFIRMED':
-        toast.success(`Commande #${data.orderNumber} confirmée !`)
-        break
-
-      case 'PREPARING':
-        toast.info(`Votre commande #${data.orderNumber} est en préparation`)
-        break
-
-      case 'READY':
-        toast.success(`Commande #${data.orderNumber} prête ! 🔔`, {
-          timeout: 10000
-        })
-        break
-
-      case 'SERVED':
-        toast.success(`Commande #${data.orderNumber} servie. Bon appétit ! 🍽️`)
-        break
-
-      case 'CANCELLED':
-        toast.error(`Commande #${data.orderNumber} annulée`)
-        break
+  private handleOrderUpdate(data: any): void {
+    const orderData: OrderUpdateMessage = {
+      orderId: data.id || data.orderId,
+      orderNumber: data.orderNumber,
+      status: data.status,
+      estimatedTime: data.estimatedTime,
+      kitchenNotes: data.kitchenNotes
     }
 
-    // Show browser notification if permission granted
-    this.showBrowserNotification(data)
-  }
-
-  /**
-   * Handle kitchen messages
-   */
-  private handleKitchenMessage(data: any): void {
-    const toast = useToast()
-
-    if (data.message) {
-      toast.info(`Message de la cuisine: ${data.message}`, {
-        timeout: 8000
+    // Emit to listeners
+    const callbacks = this.listeners.get('ORDER_UPDATE')
+    if (callbacks) {
+      callbacks.forEach(callback => {
+        try {
+          callback(orderData)
+        } catch (error) {
+          console.error('[Socket.io] Error in callback:', error)
+        }
       })
     }
+
+    // Show toast notification based on status
+    this.showStatusNotification(orderData)
   }
 
   /**
-   * Handle system notifications
+   * Show toast notification for order status changes
    */
-  private handleSystemNotification(data: any): void {
-    const toast = useToast()
+  private showStatusNotification(data: OrderUpdateMessage): void {
+    const statusMessages: Record<string, { message: string; type: 'success' | 'info' | 'warning' | 'error' }> = {
+      PENDING: {
+        message: `Commande #${data.orderNumber} reçue`,
+        type: 'info'
+      },
+      CONFIRMED: {
+        message: `Commande #${data.orderNumber} confirmée ! ✓`,
+        type: 'success'
+      },
+      PREPARING: {
+        message: `Votre commande est en préparation... 👨‍🍳`,
+        type: 'info'
+      },
+      READY: {
+        message: `Commande #${data.orderNumber} prête ! 🔔`,
+        type: 'success'
+      },
+      COMPLETED: {
+        message: `Commande #${data.orderNumber} servie. Bon appétit ! 🍽️`,
+        type: 'success'
+      },
+      CANCELLED: {
+        message: `Commande #${data.orderNumber} annulée`,
+        type: 'error'
+      }
+    }
 
-    switch (data.type) {
-      case 'info':
-        toast.info(data.message)
-        break
-      case 'warning':
-        toast.warning(data.message)
-        break
-      case 'error':
-        toast.error(data.message)
-        break
-      default:
-        toast(data.message)
+    const notification = statusMessages[data.status]
+    if (notification) {
+      const toastOptions = {
+        timeout: data.status === 'READY' ? 10000 : 5000
+      }
+
+      switch (notification.type) {
+        case 'success':
+          this.toast.success(notification.message, toastOptions)
+          break
+        case 'info':
+          this.toast.info(notification.message, toastOptions)
+          break
+        case 'warning':
+          this.toast.warning(notification.message, toastOptions)
+          break
+        case 'error':
+          this.toast.error(notification.message, toastOptions)
+          break
+      }
+
+      // Show browser notification if permission granted
+      this.showBrowserNotification(data, notification.message)
     }
   }
 
   /**
    * Show browser notification
    */
-  private showBrowserNotification(data: OrderUpdateMessage): void {
+  private showBrowserNotification(data: OrderUpdateMessage, message: string): void {
     if (!('Notification' in window) || Notification.permission !== 'granted') {
       return
     }
 
-    const statusMessages = {
-      CONFIRMED: 'Votre commande a été confirmée',
-      PREPARING: 'Votre commande est en préparation',
-      READY: 'Votre commande est prête !',
-      SERVED: 'Votre commande a été servie',
-      CANCELLED: 'Votre commande a été annulée'
-    }
-
-    const message = statusMessages[data.status as keyof typeof statusMessages] || 'Mise à jour de commande'
-
-    new Notification(`Commande #${data.orderNumber}`, {
+    new Notification(`Garbaking - Commande #${data.orderNumber}`, {
       body: message,
       icon: '/icons/icon-192x192.png',
       badge: '/icons/badge-72x72.png',
       tag: `order-${data.orderNumber}`,
       requireInteraction: data.status === 'READY',
-      actions: [
-        {
-          action: 'view',
-          title: 'Voir la commande'
-        }
-      ]
-    })
-  }
-
-  /**
-   * Start heartbeat to keep connection alive
-   */
-  private startHeartbeat(): void {
-    this.heartbeatInterval = setInterval(() => {
-      if (this.isConnected()) {
-        this.send('PING', { timestamp: Date.now() })
-      }
-    }, 30000) // Every 30 seconds
-  }
-
-  /**
-   * Schedule reconnection attempt
-   */
-  private scheduleReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('[WS] Max reconnection attempts reached')
-      return
-    }
-
-    const networkStore = useNetworkStore()
-    if (!networkStore.isOnline) {
-      console.log('[WS] Device is offline, skipping reconnect')
-      return
-    }
-
-    this.reconnectAttempts++
-    console.log(`[WS] Scheduling reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${this.reconnectInterval}ms`)
-
-    setTimeout(() => {
-      if (!this.isIntentionallyClosed) {
-        this.connect().catch(error => {
-          console.error('[WS] Reconnection failed:', error)
-
-          // Exponential backoff
-          this.reconnectInterval = Math.min(
-            this.reconnectInterval * 1.5,
-            this.maxReconnectInterval
-          )
-        })
-      }
-    }, this.reconnectInterval)
-  }
-
-  /**
-   * Clean up resources
-   */
-  private cleanup(): void {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval)
-      this.heartbeatInterval = null
-    }
-
-    this.socket = null
-  }
-
-  /**
-   * Generate unique client ID
-   */
-  private generateClientId(): string {
-    return `customer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-  }
-
-  /**
-   * Initialize event listeners for app lifecycle
-   */
-  private initializeEventListeners(): void {
-    // Handle page visibility changes
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && !this.isConnected() && !this.isIntentionallyClosed) {
-        console.log('[WS] Page became visible, attempting to reconnect')
-        this.connect().catch(console.error)
-      }
-    })
-
-    // Handle network connectivity changes
-    window.addEventListener('online', () => {
-      if (!this.isConnected() && !this.isIntentionallyClosed) {
-        console.log('[WS] Network back online, attempting to reconnect')
-        this.reconnectAttempts = 0 // Reset attempts on network recovery
-        this.connect().catch(console.error)
-      }
-    })
-
-    window.addEventListener('offline', () => {
-      console.log('[WS] Network went offline')
-      this.disconnect()
+      vibrate: data.status === 'READY' ? [200, 100, 200] : undefined
     })
   }
 

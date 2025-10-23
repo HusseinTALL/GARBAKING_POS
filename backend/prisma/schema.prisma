@@ -40,7 +40,8 @@ model Category {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  menuItems MenuItem[]
+  menuItems        MenuItem[]
+  loyaltyCampaigns LoyaltyCampaign[]
 
   @@map("categories")
 }
@@ -67,28 +68,33 @@ model ModifierGroup {
 
 // Customer Management
 model Customer {
-  id          String   @id @default(uuid())
-  firstName   String?
-  lastName    String?
-  email       String?  @unique
-  phone       String?  @unique
-  dateOfBirth DateTime?
-  address     String?
-  city        String?
-  zipCode     String?
-  isActive    Boolean  @default(true)
-  loyaltyPoints Int    @default(0)
-  totalSpent    Float  @default(0)
-  visitCount    Int    @default(0)
+  id            String   @id @default(uuid())
+  firstName     String?
+  lastName      String?
+  email         String?  @unique
+  phone         String?  @unique
+  dateOfBirth   DateTime?
+  address       String?
+  city          String?
+  zipCode       String?
+  isActive      Boolean  @default(true)
+  loyaltyPoints Int      @default(0)
+  totalSpent    Float    @default(0)
+  visitCount    Int      @default(0)
   lastVisit     DateTime?
+  loyaltyTierId String?  // Current loyalty tier
+  joinDate      DateTime @default(now()) // When they joined loyalty program
   notes         String?
   storeId       String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   // Relations
-  orders         Order[]
-  loyaltyRewards LoyaltyReward[]
+  orders               Order[]
+  loyaltyRewards       LoyaltyReward[]
+  loyaltyRedemptions   LoyaltyRedemption[]
+  loyaltyTier          LoyaltyTier?           @relation(fields: [loyaltyTierId], references: [id])
+  campaignUsages       LoyaltyCampaignUsage[]
 
   @@map("customers")
 }
@@ -528,23 +534,145 @@ model PurchaseOrderItem {
   @@map("purchase_order_items")
 }
 
-// Loyalty and Rewards
+// Loyalty and Rewards System
+model LoyaltyProgram {
+  id                String   @id @default(uuid())
+  name              String
+  description       String?
+  pointsPerDollar   Float    @default(1.0) // Points earned per dollar spent
+  dollarPerPoint    Float    @default(0.01) // Redemption value (1 point = $0.01)
+  minPointsRedeem   Int      @default(100) // Minimum points to redeem
+  maxPointsPerOrder Int?     // Maximum points that can be redeemed per order
+  signupBonus       Int      @default(0)   // Bonus points for signing up
+  birthdayBonus     Int      @default(0)   // Bonus points on birthday
+  referralBonus     Int      @default(0)   // Bonus points for referrals
+  pointsExpireDays  Int?     // Days until points expire (null = never)
+  isActive          Boolean  @default(true)
+  startDate         DateTime @default(now())
+  endDate           DateTime?
+  storeId           String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  tiers    LoyaltyTier[]
+  campaigns LoyaltyCampaign[]
+
+  @@map("loyalty_programs")
+}
+
+model LoyaltyTier {
+  id             String   @id @default(uuid())
+  programId      String
+  name           String   // Bronze, Silver, Gold, Platinum
+  minSpent       Float    @default(0)    // Minimum spent to reach tier
+  minVisits      Int      @default(0)    // Minimum visits to reach tier
+  pointsMultiplier Float  @default(1.0)  // Points multiplier for this tier
+  discountPercent  Float  @default(0)    // Automatic discount percentage
+  freeDelivery     Boolean @default(false)
+  prioritySupport  Boolean @default(false)
+  birthdayReward   Float   @default(0)    // Special birthday reward
+  color            String? // UI color for tier badge
+  icon             String? // Icon for tier
+  description      String?
+  benefits         String? // JSON array of benefit descriptions
+  isActive         Boolean @default(true)
+  sortOrder        Int     @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  program   LoyaltyProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  customers Customer[]
+
+  @@map("loyalty_tiers")
+}
+
+model LoyaltyCampaign {
+  id             String   @id @default(uuid())
+  programId      String
+  name           String
+  description    String?
+  type           String   // DOUBLE_POINTS, BONUS_POINTS, CATEGORY_MULTIPLIER, SPEND_THRESHOLD
+  pointsBonus    Int      @default(0)    // Bonus points to award
+  multiplier     Float    @default(1.0)  // Points multiplier
+  minSpend       Float?   // Minimum spend requirement
+  categoryId     String?  // Category restriction
+  menuItemId     String?  // Specific item restriction
+  maxRedemptions Int?     // Maximum number of redemptions
+  usageCount     Int      @default(0)    // Current usage count
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean  @default(true)
+  storeId        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  program        LoyaltyProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  category       Category?      @relation(fields: [categoryId], references: [id])
+  menuItem       MenuItem?      @relation(fields: [menuItemId], references: [id])
+  campaignUsages LoyaltyCampaignUsage[]
+
+  @@map("loyalty_campaigns")
+}
+
+model LoyaltyCampaignUsage {
+  id          String   @id @default(uuid())
+  campaignId  String
+  customerId  String
+  orderId     String
+  pointsAwarded Int
+  createdAt   DateTime @default(now())
+
+  // Relations
+  campaign LoyaltyCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("loyalty_campaign_usages")
+}
+
 model LoyaltyReward {
   id         String   @id @default(uuid())
   customerId String
-  type       String   // POINTS_EARNED, POINTS_REDEEMED, REWARD_ISSUED, REWARD_REDEEMED
+  type       String   // POINTS_EARNED, POINTS_REDEEMED, SIGNUP_BONUS, BIRTHDAY_BONUS, CAMPAIGN_BONUS, TIER_BONUS, REFERRAL_BONUS
   points     Int      @default(0)
   value      Float?   // Monetary value if applicable
   orderId    String?  // Associated order
+  campaignId String?  // Associated campaign
   reason     String?
+  description String? // User-friendly description
+  metadata   String?  // JSON metadata for tracking additional info
   expiresAt  DateTime?
   isActive   Boolean  @default(true)
+  processedAt DateTime?
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@map("loyalty_rewards")
+}
+
+model LoyaltyRedemption {
+  id            String   @id @default(uuid())
+  customerId    String
+  orderId       String?
+  pointsUsed    Int
+  discountValue Float    // Dollar value of discount applied
+  type          String   // DISCOUNT, FREE_ITEM, PERCENTAGE_OFF
+  description   String
+  status        String   @default("PENDING") // PENDING, APPLIED, CANCELLED, EXPIRED
+  appliedAt     DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("loyalty_redemptions")
 }
 
 // Enhanced User Relations
@@ -607,6 +735,7 @@ model MenuItem {
   variants        MenuItemVariant[]
   inventoryItems  InventoryItem[]
   recipes         Recipe[]
+  loyaltyCampaigns LoyaltyCampaign[]
 
   @@map("menu_items")
 }

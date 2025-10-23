@@ -1,237 +1,80 @@
+<!--
+  Dashboard View - Rebuilt with Modern Dark Theme
+  Main analytics dashboard showing key metrics, recent orders, and insights
+  Design based on Jaegar Resto UI specifications
+-->
 <template>
-  <div class="dashboard bg-gray-900 text-gray-100 min-h-screen">
-    <!-- Header -->
-    <div class="dashboard-header bg-gray-800 border-b border-gray-700 px-6 py-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-white">Dashboard</h1>
-          <p class="text-gray-400 mt-1">{{ currentTime }} • {{ formatDate(new Date()) }}</p>
-        </div>
-        <div class="flex items-center space-x-4">
-          <div
-            class="px-3 py-1 rounded-full text-sm font-medium"
-            :class="ordersStore.isConnected ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'"
-          >
-            {{ ordersStore.isConnected ? 'Online' : 'Offline' }}
-          </div>
-          <button
-            @click="refreshData"
-            :disabled="isLoading"
-            class="p-2 text-gray-400 hover:text-gray-200 rounded-lg hover:bg-gray-700 disabled:opacity-50"
-          >
-            <RefreshCw :class="{ 'animate-spin': isLoading }" class="w-5 h-5" />
-          </button>
-        </div>
+  <div class="dashboard-container">
+    <!-- Top Header Bar -->
+    <div class="dashboard-header">
+      <div class="header-left">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">{{ currentTime }} • {{ formatDate(new Date()) }}</p>
+      </div>
+      <div class="header-right">
+        <select v-model="dateFilter" class="filter-dropdown">
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+        <button @click="refreshData" :disabled="isLoading" class="refresh-btn">
+          <RefreshCw :class="{ 'animate-spin': isLoading }" class="w-5 h-5" />
+        </button>
       </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="p-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Card -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-400">Today's Orders</p>
-              <p class="text-3xl font-bold text-white">{{ ordersStore.orderStats.today }}</p>
-              <p class="text-sm text-green-400 mt-1">+{{ Math.floor(Math.random() * 20) + 5 }}% from yesterday</p>
-            </div>
-            <div class="p-3 bg-blue-900 rounded-lg">
-              <ShoppingBag class="w-6 h-6 text-blue-400" />
-            </div>
-          </div>
-        </div>
+    <!-- Metrics Cards Row -->
+    <div class="metrics-row">
+      <MetricCard
+        label="Total Revenue"
+        :value="ordersStore.orderStats.revenue"
+        :change="32.40"
+        :icon="DollarSign"
+        icon-color="orange"
+        format-as="currency"
+      />
+      <MetricCard
+        label="Total Dishes Ordered"
+        :value="totalDishesOrdered"
+        :change="-12.40"
+        :icon="ShoppingBag"
+        icon-color="green"
+      />
+      <MetricCard
+        label="Total Customers"
+        :value="totalCustomers"
+        :change="2.40"
+        :icon="Users"
+        icon-color="blue"
+      />
+    </div>
 
-        <!-- Revenue -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-400">Today's Revenue</p>
-              <p class="text-3xl font-bold text-white">{{ formatPrice(ordersStore.orderStats.revenue) }}</p>
-              <p class="text-sm text-green-400 mt-1">+{{ Math.floor(Math.random() * 15) + 8 }}% from yesterday</p>
-            </div>
-            <div class="p-3 bg-green-900 rounded-lg">
-              <DollarSign class="w-6 h-6 text-green-400" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Active Orders -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-400">Active Orders</p>
-              <p class="text-3xl font-bold text-white">{{ ordersStore.activeOrders.length }}</p>
-              <p class="text-sm text-yellow-400 mt-1">{{ ordersStore.pendingOrders.length }} pending</p>
-            </div>
-            <div class="p-3 bg-yellow-900 rounded-lg">
-              <Clock class="w-6 h-6 text-yellow-400" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Avg Order -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-400">Avg Order Value</p>
-              <p class="text-3xl font-bold text-white">{{ formatPrice(averageOrderValue) }}</p>
-              <p class="text-sm text-blue-400 mt-1">{{ Math.floor(Math.random() * 10) + 3 }} items avg</p>
-            </div>
-            <div class="p-3 bg-purple-900 rounded-lg">
-              <TrendingUp class="w-6 h-6 text-purple-400" />
-            </div>
-          </div>
-        </div>
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+      <!-- Left: Order Report Table -->
+      <div class="content-main">
+        <OrderReportTable
+          :orders="recentOrdersForTable"
+          @view-order="viewOrderDetails"
+        />
       </div>
 
-      <!-- Main Content -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Recent Orders -->
-        <div class="lg:col-span-2 bg-gray-800 rounded-lg shadow-md">
-          <div class="p-6 border-b border-gray-700">
-            <div class="flex items-center justify-between">
-              <h2 class="text-lg font-semibold text-white">Recent Orders</h2>
-              <button
-                @click="$router.push('/orders')"
-                class="text-blue-400 hover:text-blue-300 text-sm font-medium"
-              >
-                View All
-              </button>
-            </div>
-          </div>
-          <div class="divide-y divide-gray-700">
-            <div
-              v-for="order in recentOrders.slice(0, 6)"
-              :key="order.id"
-              class="p-6 hover:bg-gray-700 cursor-pointer transition"
-              @click="selectOrder(order)"
-            >
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                  <div class="flex-shrink-0">
-                    <div :class="getStatusColor(order.status)" class="w-3 h-3 rounded-full"></div>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-white">#{{ order.orderNumber }}</p>
-                    <p class="text-sm text-gray-400">{{ order.customerName || 'Walk-in Customer' }}</p>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <p class="text-sm font-medium text-white">{{ formatPrice(order.total) }}</p>
-                  <p class="text-sm text-gray-400">{{ formatTime(order.createdAt) }}</p>
-                </div>
-              </div>
-              <div class="mt-2 flex items-center justify-between text-xs text-gray-400">
-                <span>{{ order.items.length }} items • Table {{ order.tableNumber || 'N/A' }}</span>
-                <span :class="getStatusTextColor(order.status)" class="font-medium capitalize">
-                  {{ order.status.toLowerCase() }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Right: Panels -->
+      <div class="content-sidebar">
+        <!-- Most Ordered Dishes -->
+        <MostOrderedPanel :dishes="mostOrderedDishes" />
 
-        <!-- Right Sidebar -->
-        <div class="space-y-6">
-          <!-- Quick Actions -->
-          <div class="bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-semibold text-white mb-4">Quick Actions</h2>
-            <div class="space-y-3">
-              <button
-                @click="$router.push('/orders/new')"
-                class="w-full flex items-center space-x-3 p-3 text-left bg-blue-900 hover:bg-blue-800 rounded-lg transition"
-              >
-                <Plus class="w-5 h-5 text-blue-400" />
-                <span class="text-blue-300 font-medium">New Order</span>
-              </button>
-              <button
-                @click="$router.push('/menu')"
-                class="w-full flex items-center space-x-3 p-3 text-left bg-gray-700 hover:bg-gray-600 rounded-lg transition"
-              >
-                <Utensils class="w-5 h-5 text-gray-300" />
-                <span class="text-gray-200 font-medium">Manage Menu</span>
-              </button>
-              <button
-                @click="$router.push('/tables')"
-                class="w-full flex items-center space-x-3 p-3 text-left bg-gray-700 hover:bg-gray-600 rounded-lg transition"
-              >
-                <Grid3X3 class="w-5 h-5 text-gray-300" />
-                <span class="text-gray-200 font-medium">Table Management</span>
-              </button>
-              <button
-                @click="$router.push('/analytics')"
-                class="w-full flex items-center space-x-3 p-3 text-left bg-gray-700 hover:bg-gray-600 rounded-lg transition"
-              >
-                <BarChart3 class="w-5 h-5 text-gray-300" />
-                <span class="text-gray-200 font-medium">View Analytics</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- System Status -->
-          <div class="bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-semibold text-white mb-4">System Status</h2>
-            <div class="space-y-4 text-sm">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>POS System</span>
-                </div>
-                <span class="text-green-400 font-medium">Online</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Kitchen Display</span>
-                </div>
-                <span class="text-green-400 font-medium">Connected</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <span>Receipt Printer</span>
-                </div>
-                <span class="text-yellow-400 font-medium">Warning</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Database</span>
-                </div>
-                <span class="text-green-400 font-medium">Synced</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Today's Summary -->
-          <div class="bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-semibold text-white mb-4">Today's Summary</h2>
-            <div class="space-y-3 text-sm">
-              <div class="flex justify-between">
-                <span class="text-gray-400">Peak Hour</span>
-                <span class="font-medium text-white">12:00 - 13:00</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-400">Top Item</span>
-                <span class="font-medium text-white">Margherita Pizza</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-400">Avg Wait Time</span>
-                <span class="font-medium text-white">12 min</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-gray-400">Customer Satisfaction</span>
-                <div class="flex items-center space-x-1">
-                  <Star class="w-4 h-4 text-yellow-400 fill-current" />
-                  <span class="font-medium text-white">4.8</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- Order Type Chart -->
+        <OrderTypeChart :order-types="orderTypeData" />
       </div>
     </div>
+
+    <!-- Order Details Modal -->
+    <OrderDetailsModal
+      v-if="showOrderModal && selectedOrderForModal"
+      :order="selectedOrderForModal"
+      @close="closeOrderModal"
+    />
   </div>
 </template>
 
@@ -239,71 +82,137 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useOrdersStore } from '@/stores/orders'
-import {
-  Clock,
-  ShoppingBag,
-  RefreshCw,
-  DollarSign,
-  TrendingUp,
-  Plus,
-  Utensils,
-  Grid3X3,
-  BarChart3,
-  Star
-} from 'lucide-vue-next'
+import MetricCard from '@/components/dashboard/MetricCard.vue'
+import OrderReportTable from '@/components/dashboard/OrderReportTable.vue'
+import MostOrderedPanel from '@/components/dashboard/MostOrderedPanel.vue'
+import OrderTypeChart from '@/components/dashboard/OrderTypeChart.vue'
+import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue'
+import { DollarSign, ShoppingBag, Users, RefreshCw } from 'lucide-vue-next'
 
 const router = useRouter()
 const ordersStore = useOrdersStore()
 
 const isLoading = ref(false)
 const currentTime = ref('')
+const dateFilter = ref('today')
+const showOrderModal = ref(false)
+const selectedOrderForModal = ref(null)
 
-const recentOrders = computed(() =>
-  ordersStore.orders.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-)
-
-const averageOrderValue = computed(() => {
-  const todayOrders = ordersStore.todayOrders
-  if (todayOrders.length === 0) return 0
-  return todayOrders.reduce((sum, order) => sum + order.total, 0) / todayOrders.length
+// Computed properties for metrics
+const totalDishesOrdered = computed(() => {
+  return ordersStore.orders.reduce((total, order) => {
+    return total + (order.orderItems?.length || order.items?.length || 0)
+  }, 0)
 })
 
-const formatPrice = (amount: number): string =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(amount)
+const totalCustomers = computed(() => {
+  const uniqueCustomers = new Set()
+  ordersStore.orders.forEach(order => {
+    if (order.customerName) {
+      uniqueCustomers.add(order.customerName)
+    }
+  })
+  return uniqueCustomers.size
+})
 
+// Recent orders formatted for table
+const recentOrdersForTable = computed(() => {
+  return ordersStore.orders
+    .slice()
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 10)
+    .map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName || 'Walk-in Customer',
+      customerPhone: order.customerPhone || 'N/A',
+      orderItems: order.orderItems || order.items || [],
+      total: order.total,
+      status: order.status,
+      createdAt: order.createdAt
+    }))
+})
+
+// Most ordered dishes data
+const mostOrderedDishes = computed(() => {
+  const dishCounts = new Map()
+
+  ordersStore.orders.forEach(order => {
+    const items = order.orderItems || order.items || []
+    items.forEach((item: any) => {
+      const dishName = item.name || item.menuItem?.name || 'Unknown'
+      const dishId = item.menuItemId || item.id
+      const existing = dishCounts.get(dishId) || {
+        id: dishId,
+        name: dishName,
+        image: item.menuItem?.imageUrl || item.imageUrl,
+        count: 0,
+        revenue: 0,
+        trending: 'up'
+      }
+      existing.count += item.quantity || 1
+      existing.revenue += (item.unitPrice || item.price || 0) * (item.quantity || 1)
+      dishCounts.set(dishId, existing)
+    })
+  })
+
+  return Array.from(dishCounts.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3)
+})
+
+// Order type distribution
+const orderTypeData = computed(() => {
+  const typeCounts = {
+    DINE_IN: 0,
+    TAKEOUT: 0,
+    DELIVERY: 0
+  }
+
+  ordersStore.orders.forEach(order => {
+    const type = order.type || order.orderType || 'DINE_IN'
+    if (typeCounts[type] !== undefined) {
+      typeCounts[type]++
+    }
+  })
+
+  const total = Object.values(typeCounts).reduce((sum, count) => sum + count, 0)
+
+  return [
+    {
+      type: 'Dine In',
+      count: typeCounts.DINE_IN,
+      percentage: total > 0 ? Math.round((typeCounts.DINE_IN / total) * 100) : 0,
+      color: '#E91E63'
+    },
+    {
+      type: 'To Go',
+      count: typeCounts.TAKEOUT,
+      percentage: total > 0 ? Math.round((typeCounts.TAKEOUT / total) * 100) : 0,
+      color: '#FF9800'
+    },
+    {
+      type: 'Delivery',
+      count: typeCounts.DELIVERY,
+      percentage: total > 0 ? Math.round((typeCounts.DELIVERY / total) * 100) : 0,
+      color: '#2196F3'
+    }
+  ]
+})
+
+// Helper functions
 const formatDate = (date: Date): string =>
   date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
-const formatTime = (dateString: string): string =>
-  new Date(dateString).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-
-const getStatusColor = (status: string): string => {
-  const colors: Record<string, string> = {
-    PENDING: 'bg-yellow-400',
-    CONFIRMED: 'bg-blue-400',
-    PREPARING: 'bg-orange-400',
-    READY: 'bg-green-400',
-    SERVED: 'bg-gray-400',
-    CANCELLED: 'bg-red-400'
-  }
-  return colors[status] || 'bg-gray-400'
-}
-
-const getStatusTextColor = (status: string): string => {
-  const colors: Record<string, string> = {
-    PENDING: 'text-yellow-400',
-    CONFIRMED: 'text-blue-400',
-    PREPARING: 'text-orange-400',
-    READY: 'text-green-400',
-    SERVED: 'text-gray-400',
-    CANCELLED: 'text-red-400'
-  }
-  return colors[status] || 'text-gray-400'
-}
-
-const selectOrder = (order: any) => {
+const viewOrderDetails = (order: any) => {
   ordersStore.selectOrder(order)
-  router.push(`/orders/${order.id}`)
+  selectedOrderForModal.value = order
+  showOrderModal.value = true
+}
+
+const closeOrderModal = () => {
+  showOrderModal.value = false
+  selectedOrderForModal.value = null
 }
 
 const refreshData = async () => {
@@ -334,3 +243,146 @@ onUnmounted(() => {
   ordersStore.disconnectWebSocket()
 })
 </script>
+
+<style scoped>
+.dashboard-container {
+  background: var(--bg-primary);
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.page-title {
+  font-size: var(--font-size-h1);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  font-size: var(--font-size-body);
+  color: var(--text-secondary);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-dropdown {
+  padding: 10px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-body);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-dropdown:hover {
+  border-color: var(--accent-orange);
+}
+
+.filter-dropdown:focus {
+  outline: none;
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.refresh-btn {
+  padding: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+  background: rgba(255, 107, 53, 0.1);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+}
+
+.content-main {
+  min-width: 0; /* Prevents grid blowout */
+}
+
+.content-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Responsive */
+@media (max-width: 1280px) {
+  .content-grid {
+    grid-template-columns: 1fr 320px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .metrics-row {
+    gap: 16px;
+  }
+
+  .content-grid {
+    gap: 16px;
+  }
+}
+</style>

@@ -285,13 +285,11 @@ const refreshMenu = async () => {
 
 const addToCart = (item: any) => {
   cartStore.addItem({
-    id: `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    menuItemId: item.id,
+    id: item.id,
     name: item.name,
     price: item.price,
-    quantity: 1,
-    imageUrl: item.imageUrl,
-    category: item.category?.name
+    imageUrl: item.imageUrl || item.image,
+    category: typeof item.category === 'string' ? item.category : item.category?.name
   })
 
   toast.success(`${item.name} ajouté au panier`)

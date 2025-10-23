@@ -27,7 +27,7 @@ export interface ApiError {
   details?: any
 }
 
-class ApiService {
+export class ApiService {
   private axiosInstance: AxiosInstance
   private baseURL: string
 

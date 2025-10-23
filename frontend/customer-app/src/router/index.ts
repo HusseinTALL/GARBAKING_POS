@@ -8,22 +8,40 @@ import type { RouteRecordRaw } from 'vue-router'
 
 // Import views
 import Welcome from '@/views/Welcome.vue'
+import Home from '@/views/Home.vue'
 import Menu from '@/views/Menu.vue'
 import Cart from '@/views/Cart.vue'
 import Checkout from '@/views/Checkout.vue'
 import OrderConfirmation from '@/views/OrderConfirmation.vue'
 import OrderStatus from '@/views/OrderStatus.vue'
 import About from '@/views/About.vue'
+import Favorites from '@/views/Favorites.vue'
+import Profile from '@/views/Profile.vue'
+import Vouchers from '@/views/Vouchers.vue'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
+    redirect: '/home'
+  },
+  {
+    path: '/welcome',
     name: 'Welcome',
     component: Welcome,
     meta: {
       title: 'Bienvenue chez Garbaking',
       showHeader: false,
       transition: 'slide-right'
+    }
+  },
+  {
+    path: '/home',
+    name: 'Home',
+    component: Home,
+    meta: {
+      title: 'Menu',
+      showHeader: false,
+      transition: 'slide-left'
     }
   },
   {
@@ -34,6 +52,16 @@ const routes: RouteRecordRaw[] = [
       title: 'Notre Menu',
       showHeader: true,
       transition: 'slide-left'
+    }
+  },
+  {
+    path: '/favorites',
+    name: 'Favorites',
+    component: Favorites,
+    meta: {
+      title: 'Mes Favoris',
+      showHeader: false,
+      transition: 'fade'
     }
   },
   {
@@ -93,9 +121,29 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/vouchers',
+    name: 'Vouchers',
+    component: Vouchers,
+    meta: {
+      title: 'Mes Bons',
+      showHeader: false,
+      transition: 'fade'
+    }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
+    meta: {
+      title: 'Profil',
+      showHeader: false,
+      transition: 'fade'
+    }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
-    redirect: '/'
+    redirect: '/home'
   }
 ]
 

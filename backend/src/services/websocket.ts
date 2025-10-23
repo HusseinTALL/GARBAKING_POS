@@ -45,6 +45,19 @@ export function setupWebSocket(io: SocketIOServer): void {
   // Authentication middleware
   io.use(async (socket: AuthenticatedSocket, next) => {
     try {
+      // Development bypass for admin-pos clients
+      if (process.env.NODE_ENV === 'development' && socket.handshake.query.clientType === 'admin-pos') {
+        console.log('[DEV] WebSocket: Auto-authenticating admin-pos client')
+        socket.user = {
+          id: 'dev-admin-001',
+          email: 'admin@garbaking.dev',
+          name: 'Development Admin',
+          role: 'ADMIN',
+          storeId: 'store_001'
+        }
+        return next()
+      }
+
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '')
 
       if (!token) {
@@ -63,14 +76,14 @@ export function setupWebSocket(io: SocketIOServer): void {
       // Verify JWT token
       const decoded = jwt.verify(token, jwtSecret) as any
 
-      if (!decoded || !decoded.id) {
+      if (!decoded || !decoded.userId) {
         return next(new Error('Invalid token'))
       }
 
       // Get user from database
       const db = getDB()
       const user = await db.user.findUnique({
-        where: { id: decoded.id },
+        where: { id: decoded.userId },
         select: {
           id: true,
           email: true,

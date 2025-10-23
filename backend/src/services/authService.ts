@@ -46,6 +46,7 @@ export interface AuthResponse {
 export interface TokenPayload {
   userId: string;
   email: string;
+  name: string;
   role: string;
   storeId: string;
   sessionId: string;
@@ -365,6 +366,7 @@ class AuthService {
     const payload: TokenPayload = {
       userId: user.id,
       email: user.email,
+      name: user.name,
       role: user.role,
       storeId: user.storeId,
       sessionId,
@@ -385,6 +387,7 @@ class AuthService {
     const payload: TokenPayload = {
       userId: user.id,
       email: user.email,
+      name: user.name,
       role: user.role,
       storeId: user.storeId,
       sessionId,

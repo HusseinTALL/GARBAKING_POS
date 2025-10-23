@@ -219,7 +219,13 @@ export const useMenuStore = defineStore('menu', () => {
       menuItems.value.push(newItem)
       return newItem
     } catch (err: any) {
-      error.value = err.message || 'Failed to create menu item'
+      if (err.status === 401 || err.code === 'UNAUTHORIZED') {
+        error.value = 'Session expired. Please log in with admin credentials to manage menu items.'
+      } else if (err.status === 403 || err.code === 'FORBIDDEN') {
+        error.value = 'Admin or Manager role required to create menu items.'
+      } else {
+        error.value = err.message || 'Failed to create menu item'
+      }
       console.error('Error creating menu item:', err)
       throw err
     } finally {
@@ -240,7 +246,13 @@ export const useMenuStore = defineStore('menu', () => {
       }
       return updatedItem
     } catch (err: any) {
-      error.value = err.message || 'Failed to update menu item'
+      if (err.status === 401 || err.code === 'UNAUTHORIZED') {
+        error.value = 'Session expired. Please log in with admin credentials to manage menu items.'
+      } else if (err.status === 403 || err.code === 'FORBIDDEN') {
+        error.value = 'Admin or Manager role required to modify menu items.'
+      } else {
+        error.value = err.message || 'Failed to update menu item'
+      }
       console.error('Error updating menu item:', err)
       throw err
     } finally {
@@ -274,7 +286,13 @@ export const useMenuStore = defineStore('menu', () => {
       }
       return updatedItem
     } catch (err: any) {
-      error.value = err.message || 'Failed to update item availability'
+      if (err.status === 401 || err.code === 'UNAUTHORIZED') {
+        error.value = 'Session expired. Please log in with admin credentials to manage menu items.'
+      } else if (err.status === 403 || err.code === 'FORBIDDEN') {
+        error.value = 'Admin or Manager role required to modify menu items.'
+      } else {
+        error.value = err.message || 'Failed to update item availability'
+      }
       console.error('Error updating availability:', err)
       throw err
     }

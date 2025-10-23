@@ -1,68 +1,62 @@
 <!--
-  Menu item card component for the PWA ordering system
-  Displays menu items with add to cart functionality and accessibility support
+  Modern minimal menu item card
+  Clean white design with product photo, price, and add button
 -->
 
 <template>
-  <div class="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden">
-    <!-- Image section -->
-    <div class="relative aspect-square bg-gray-100">
+  <div
+    @click="$emit('view-detail', item)"
+    class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer"
+  >
+    <!-- Product Image -->
+    <div class="relative aspect-square bg-gray-50 overflow-hidden">
       <img
         :src="item.image"
         :alt="item.name"
         class="w-full h-full object-cover"
-        :aria-label="item.name"
       />
-
-      <!-- Dietary tags overlay -->
-      <div v-if="item.tags && item.tags.length > 0" class="absolute top-2 left-2 flex flex-wrap gap-1">
-        <span
-          v-for="tag in item.tags"
-          :key="tag"
-          class="px-2 py-1 bg-black bg-opacity-60 text-white text-xs rounded-full backdrop-blur-sm"
-        >
-          {{ $t(`dietary_tags.${tag.replace('-', '_')}`) }}
-        </span>
-      </div>
     </div>
 
-    <!-- Content section -->
+    <!-- Product Info -->
     <div class="p-4">
-      <!-- Category badge -->
-      <div class="mb-2">
-        <span class="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-lg">
-          {{ $t(`categories.${item.category.toLowerCase()}`) }}
-        </span>
-      </div>
-
-      <!-- Item name -->
-      <h3 class="font-bold text-gray-900 text-lg mb-2 line-clamp-2">
+      <!-- Name -->
+      <h3 class="font-semibold text-text-DEFAULT text-base mb-2 line-clamp-2 leading-tight">
         {{ item.name }}
       </h3>
 
-      <!-- Description -->
-      <p class="text-gray-600 text-sm mb-3 line-clamp-2">
-        {{ item.description }}
-      </p>
+      <!-- Price -->
+      <div class="text-lg font-bold text-text-DEFAULT mb-3">
+        {{ formatPrice(item.price) }}
+      </div>
 
-      <!-- Price and action -->
+      <!-- Meta Info & Add Button -->
       <div class="flex items-center justify-between">
-        <div class="flex flex-col">
-          <span class="text-2xl font-bold text-orange-600">
-            {{ formatPrice(item.price) }}
+        <div class="flex items-center gap-3 text-xs text-text-secondary">
+          <!-- Calories -->
+          <span class="flex items-center gap-1">
+            <svg class="w-4 h-4 text-danger-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd" />
+            </svg>
+            44
           </span>
-          <span class="text-xs text-gray-400">
-            {{ item.sku }}
+
+          <!-- Time -->
+          <span class="flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            20 min
           </span>
         </div>
 
+        <!-- Add Button -->
         <button
-          @click="handleAddToCart"
-          :aria-label="$t('add_to_cart') + ' ' + item.name"
-          class="bg-orange-600 text-white p-3 rounded-xl hover:bg-orange-700 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm min-w-[48px] min-h-[48px] flex items-center justify-center"
+          @click.stop="handleAddToCart"
+          class="w-9 h-9 rounded-full bg-primary-500 text-white flex items-center justify-center hover:bg-primary-600 transition-colors shadow-sm"
+          :aria-label="'Add ' + item.name + ' to cart'"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
         </button>
       </div>
@@ -71,7 +65,6 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import type { MenuItem } from '@/services/mockApi'
 
 // Props
@@ -81,17 +74,15 @@ interface Props {
 
 const props = defineProps<Props>()
 
-// Composables
-const { t } = useI18n()
-
 // Emits
 const emit = defineEmits<{
   'add-to-cart': [item: MenuItem]
+  'view-detail': [item: MenuItem]
 }>()
 
 // Methods
 const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
+  return `$${(amount / 1000).toFixed(2)}`
 }
 
 const handleAddToCart = () => {
@@ -100,31 +91,11 @@ const handleAddToCart = () => {
 </script>
 
 <style scoped>
-/* Text truncation utilities */
+/* Text truncation */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-/* Card shadow utilities */
-.shadow-card {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-}
-
-.shadow-card-hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-/* Touch interactions */
-@media (hover: none) and (pointer: coarse) {
-  .hover\:scale-105:hover {
-    transform: none;
-  }
-
-  .active\:scale-95:active {
-    transform: scale(0.95);
-  }
 }
 </style>

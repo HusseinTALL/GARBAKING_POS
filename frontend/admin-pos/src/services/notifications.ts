@@ -61,14 +61,14 @@ class NotificationService {
     maxNotifications: 50
   })
 
-  // Sound configuration
+  // Sound configuration - disabled (sound files not provided)
   private sounds: SoundConfig = {
-    newOrder: '/sounds/new-order.mp3',
-    orderReady: '/sounds/order-ready.mp3',
-    payment: '/sounds/payment.mp3',
-    error: '/sounds/error.mp3',
-    warning: '/sounds/warning.mp3',
-    info: '/sounds/info.mp3'
+    newOrder: '',
+    orderReady: '',
+    payment: '',
+    error: '',
+    warning: '',
+    info: ''
   }
 
   // Audio elements

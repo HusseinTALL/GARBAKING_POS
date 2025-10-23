@@ -4,10 +4,10 @@
 -->
 
 <template>
-  <div class="bg-white rounded-2xl shadow-card p-6 border border-gray-100">
-    <!-- Order header -->
-    <div class="text-center mb-6">
-      <h3 class="text-2xl font-bold text-gray-900 mb-2">
+  <div class="bg-white rounded-xl sm:rounded-2xl shadow-card p-4 sm:p-6 border border-gray-100">
+    <!-- Order header - responsive -->
+    <div class="text-center mb-4 sm:mb-6">
+      <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
         {{ $t('order') }} #{{ order.localOrderId || order.clientOrderId.slice(-8) }}
       </h3>
       <p class="text-gray-600">

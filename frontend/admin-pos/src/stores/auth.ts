@@ -326,6 +326,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('pos_auth_token')
     localStorage.removeItem('pos_refresh_token')
     localStorage.removeItem('pos_user')
+    localStorage.removeItem('pos_last_verified')
 
     // Clear axios header
     delete axios.defaults.headers.common['Authorization']
@@ -357,6 +358,7 @@ export const useAuthStore = defineStore('auth', () => {
     const storedToken = localStorage.getItem('pos_auth_token')
     const storedUser = localStorage.getItem('pos_user')
     const storedRefreshToken = localStorage.getItem('pos_refresh_token')
+    const lastVerified = localStorage.getItem('pos_last_verified')
 
     if (!storedToken || !storedUser || !storedRefreshToken) {
       return false
@@ -367,23 +369,36 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = storedToken
       refreshToken.value = storedRefreshToken
 
-      // Verify the token is still valid by making a test API call
       axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
 
-      try {
-        await axios.get('/api/auth/verify')
-        // Token is valid, set timeout for refresh
+      // Check if token was verified recently (within last 5 minutes)
+      const now = Date.now()
+      const lastVerifiedTime = lastVerified ? parseInt(lastVerified) : 0
+      const fiveMinutesAgo = now - (5 * 60 * 1000)
+
+      // Only verify if it's been more than 5 minutes since last verification
+      if (lastVerifiedTime < fiveMinutesAgo) {
+        try {
+          await axios.get('/api/auth/verify')
+          // Token is valid, update last verified time and set timeout for refresh
+          localStorage.setItem('pos_last_verified', now.toString())
+          setSessionTimeout(15 * 60 * 1000)
+          return true
+        } catch (verifyError) {
+          // Token might be expired, try to refresh
+          const refreshed = await refreshAuthToken()
+          if (refreshed) {
+            localStorage.setItem('pos_last_verified', now.toString())
+            return true
+          } else {
+            clearSession()
+            return false
+          }
+        }
+      } else {
+        // Token was verified recently, assume it's still valid
         setSessionTimeout(15 * 60 * 1000)
         return true
-      } catch (verifyError) {
-        // Token might be expired, try to refresh
-        const refreshed = await refreshAuthToken()
-        if (refreshed) {
-          return true
-        } else {
-          clearSession()
-          return false
-        }
       }
     } catch (err) {
       console.error('Failed to parse stored user data:', err)

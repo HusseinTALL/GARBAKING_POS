@@ -1,4 +1,4 @@
-<!-- 
+<!--
   Menu management view for adding, editing, and organizing menu items and categories
   Provides comprehensive CRUD operations with real-time updates -->
 
@@ -100,34 +100,107 @@
       <div class="flex-1 flex flex-col overflow-hidden">
         <!-- Filters and Search -->
         <div class="p-4 border-b border-gray-700 bg-gray-800">
-          <div class="flex items-center gap-4">
-            <div class="flex-1">
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="Search menu items..."
-                class="input w-full"
-              />
+          <div class="flex flex-col gap-4">
+            <!-- Top row: Search and filters -->
+            <div class="flex items-center gap-4">
+              <div class="flex-1 relative">
+                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search menu items..."
+                  class="input w-full pl-10"
+                />
+              </div>
+              <select v-model="availabilityFilter" class="input">
+                <option value="all">All Items</option>
+                <option value="available">Available Only</option>
+                <option value="unavailable">Unavailable Only</option>
+              </select>
+              <select v-model="sortBy" class="input">
+                <option value="name">Sort by Name</option>
+                <option value="price">Sort by Price</option>
+                <option value="category">Sort by Category</option>
+                <option value="created">Sort by Created Date</option>
+              </select>
+              <button
+                @click="refreshMenu"
+                class="btn btn-secondary"
+                :disabled="menuStore.loading"
+              >
+                <RotateCcw class="w-4 h-4 mr-2" />
+                Refresh
+              </button>
             </div>
-            <select v-model="sortBy" class="input">
-              <option value="name">Sort by Name</option>
-              <option value="price">Sort by Price</option>
-              <option value="category">Sort by Category</option>
-              <option value="created">Sort by Created Date</option>
-            </select>
-            <button
-              @click="refreshMenu"
-              class="btn btn-secondary"
-              :disabled="menuStore.loading"
-            >
-              <RotateCcw class="w-4 h-4 mr-2" />
-              Refresh
-            </button>
+
+            <!-- Bottom row: Bulk actions (shown when items selected) -->
+            <div v-if="selectedItems.length > 0" class="flex items-center justify-between bg-blue-900/20 border border-blue-700/50 rounded-lg p-3">
+              <div class="flex items-center gap-3">
+                <span class="text-blue-400 text-sm font-medium">
+                  {{ selectedItems.length }} item{{ selectedItems.length === 1 ? '' : 's' }} selected
+                </span>
+                <button
+                  @click="selectAll"
+                  class="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  Select All ({{ filteredAndSortedItems.length }})
+                </button>
+                <button
+                  @click="clearSelection"
+                  class="text-gray-400 hover:text-gray-300 text-sm"
+                >
+                  Clear Selection
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  @click="bulkToggleAvailability(true)"
+                  class="btn btn-sm bg-green-600 hover:bg-green-500 text-white"
+                >
+                  <Check class="w-3 h-3 mr-1" />
+                  Enable Selected
+                </button>
+                <button
+                  @click="bulkToggleAvailability(false)"
+                  class="btn btn-sm bg-yellow-600 hover:bg-yellow-500 text-white"
+                >
+                  <X class="w-3 h-3 mr-1" />
+                  Disable Selected
+                </button>
+                <button
+                  @click="confirmBulkDelete"
+                  class="btn btn-sm bg-red-600 hover:bg-red-500 text-white"
+                >
+                  <Trash2 class="w-3 h-3 mr-1" />
+                  Delete Selected
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Menu Items Grid -->
         <div class="flex-1 overflow-y-auto p-6">
+          <!-- Auth Error Banner -->
+          <div v-if="menuStore.error && (menuStore.error.includes('Session expired') || menuStore.error.includes('Admin or Manager role'))"
+               class="mb-6 p-4 bg-yellow-900/50 border border-yellow-700 rounded-lg">
+            <div class="flex items-center gap-3">
+              <AlertTriangle class="w-5 h-5 text-yellow-400" />
+              <div>
+                <h3 class="font-medium text-yellow-200">Authentication Required</h3>
+                <p class="text-sm text-yellow-300 mt-1">{{ menuStore.error }}</p>
+                <div class="mt-3 flex gap-2">
+                  <button @click="goToLogin" class="text-sm bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1 rounded">
+                    Go to Login
+                  </button>
+                  <button @click="menuStore.clearError()" class="text-sm bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded">
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Empty state -->
           <div
             v-if="filteredAndSortedItems.length === 0"
@@ -162,12 +235,23 @@
             <div
               v-for="item in filteredAndSortedItems"
               :key="item.id"
-              class="bg-gray-800 rounded-xl border border-gray-700 shadow card-hover performance-optimized"
+              :class="[
+                'bg-gray-800 rounded-xl border border-gray-700 shadow card-hover performance-optimized relative transition-all duration-200',
+                selectedItems.includes(item.id) ? 'ring-2 ring-blue-500 border-blue-500' : ''
+              ]"
             >
+              <!-- Selection Checkbox -->
+              <div class="absolute top-3 left-3 z-10">
+                <input
+                  type="checkbox"
+                  :checked="selectedItems.includes(item.id)"
+                  @change="toggleItemSelection(item.id)"
+                  class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+              </div>
+
               <!-- Item Image -->
-              <div
-                class="aspect-video bg-gray-700 rounded-t-xl overflow-hidden"
-              >
+              <div class="aspect-video bg-gray-700 rounded-t-xl overflow-hidden relative">
                 <img
                   v-if="item.imageUrl"
                   :src="item.imageUrl"
@@ -180,63 +264,96 @@
                 >
                   <Utensils class="w-12 h-12 text-gray-500" />
                 </div>
+
+                <!-- Availability Badge -->
+                <div class="absolute top-3 right-3">
+                  <span
+                    :class="[
+                      'px-2 py-1 text-xs font-medium rounded-full',
+                      item.isAvailable
+                        ? 'bg-green-500/90 text-white'
+                        : 'bg-red-500/90 text-white'
+                    ]"
+                  >
+                    {{ item.isAvailable ? 'Available' : 'Unavailable' }}
+                  </span>
+                </div>
               </div>
 
               <!-- Item Details -->
               <div class="p-4">
                 <div class="flex items-start justify-between mb-2">
-                  <h3 class="font-semibold text-white truncate">
-                    {{ item.name }}
-                  </h3>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="font-semibold text-white truncate">
+                      {{ item.name }}
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-1">SKU: {{ item.sku }}</p>
+                  </div>
                   <div class="flex items-center gap-1 ml-2">
-                    <!-- Availability Toggle -->
+                    <!-- Quick Availability Toggle -->
                     <button
                       @click="toggleAvailability(item)"
                       :class="[
-                        'w-5 h-5 rounded-full border-2 interactive-fast',
+                        'w-6 h-6 rounded-full border-2 interactive-fast flex items-center justify-center',
                         item.isAvailable
-                          ? 'bg-green-500 border-green-500'
-                          : 'bg-gray-600 border-gray-600'
+                          ? 'bg-green-500 border-green-500 hover:bg-green-600'
+                          : 'bg-gray-600 border-gray-600 hover:bg-gray-500'
                       ]"
-                      style="transition: background-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94); will-change: background-color, border-color;"
+                      :title="item.isAvailable ? 'Click to disable' : 'Click to enable'"
                     >
                       <Check
                         v-if="item.isAvailable"
+                        class="w-3 h-3 text-white"
+                      />
+                      <X
+                        v-else
                         class="w-3 h-3 text-white"
                       />
                     </button>
                   </div>
                 </div>
 
-                <p class="text-sm text-gray-400 mb-3 line-clamp-2">
+                <p class="text-sm text-gray-400 mb-3 line-clamp-2" :title="item.description">
                   {{ item.description }}
                 </p>
 
+                <!-- Price and Category -->
                 <div class="flex items-center justify-between mb-3">
                   <div class="text-lg font-bold text-green-400">
                     {{ formatCurrency(item.price) }}
                   </div>
-                  <div class="text-xs text-gray-500">SKU: {{ item.sku }}</div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-gray-400">
+                  <span class="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">
                     {{ getCategoryName(item.categoryId) }}
                   </span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <Calendar class="w-3 h-3" />
+                    <span>{{ formatDate(item.createdAt) }}</span>
+                  </div>
                   <div class="flex gap-1">
                     <button
                       @click="editItem(item)"
-                      class="p-2 text-gray-400 interactive-fast"
-                      style="transition: color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94); will-change: color;"
+                      class="p-2 text-gray-400 hover:text-blue-400 interactive-fast rounded"
+                      title="Edit item"
                     >
-                      <Edit class="w-3 h-3" />
+                      <Edit class="w-4 h-4" />
+                    </button>
+                    <button
+                      @click="duplicateItem(item)"
+                      class="p-2 text-gray-400 hover:text-yellow-400 interactive-fast rounded"
+                      title="Duplicate item"
+                    >
+                      <Copy class="w-4 h-4" />
                     </button>
                     <button
                       @click="confirmDeleteItem(item)"
-                      class="p-2 text-gray-400 interactive-fast"
-                      style="transition: color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94); will-change: color;"
+                      class="p-2 text-gray-400 hover:text-red-400 interactive-fast rounded"
+                      title="Delete item"
                     >
-                      <Trash2 class="w-3 h-3" />
+                      <Trash2 class="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -247,204 +364,318 @@
       </div>
     </div>
 
-    <!-- Mock Modals -->
-    <div
+    <!-- Category Modal -->
+    <CategoryModal
       v-if="showCategoryModal"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center"
-    >
-      <div class="bg-gray-800 p-6 rounded-xl w-96">
-        <h2 class="text-lg font-bold text-white mb-4">Category Modal</h2>
-        <button
-          class="btn btn-secondary w-full"
-          @click="showCategoryModal = false"
-        >
-          Close
-        </button>
-      </div>
-    </div>
+      :category="editingCategory"
+      @close="closeCategoryModal"
+      @success="handleCategorySuccess"
+    />
 
-    <div
+    <!-- Menu Item Modal -->
+    <MenuItemModal
       v-if="showItemModal"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center"
-    >
-      <div class="bg-gray-800 p-6 rounded-xl w-96">
-        <h2 class="text-lg font-bold text-white mb-4">Item Modal</h2>
-        <button class="btn btn-secondary w-full" @click="showItemModal = false">
-          Close
-        </button>
-      </div>
-    </div>
+      :item="editingItem"
+      @close="closeItemModal"
+      @success="handleItemSuccess"
+    />
 
-    <div
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
       v-if="showDeleteConfirm"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center"
-    >
-      <div class="bg-gray-800 p-6 rounded-xl w-96">
-        <h2 class="text-lg font-bold text-white mb-4">{{ deleteConfirmTitle }}</h2>
-        <p class="text-gray-300 mb-4">{{ deleteConfirmMessage }}</p>
-        <div class="flex gap-2">
-          <button class="btn btn-secondary flex-1" @click="showDeleteConfirm = false">
-            Cancel
-          </button>
-          <button class="btn btn-primary flex-1" @click="handleDeleteConfirm">
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>
+      :title="deleteConfirmTitle"
+      :message="deleteConfirmMessage"
+      :is-destructive="true"
+      :is-loading="isDeleting || isBulkDeleting"
+      :icon="Trash2"
+      :confirm-text="deletingItem?.id === 'bulk-delete' ? 'Delete Selected Items' : 'Delete Item'"
+      :loading-text="deletingItem?.id === 'bulk-delete' ? 'Deleting Items...' : 'Deleting...'"
+      @confirm="handleDeleteConfirm"
+      @cancel="cancelDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { Plus, RotateCcw, Utensils, Check, Edit, Trash2 } from "lucide-vue-next";
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from 'vue-router';
+import { Plus, RotateCcw, Utensils, Check, Edit, Trash2, Search, X, Copy, Calendar, AlertTriangle } from "lucide-vue-next";
+import { useMenuStore, type MenuCategory, type MenuItem } from '@/stores/menu'
+import CategoryModal from '@/components/CategoryModal.vue'
+import MenuItemModal from '@/components/MenuItemModal.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+import { useToast } from 'vue-toastification'
 
-/** 🔹 Mock Menu Store (replace with Pinia later if needed) */
-const menuStore = {
-  loading: false,
-  selectedCategory: null as string | null,
-  categories: ref([
-    { id: "c1", name: "Drinks", description: "Beverages", itemCount: 2 },
-    { id: "c2", name: "Food", description: "Main dishes", itemCount: 2 },
-  ]),
-  menuItems: ref([
-    {
-      id: "i1",
-      name: "Coke",
-      description: "Chilled soft drink",
-      price: 2.5,
-      sku: "DR001",
-      categoryId: "c1",
-      isAvailable: true,
-      imageUrl: "",
-      createdAt: "2025-01-01",
-    },
-    {
-      id: "i2",
-      name: "Burger",
-      description: "Juicy beef burger",
-      price: 8,
-      sku: "FD001",
-      categoryId: "c2",
-      isAvailable: true,
-      imageUrl: "",
-      createdAt: "2025-01-02",
-    },
-  ]),
-  setSelectedCategory(id: string | null) {
-    this.selectedCategory = id;
-  },
-  get categoriesWithCounts() {
-    return this.categories.value.map((c) => ({
-      ...c,
-      itemCount: this.menuItems.value.filter((i) => i.categoryId === c.id).length,
-    }));
-  },
-  categoriesForSelect: computed(() =>
-    menuStore.categories.value.map((c) => ({ label: c.name, value: c.id }))
-  ),
-  fetchMenu() {
-    console.log("Fetching menu...");
-  },
-  addCategory(c) {
-    this.categories.value.push(c);
-  },
-  updateCategory(c) {
-    const idx = this.categories.value.findIndex((x) => x.id === c.id);
-    if (idx > -1) this.categories.value[idx] = c;
-  },
-  addItem(i) {
-    this.menuItems.value.push(i);
-  },
-  updateItem(i) {
-    const idx = this.menuItems.value.findIndex((x) => x.id === i.id);
-    if (idx > -1) this.menuItems.value[idx] = i;
-  },
-  deleteItem(id) {
-    this.menuItems.value = this.menuItems.value.filter((i) => i.id !== id);
-  },
-};
+// Stores and composables
+const menuStore = useMenuStore()
+const toast = useToast()
+const router = useRouter()
 
 // State
-const showCategoryModal = ref(false);
-const showItemModal = ref(false);
-const showDeleteConfirm = ref(false);
+const showCategoryModal = ref(false)
+const showItemModal = ref(false)
+const showDeleteConfirm = ref(false)
 
-const editingCategory = ref(null);
-const editingItem = ref(null);
-const deletingItem = ref(null);
+const editingCategory = ref<MenuCategory | null>(null)
+const editingItem = ref<MenuItem | null>(null)
+const deletingItem = ref<MenuItem | null>(null)
+const isDeleting = ref(false)
 
-const searchQuery = ref("");
-const sortBy = ref("name");
+const searchQuery = ref('')
+const sortBy = ref('name')
+const availabilityFilter = ref('all')
+const selectedItems = ref<string[]>([])
+const isBulkDeleting = ref(false)
 
 // Filtering + Sorting
 const filteredAndSortedItems = computed(() => {
-  let items = menuStore.menuItems.value;
+  let items = menuStore.selectedCategory
+    ? menuStore.filteredMenuItems
+    : menuStore.menuItems
 
+  // Apply search filter
   if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase();
+    const q = searchQuery.value.toLowerCase()
     items = items.filter(
       (i) =>
         i.name.toLowerCase().includes(q) ||
         i.description?.toLowerCase().includes(q) ||
         i.sku?.toLowerCase().includes(q)
-    );
+    )
   }
 
+  // Apply availability filter
+  if (availabilityFilter.value !== 'all') {
+    items = items.filter(i =>
+      availabilityFilter.value === 'available' ? i.isAvailable : !i.isAvailable
+    )
+  }
+
+  // Sort items
   return [...items].sort((a, b) => {
     switch (sortBy.value) {
-      case "price":
-        return a.price - b.price;
-      case "category":
-        return a.categoryId.localeCompare(b.categoryId);
-      case "created":
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'price':
+        return a.price - b.price
+      case 'category':
+        return a.categoryId.localeCompare(b.categoryId)
+      case 'created':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       default:
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name)
     }
-  });
-});
+  })
+})
 
 // Methods
-function refreshMenu() {
-  menuStore.fetchMenu();
-}
-function toggleAvailability(item) {
-  item.isAvailable = !item.isAvailable;
-  menuStore.updateItem(item);
-}
-function editCategory(category) {
-  editingCategory.value = category;
-  showCategoryModal.value = true;
-}
-function editItem(item) {
-  editingItem.value = item;
-  showItemModal.value = true;
-}
-function confirmDeleteItem(item) {
-  deletingItem.value = item;
-  showDeleteConfirm.value = true;
-}
-function handleDeleteConfirm() {
-  if (deletingItem.value) {
-    menuStore.deleteItem(deletingItem.value.id);
+const refreshMenu = async () => {
+  try {
+    await menuStore.refreshMenu()
+    toast.success('Menu refreshed successfully')
+  } catch (error) {
+    toast.error('Failed to refresh menu')
   }
-  showDeleteConfirm.value = false;
-  deletingItem.value = null;
-}
-function formatCurrency(amount) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
-function getCategoryName(categoryId) {
-  const category = menuStore.categories.value.find((c) => c.id === categoryId);
-  return category ? category.name : "Uncategorized";
 }
 
-const deleteConfirmTitle = "Delete Item";
-const deleteConfirmMessage = "Are you sure you want to delete this menu item?";
+const toggleAvailability = async (item: MenuItem) => {
+  try {
+    await menuStore.toggleItemAvailability(item.id, !item.isAvailable)
+    toast.success(`${item.name} ${item.isAvailable ? 'enabled' : 'disabled'}`)
+  } catch (error) {
+    toast.error('Failed to update item availability')
+  }
+}
+
+const editCategory = (category: MenuCategory) => {
+  editingCategory.value = category
+  showCategoryModal.value = true
+}
+
+const editItem = (item: MenuItem) => {
+  editingItem.value = item
+  showItemModal.value = true
+}
+
+const confirmDeleteItem = (item: MenuItem) => {
+  deletingItem.value = item
+  showDeleteConfirm.value = true
+}
+
+const handleDeleteConfirm = async () => {
+  if (!deletingItem.value) return
+
+  // Handle bulk delete
+  if (deletingItem.value.id === 'bulk-delete') {
+    await handleBulkDelete()
+    return
+  }
+
+  // Handle single item delete
+  isDeleting.value = true
+  try {
+    await menuStore.deleteMenuItem(deletingItem.value.id)
+    toast.success('Menu item deleted successfully')
+    cancelDelete()
+  } catch (error) {
+    toast.error('Failed to delete menu item')
+    isDeleting.value = false
+  }
+}
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false
+  deletingItem.value = null
+  isDeleting.value = false
+}
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount)
+}
+
+const getCategoryName = (categoryId: string) => {
+  const category = menuStore.categories.find((c) => c.id === categoryId)
+  return category ? category.name : 'Uncategorized'
+}
+
+// Modal handlers
+const closeCategoryModal = () => {
+  showCategoryModal.value = false
+  editingCategory.value = null
+}
+
+const closeItemModal = () => {
+  showItemModal.value = false
+  editingItem.value = null
+}
+
+const handleCategorySuccess = (category: MenuCategory) => {
+  const action = editingCategory.value ? 'updated' : 'created'
+  toast.success(`Category ${category.name} ${action} successfully`)
+}
+
+const handleItemSuccess = (item: MenuItem) => {
+  const action = editingItem.value ? 'updated' : 'created'
+  toast.success(`Menu item ${item.name} ${action} successfully`)
+}
+
+// Selection Methods
+const toggleItemSelection = (itemId: string) => {
+  const index = selectedItems.value.indexOf(itemId)
+  if (index > -1) {
+    selectedItems.value.splice(index, 1)
+  } else {
+    selectedItems.value.push(itemId)
+  }
+}
+
+const selectAll = () => {
+  selectedItems.value = filteredAndSortedItems.value.map(item => item.id)
+}
+
+const clearSelection = () => {
+  selectedItems.value = []
+}
+
+// Bulk Operations
+const bulkToggleAvailability = async (isAvailable: boolean) => {
+  if (selectedItems.value.length === 0) return
+
+  try {
+    const promises = selectedItems.value.map(itemId =>
+      menuStore.toggleItemAvailability(itemId, isAvailable)
+    )
+    await Promise.all(promises)
+
+    const action = isAvailable ? 'enabled' : 'disabled'
+    toast.success(`${selectedItems.value.length} items ${action} successfully`)
+    clearSelection()
+  } catch (error) {
+    toast.error('Failed to update item availability')
+  }
+}
+
+const confirmBulkDelete = () => {
+  if (selectedItems.value.length === 0) return
+
+  deletingItem.value = { id: 'bulk-delete' } as MenuItem
+  showDeleteConfirm.value = true
+}
+
+const handleBulkDelete = async () => {
+  if (selectedItems.value.length === 0) return
+
+  isBulkDeleting.value = true
+  try {
+    const promises = selectedItems.value.map(itemId =>
+      menuStore.deleteMenuItem(itemId)
+    )
+    await Promise.all(promises)
+
+    toast.success(`${selectedItems.value.length} items deleted successfully`)
+    clearSelection()
+    cancelDelete()
+  } catch (error) {
+    toast.error('Failed to delete selected items')
+  } finally {
+    isBulkDeleting.value = false
+  }
+}
+
+// Additional Features
+const duplicateItem = async (item: MenuItem) => {
+  try {
+    const duplicatedItem = {
+      name: `${item.name} (Copy)`,
+      sku: `${item.sku}_COPY_${Date.now()}`,
+      description: item.description,
+      price: item.price,
+      cost: item.cost || 0,
+      categoryId: item.categoryId,
+      imageUrl: item.imageUrl || '',
+      isAvailable: false // Start as unavailable for review
+    }
+
+    const result = await menuStore.createMenuItem(duplicatedItem)
+    toast.success(`Menu item duplicated: ${result.name}`)
+  } catch (error) {
+    toast.error('Failed to duplicate menu item')
+  }
+}
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
+
+const goToLogin = () => {
+  router.push('/login')
+}
+
+// Initialize data on mount
+onMounted(async () => {
+  await refreshMenu()
+})
+
+const deleteConfirmTitle = computed(() => {
+  if (!deletingItem.value) return 'Delete Item'
+  if (deletingItem.value.id === 'bulk-delete') {
+    return `Delete ${selectedItems.value.length} Items`
+  }
+  return `Delete "${deletingItem.value.name}"`
+})
+
+const deleteConfirmMessage = computed(() => {
+  if (!deletingItem.value) return 'Are you sure you want to delete this menu item?'
+  if (deletingItem.value.id === 'bulk-delete') {
+    return `Are you sure you want to delete ${selectedItems.value.length} selected items? This will remove them from all future orders and cannot be undone.`
+  }
+  return `Are you sure you want to delete "${deletingItem.value.name}"? This will remove it from all future orders and cannot be undone.`
+})
 </script>
 
 <style scoped>
@@ -465,5 +696,32 @@ const deleteConfirmMessage = "Are you sure you want to delete this menu item?";
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.card-hover {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.3);
+}
+
+.performance-optimized {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.interactive-fast {
+  transition: all 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: color, background-color, transform;
+}
+
+.interactive-fast:hover {
+  transform: scale(1.05);
 }
 </style>

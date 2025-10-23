@@ -12,7 +12,7 @@ function getPrismaClient(): PrismaClient {
   if (!prisma) {
     prisma = new PrismaClient({
       log: process.env.NODE_ENV === 'development'
-        ? ['query', 'info', 'warn', 'error']
+        ? ['warn', 'error'] // Removed 'query' and 'info' for better performance
         : ['warn', 'error'],
       errorFormat: 'pretty',
     })
@@ -87,11 +87,17 @@ async function ensureDefaultSettings(client: PrismaClient): Promise<void> {
     }
   ]
 
-  for (const setting of defaultSettings) {
-    await client.settings.upsert({
-      where: { key: setting.key },
-      update: {},
-      create: setting
+  // Use batch operations for better performance
+  const existingSettings = await client.settings.findMany({
+    where: { key: { in: defaultSettings.map(s => s.key) } }
+  })
+
+  const existingKeys = new Set(existingSettings.map(s => s.key))
+  const newSettings = defaultSettings.filter(s => !existingKeys.has(s.key))
+
+  if (newSettings.length > 0) {
+    await client.settings.createMany({
+      data: newSettings
     })
   }
 }

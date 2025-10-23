@@ -56,11 +56,7 @@
       </transition-group>
     </div>
 
-    <!-- Sound notification -->
-    <audio ref="notificationSound" preload="auto">
-      <source src="/sounds/notification.mp3" type="audio/mpeg">
-      <source src="/sounds/notification.wav" type="audio/wav">
-    </audio>
+    <!-- Sound notification disabled - audio files not provided -->
   </div>
 </template>
 
@@ -124,7 +120,8 @@ const {
 // Reactive data
 const notifications = ref<Notification[]>([])
 const toasts = ref<Toast[]>([])
-const notificationSound = ref<HTMLAudioElement>()
+// Audio disabled - sound files not provided
+// const notificationSound = ref<HTMLAudioElement>()
 
 // Computed properties
 const connectionStatusClass = computed(() => ({
@@ -202,10 +199,8 @@ function handleNotificationClick(notification: Notification) {
 }
 
 function playNotificationSound() {
-  if (notificationSound.value) {
-    notificationSound.value.currentTime = 0
-    notificationSound.value.play().catch(console.warn)
-  }
+  // Audio notification disabled - sound files not provided
+  console.log('🔔 Notification sound (audio disabled)')
 }
 
 function getNotificationIcon(type: string) {
