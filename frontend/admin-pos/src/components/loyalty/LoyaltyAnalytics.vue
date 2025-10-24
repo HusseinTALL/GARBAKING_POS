@@ -218,58 +218,121 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useLoyaltyStore } from '@/stores/loyalty'
+
+const loyaltyStore = useLoyaltyStore()
 
 // State
 const selectedTimeframe = ref('30d')
+const isLoading = ref(false)
 
-const analytics = ref({
-  activeMemberCount: 1247,
-  memberGrowthRate: 12.5,
-  pointsRedeemed: 156780,
-  redemptionValue: 8947,
-  engagementRate: 68.2,
-  activeRedemptions: 42,
-  revenueImpact: 23456,
-  averageOrderIncrease: 15.3,
-  tierDistribution: [
-    { name: 'Bronze', count: 892, percentage: 71.5, color: '#CD7F32' },
-    { name: 'Silver', count: 267, percentage: 21.4, color: '#C0C0C0' },
-    { name: 'Gold', count: 71, percentage: 5.7, color: '#FFD700' },
-    { name: 'Platinum', count: 17, percentage: 1.4, color: '#E5E4E2' }
-  ],
-  popularRewards: [
-    { id: '1', name: '$5 Off Order', pointsCost: 500, redemptions: 234 },
-    { id: '2', name: 'Free Dessert', pointsCost: 300, redemptions: 189 },
-    { id: '3', name: '10% Off Total', pointsCost: 750, redemptions: 156 },
-    { id: '4', name: 'Free Drink', pointsCost: 200, redemptions: 98 }
-  ],
-  recentActivity: [
-    {
-      id: '1',
-      type: 'redemption',
-      description: 'Sarah Johnson redeemed $5 off reward',
-      timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString()
-    },
-    {
-      id: '2',
-      type: 'enrollment',
-      description: 'New member Mike Chen enrolled in Bronze tier',
-      timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString()
-    },
-    {
-      id: '3',
-      type: 'tier_upgrade',
-      description: 'Emma Davis upgraded to Silver tier',
-      timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString()
+// Computed - Use real data from store
+const analytics = computed(() => {
+  const storeAnalytics = loyaltyStore.analytics
+
+  if (!storeAnalytics) {
+    return {
+      activeMemberCount: 0,
+      memberGrowthRate: 0,
+      pointsRedeemed: 0,
+      redemptionValue: 0,
+      engagementRate: 0,
+      activeRedemptions: 0,
+      revenueImpact: 0,
+      averageOrderIncrease: 0,
+      tierDistribution: [],
+      popularRewards: [],
+      recentActivity: []
     }
-  ]
+  }
+
+  // Map tier distribution from store analytics
+  const tierDistribution = Object.entries(storeAnalytics.membersByTier || {}).map(([name, count]) => ({
+    name,
+    count,
+    percentage: storeAnalytics.totalMembers > 0 ? ((count / storeAnalytics.totalMembers) * 100).toFixed(1) : 0,
+    color: getTierColor(name)
+  }))
+
+  // Map recent activity from transactions
+  const recentActivity = (storeAnalytics.recentTransactions || []).slice(0, 5).map(tx => ({
+    id: tx.id,
+    type: tx.type.toLowerCase(),
+    description: getActivityDescription(tx),
+    timestamp: tx.createdAt
+  }))
+
+  return {
+    activeMemberCount: storeAnalytics.activeMembers || 0,
+    memberGrowthRate: storeAnalytics.enrollmentRate ? (storeAnalytics.enrollmentRate * 100).toFixed(1) : 0,
+    pointsRedeemed: storeAnalytics.totalPointsRedeemed || 0,
+    redemptionValue: storeAnalytics.totalRedemptionValue || 0,
+    engagementRate: storeAnalytics.redemptionRate ? (storeAnalytics.redemptionRate * 100).toFixed(1) : 0,
+    activeRedemptions: loyaltyStore.redemptions.length,
+    revenueImpact: storeAnalytics.totalRedemptionValue || 0,
+    averageOrderIncrease: 15.3, // Would need to calculate from order data
+    tierDistribution,
+    popularRewards: [], // Would need rewards data
+    recentActivity
+  }
 })
 
 // Methods
-const exportAnalytics = () => {
-  // Implement analytics export functionality
-  alert('Export functionality will be implemented')
+const fetchAnalytics = async () => {
+  isLoading.value = true
+  try {
+    let startDate: string | undefined
+    let endDate: string | undefined
+
+    const daysMap: Record<string, number> = {
+      '7d': 7,
+      '30d': 30,
+      '90d': 90,
+      '1y': 365
+    }
+
+    const days = daysMap[selectedTimeframe.value] || 30
+    const end = new Date()
+    const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000)
+
+    startDate = start.toISOString().split('T')[0]
+    endDate = end.toISOString().split('T')[0]
+
+    await loyaltyStore.fetchAnalytics(startDate, endDate)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const exportAnalytics = async () => {
+  const success = await loyaltyStore.exportData('customers', 'EXCEL')
+  if (success) {
+    alert('Analytics exported successfully')
+  } else {
+    alert('Failed to export analytics')
+  }
+}
+
+const getTierColor = (tierName: string): string => {
+  const colors: Record<string, string> = {
+    'Bronze': '#CD7F32',
+    'Silver': '#C0C0C0',
+    'Gold': '#FFD700',
+    'Platinum': '#E5E4E2',
+    'Diamond': '#B9F2FF'
+  }
+  return colors[tierName] || '#6B7280'
+}
+
+const getActivityDescription = (transaction: any): string => {
+  const typeDescriptions: Record<string, string> = {
+    'EARN': `Customer earned ${transaction.points} points`,
+    'REDEEM': `Customer redeemed ${Math.abs(transaction.points)} points`,
+    'EXPIRE': `${Math.abs(transaction.points)} points expired`,
+    'ADJUST': `Points adjusted: ${transaction.description}`
+  }
+  return typeDescriptions[transaction.type] || transaction.description
 }
 
 const formatDate = (dateString: string) => {
@@ -282,7 +345,7 @@ const formatDate = (dateString: string) => {
 }
 
 // Lifecycle
-onMounted(() => {
-  // Load analytics data
+onMounted(async () => {
+  await fetchAnalytics()
 })
 </script>
