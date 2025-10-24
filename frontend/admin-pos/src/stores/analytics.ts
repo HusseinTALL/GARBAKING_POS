@@ -540,39 +540,118 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   }
 
   const exportData = async (
-    startDate?: string,
-    endDate?: string,
-    format: 'csv' | 'json' = 'csv'
+    type: 'sales' | 'products' | 'staff' | 'customers' | 'inventory' = 'sales',
+    format: 'CSV' | 'Excel' | 'PDF' = 'CSV',
+    period: string = 'today'
   ): Promise<boolean> => {
     try {
-      const params: any = { format }
+      const params: any = {
+        type,
+        format: format.toLowerCase(),
+        period
+      }
 
-      if (startDate) params.startDate = startDate
-      if (endDate) params.endDate = endDate
+      // Add custom date range if applicable
+      if (selectedPeriod.value === 'custom' && customDateRange.value.start && customDateRange.value.end) {
+        params.startDate = customDateRange.value.start
+        params.endDate = customDateRange.value.end
+      }
 
       const response = await axios.get('/api/analytics/export', {
         params,
-        responseType: format === 'csv' ? 'blob' : 'json'
+        responseType: 'blob'
       })
 
-      if (format === 'csv') {
-        // Handle CSV download
-        const blob = new Blob([response.data], { type: 'text/csv' })
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `sales-report-${new Date().toISOString().split('T')[0]}.csv`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
+      // Determine MIME type and extension based on format
+      const mimeTypes: Record<string, string> = {
+        'CSV': 'text/csv',
+        'Excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'PDF': 'application/pdf'
       }
+
+      const extensions: Record<string, string> = {
+        'CSV': 'csv',
+        'Excel': 'xlsx',
+        'PDF': 'pdf'
+      }
+
+      // Handle file download
+      const blob = new Blob([response.data], { type: mimeTypes[format] })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${type}-report-${new Date().toISOString().split('T')[0]}.${extensions[format]}`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
 
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       console.error('Export error:', err)
       return false
+    }
+  }
+
+  // New comparison methods for YoY and MoM
+  const fetchYearOverYearComparison = async (): Promise<any | null> => {
+    try {
+      const response = await axios.get('/api/analytics/comparison/yoy')
+
+      if (response.data.success) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch YoY comparison')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('YoY comparison error:', err)
+      return null
+    }
+  }
+
+  const fetchMonthOverMonthComparison = async (): Promise<any | null> => {
+    try {
+      const response = await axios.get('/api/analytics/comparison/mom')
+
+      if (response.data.success) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch MoM comparison')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('MoM comparison error:', err)
+      return null
+    }
+  }
+
+  const fetchCustomComparison = async (
+    startDate1: string,
+    endDate1: string,
+    startDate2: string,
+    endDate2: string
+  ): Promise<any | null> => {
+    try {
+      const response = await axios.get('/api/analytics/comparison/custom', {
+        params: {
+          startDate1,
+          endDate1,
+          startDate2,
+          endDate2
+        }
+      })
+
+      if (response.data.success) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch custom comparison')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('Custom comparison error:', err)
+      return null
     }
   }
 
@@ -722,6 +801,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     setPeriod,
     setCustomDateRange,
     clearError,
+    // New comparison methods
+    fetchYearOverYearComparison,
+    fetchMonthOverMonthComparison,
+    fetchCustomComparison,
 
     // Helpers
     formatCurrency,
