@@ -31,39 +31,73 @@
 
     <!-- Menu Items Grid -->
     <div class="menu-items-grid">
-      <div
+      <article
         v-for="item in filteredItems"
         :key="item.id"
         @click="$emit('add-item', item)"
-        class="menu-item-card"
+        class="menu-card"
+        :class="{ 'menu-card--unavailable': !item.isAvailable }"
+        role="button"
+        tabindex="0"
+        :aria-label="`Add ${item.name} to order`"
       >
-        <!-- Item Image Container -->
-        <div class="item-image-container">
-          <div class="item-image-circle">
-            <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="item-image" />
-            <div v-else class="item-placeholder">
-              <UtensilsCrossed class="placeholder-icon" />
+        <!-- Image Section -->
+        <div class="menu-card__image-wrapper">
+          <div class="menu-card__image-container">
+            <img
+              v-if="item.imageUrl"
+              :src="item.imageUrl"
+              :alt="item.name"
+              class="menu-card__image"
+              loading="lazy"
+            />
+            <div v-else class="menu-card__placeholder">
+              <UtensilsCrossed :size="48" stroke-width="1.5" />
             </div>
+          </div>
+
+          <!-- Stock Badge -->
+          <div v-if="!item.isAvailable" class="menu-card__badge menu-card__badge--out-of-stock">
+            Out of Stock
+          </div>
+          <div v-else-if="item.stock && item.stock <= 5" class="menu-card__badge menu-card__badge--low-stock">
+            Low Stock
           </div>
         </div>
 
-        <!-- Item Info -->
-        <div class="item-info">
-          <h4 class="item-name">{{ item.name }}</h4>
-          <p class="item-price">{{ formatPrice(item.price) }}</p>
-          <span v-if="item.isAvailable" class="availability-text available">
-            {{ item.stock || 20 }} Bowls available
-          </span>
-          <span v-else class="availability-text unavailable">
-            Out of Stock
-          </span>
+        <!-- Content Section -->
+        <div class="menu-card__content">
+          <div class="menu-card__header">
+            <h3 class="menu-card__title">{{ item.name }}</h3>
+            <p v-if="item.description" class="menu-card__description">
+              {{ truncateText(item.description, 60) }}
+            </p>
+          </div>
+
+          <div class="menu-card__footer">
+            <div class="menu-card__price-group">
+              <span class="menu-card__price">{{ formatPrice(item.price) }}</span>
+              <span v-if="item.stock" class="menu-card__stock">
+                {{ item.stock }} available
+              </span>
+            </div>
+
+            <button class="menu-card__add-btn" aria-label="Add to cart">
+              <Plus :size="20" stroke-width="2.5" />
+            </button>
+          </div>
         </div>
-      </div>
+      </article>
 
       <!-- Empty State -->
       <div v-if="filteredItems.length === 0" class="empty-state">
-        <UtensilsCrossed class="w-16 h-16 text-gray-600" />
-        <p class="empty-text">No items found</p>
+        <div class="empty-state__icon">
+          <UtensilsCrossed :size="64" stroke-width="1" />
+        </div>
+        <h3 class="empty-state__title">No items found</h3>
+        <p class="empty-state__description">
+          Try adjusting your search or filter criteria
+        </p>
       </div>
     </div>
   </div>
@@ -72,7 +106,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useMenuStore } from '@/stores/menu'
-import { Search, UtensilsCrossed } from 'lucide-vue-next'
+import { Search, UtensilsCrossed, Plus } from 'lucide-vue-next'
 
 const menuStore = useMenuStore()
 
@@ -118,7 +152,12 @@ const formatPrice = (amount: number): string => {
     currency: 'XOF',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
-  }).format(amount)
+  }).format(amount).replace('XOF', 'F CFA')
+}
+
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text) return ''
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text
 }
 
 onMounted(async () => {
@@ -216,136 +255,211 @@ defineEmits<{
 .menu-items-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
   overflow-y: auto;
   padding-right: 8px;
 }
 
-.menu-item-card {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 16px;
+/* Menu Card - Modern Professional Design */
+.menu-card {
+  background: var(--bg-secondary);
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  position: relative;
-  min-height: 380px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
-}
-
-.menu-item-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-}
-
-.menu-item-card:active {
-  transform: translateY(-4px) scale(1.01);
-}
-
-/* Item Image Container - Top 60% */
-.item-image-container {
-  height: 60%;
-  min-height: 240px;
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  height: 100%;
   position: relative;
+  will-change: transform;
+}
+
+.menu-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 107, 53, 0.3);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 107, 53, 0.1);
+}
+
+.menu-card:active {
+  transform: translateY(-2px);
+}
+
+.menu-card--unavailable {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.menu-card--unavailable:hover {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+/* Image Section */
+.menu-card__image-wrapper {
+  position: relative;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
   overflow: hidden;
 }
 
-/* Circular Image Frame */
-.item-image-circle {
-  width: 250px;
-  height: 250px;
-  border-radius: 50%;
+.menu-card__image-container {
+  aspect-ratio: 4 / 3;
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.03);
   position: relative;
 }
 
-.item-image {
+.menu-card__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
 }
 
-.menu-item-card:hover .item-image {
-  transform: scale(1.1);
+.menu-card:hover .menu-card__image {
+  transform: scale(1.05);
 }
 
-.item-placeholder {
+.menu-card__placeholder {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(100, 116, 139, 0.1);
-}
-
-.placeholder-icon {
-  width: 80px;
-  height: 80px;
   color: #64748b;
-  opacity: 0.5;
 }
 
-/* Item Info - Bottom 40% */
-.item-info {
-  flex: 1;
-  padding: 24px 20px 20px;
-  text-align: center;
+/* Badge */
+.menu-card__badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(8px);
+  z-index: 1;
+}
+
+.menu-card__badge--out-of-stock {
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+}
+
+.menu-card__badge--low-stock {
+  background: rgba(251, 191, 36, 0.9);
+  color: #78350f;
+}
+
+/* Content Section */
+.menu-card__content {
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  flex: 1;
   gap: 12px;
 }
 
-.item-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #f8fafc;
-  letter-spacing: 0.5px;
+.menu-card__header {
+  flex: 1;
+}
+
+.menu-card__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
   line-height: 1.4;
-  min-height: 50px;
+  margin: 0 0 6px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-card__description {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Footer with Price and Add Button */
+.menu-card__footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.menu-card__price-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-card__price {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent-orange);
+  line-height: 1;
+}
+
+.menu-card__stock {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.menu-card__add-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--accent-orange);
+  border: none;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-  margin: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
 }
 
-.item-price {
-  font-size: 28px;
-  font-weight: 800;
-  color: #ffffff;
-  margin: 0;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+.menu-card__add-btn:hover {
+  background: #ff8c5a;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35);
 }
 
-.availability-text {
-  display: block;
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: 0.3px;
+.menu-card__add-btn:active {
+  transform: scale(0.95);
 }
 
-.availability-text.available {
-  color: #d1d5db;
+.menu-card--unavailable .menu-card__add-btn {
+  background: rgba(100, 116, 139, 0.3);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
-.availability-text.unavailable {
-  color: #ef4444;
-  font-weight: 500;
+.menu-card--unavailable .menu-card__add-btn:hover {
+  transform: none;
+  background: rgba(100, 116, 139, 0.3);
 }
 
 /* Empty State */
@@ -355,73 +469,161 @@ defineEmits<{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
-  gap: 12px;
+  padding: 80px 20px;
+  gap: 16px;
+  text-align: center;
 }
 
-.empty-text {
+.empty-state__icon {
+  color: var(--text-tertiary);
+  opacity: 0.5;
+}
+
+.empty-state__title {
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-secondary);
-  font-size: var(--font-size-body);
+  margin: 0;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
+.empty-state__description {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin: 0;
+  max-width: 300px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
   .menu-items-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 24px;
-  }
-
-  .item-image-circle {
-    width: 200px;
-    height: 200px;
+    gap: 16px;
   }
 }
 
 @media (max-width: 768px) {
   .menu-grid-container {
     padding: 16px;
+    gap: 16px;
+  }
+
+  .category-tabs {
+    gap: 8px;
+  }
+
+  .category-tab {
+    padding: 8px 16px;
+    font-size: 14px;
   }
 
   .menu-items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
   }
 
-  .menu-item-card {
-    min-height: 320px;
+  .menu-card__content {
+    padding: 14px;
   }
 
-  .item-image-container {
-    min-height: 200px;
+  .menu-card__title {
+    font-size: 15px;
   }
 
-  .item-image-circle {
-    width: 180px;
-    height: 180px;
+  .menu-card__description {
+    font-size: 12px;
   }
 
-  .item-name {
+  .menu-card__price {
+    font-size: 18px;
+  }
+
+  .menu-card__add-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 640px) {
+  .menu-items-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+
+  .menu-card__content {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .menu-card__title {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .menu-card__price {
     font-size: 16px;
-    min-height: 44px;
   }
 
-  .item-price {
-    font-size: 24px;
-  }
-
-  .availability-text {
-    font-size: 13px;
+  .menu-card__stock {
+    font-size: 11px;
   }
 }
 
 @media (max-width: 480px) {
-  .menu-items-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  .menu-grid-container {
+    padding: 12px;
   }
 
-  .menu-item-card {
-    max-width: 100%;
+  .menu-items-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
+
+  .category-tabs {
+    gap: 6px;
+  }
+
+  .category-tab {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+/* Performance optimizations */
+@media (prefers-reduced-motion: reduce) {
+  .menu-card,
+  .menu-card__image,
+  .menu-card__add-btn {
+    transition: none;
+  }
+}
+
+/* Accessibility */
+.menu-card:focus-visible {
+  outline: 2px solid var(--accent-orange);
+  outline-offset: 2px;
+}
+
+.menu-card__add-btn:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+.menu-items-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.menu-items-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.menu-items-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.menu-items-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 </style>
