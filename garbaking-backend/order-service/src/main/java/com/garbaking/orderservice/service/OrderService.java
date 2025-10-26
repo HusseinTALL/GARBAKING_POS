@@ -33,6 +33,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final WebSocketService webSocketService;
 
     private static final AtomicLong orderCounter = new AtomicLong(0);
 
@@ -90,10 +91,17 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         log.info("Order created successfully: {}", savedOrder.getOrderNumber());
 
-        // Publish order.created event
+        // Convert to DTO
+        OrderDTO orderDTO = convertToDTO(savedOrder);
+
+        // Publish order.created event to Kafka
         publishOrderEvent("order.created", savedOrder);
 
-        return convertToDTO(savedOrder);
+        // Broadcast via WebSocket for real-time updates
+        webSocketService.broadcastOrderCreated(orderDTO);
+        webSocketService.sendOrderToUser(savedOrder.getUserId(), orderDTO);
+
+        return orderDTO;
     }
 
     /**
@@ -206,10 +214,18 @@ public class OrderService {
         Order updatedOrder = orderRepository.save(order);
         log.info("Order status updated from {} to {}", oldStatus, statusDTO.getStatus());
 
-        // Publish status change event
+        // Convert to DTO
+        OrderDTO orderDTO = convertToDTO(updatedOrder);
+
+        // Publish status change event to Kafka
         publishOrderEvent("order.status.changed", updatedOrder);
 
-        return convertToDTO(updatedOrder);
+        // Broadcast via WebSocket for real-time updates
+        webSocketService.broadcastOrderStatusChanged(orderDTO);
+        webSocketService.broadcastOrderUpdated(orderDTO);
+        webSocketService.sendOrderToUser(updatedOrder.getUserId(), orderDTO);
+
+        return orderDTO;
     }
 
     /**
@@ -236,10 +252,17 @@ public class OrderService {
         Order updatedOrder = orderRepository.save(order);
         log.info("Order payment status updated successfully");
 
-        // Publish payment event
+        // Convert to DTO
+        OrderDTO orderDTO = convertToDTO(updatedOrder);
+
+        // Publish payment event to Kafka
         publishOrderEvent("order.payment.updated", updatedOrder);
 
-        return convertToDTO(updatedOrder);
+        // Broadcast via WebSocket for real-time updates
+        webSocketService.broadcastOrderUpdated(orderDTO);
+        webSocketService.sendOrderToUser(updatedOrder.getUserId(), orderDTO);
+
+        return orderDTO;
     }
 
     /**
@@ -265,10 +288,17 @@ public class OrderService {
         Order cancelledOrder = orderRepository.save(order);
         log.info("Order cancelled successfully");
 
-        // Publish cancellation event
+        // Convert to DTO
+        OrderDTO orderDTO = convertToDTO(cancelledOrder);
+
+        // Publish cancellation event to Kafka
         publishOrderEvent("order.cancelled", cancelledOrder);
 
-        return convertToDTO(cancelledOrder);
+        // Broadcast via WebSocket for real-time updates
+        webSocketService.broadcastOrderCancelled(orderDTO);
+        webSocketService.sendOrderToUser(cancelledOrder.getUserId(), orderDTO);
+
+        return orderDTO;
     }
 
     /**
