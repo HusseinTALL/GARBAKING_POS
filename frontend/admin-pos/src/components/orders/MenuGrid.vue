@@ -44,16 +44,22 @@
         <!-- Image Section -->
         <div class="menu-card__image-wrapper">
           <div class="menu-card__image-container">
+            <!-- Always render placeholder, but hide it when image loads -->
+            <div class="menu-card__placeholder" :style="{ display: item.imageUrl ? 'none' : 'flex' }">
+              <div class="placeholder-icon-wrapper">
+                <UtensilsCrossed :size="56" stroke-width="1.5" />
+              </div>
+              <span class="placeholder-text">No Image</span>
+            </div>
+            <!-- Image overlay on top of placeholder -->
             <img
               v-if="item.imageUrl"
               :src="item.imageUrl"
               :alt="item.name"
               class="menu-card__image"
               loading="lazy"
+              @error="handleImageError"
             />
-            <div v-else class="menu-card__placeholder">
-              <UtensilsCrossed :size="48" stroke-width="1.5" />
-            </div>
           </div>
 
           <!-- Stock Badge -->
@@ -158,6 +164,16 @@ const formatPrice = (amount: number): string => {
 const truncateText = (text: string, maxLength: number): string => {
   if (!text) return ''
   return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text
+}
+
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  // Hide the broken image and show placeholder
+  target.style.display = 'none'
+  const placeholder = target.parentElement?.querySelector('.menu-card__placeholder')
+  if (placeholder) {
+    (placeholder as HTMLElement).style.display = 'flex'
+  }
 }
 
 onMounted(async () => {
@@ -313,10 +329,14 @@ defineEmits<{
 }
 
 .menu-card__image {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  z-index: 1;
 }
 
 .menu-card:hover .menu-card__image {
@@ -327,10 +347,31 @@ defineEmits<{
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(100, 116, 139, 0.1);
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.15) 0%, rgba(71, 85, 105, 0.1) 100%);
+  color: #94a3b8;
+}
+
+.placeholder-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  border: 2px dashed rgba(148, 163, 184, 0.3);
+}
+
+.placeholder-text {
+  font-size: 13px;
+  font-weight: 500;
   color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Badge */
