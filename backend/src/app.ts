@@ -54,27 +54,90 @@ export async function buildApp() {
   await fastify.register(authPlugin)
   await fastify.register(websocketPlugin)
 
-  // Health check endpoints
+  // Add request/response logging hooks
+  fastify.addHook('onRequest', async (request, reply) => {
+    request.log.info({
+      requestId: (request as any).id,
+      method: request.method,
+      url: request.url,
+      ip: request.ip,
+      userAgent: request.headers['user-agent']
+    }, 'Incoming request')
+  })
+
+  fastify.addHook('onResponse', async (request, reply) => {
+    const responseTime = reply.getResponseTime()
+
+    request.log.info({
+      requestId: (request as any).id,
+      method: request.method,
+      url: request.url,
+      statusCode: reply.statusCode,
+      responseTime: `${responseTime.toFixed(2)}ms`
+    }, 'Request completed')
+
+    // Log slow requests as warnings
+    if (responseTime > 5000) {
+      request.log.warn({
+        requestId: (request as any).id,
+        duration: responseTime,
+        method: request.method,
+        url: request.url
+      }, 'Slow request detected')
+    }
+  })
+
+  // Health check endpoints with database verification
   fastify.get('/health', async (request, reply) => {
-    return {
-      status: 'ok',
+    let dbStatus = 'unknown'
+    let dbError = null
+
+    try {
+      // Test database connection
+      await fastify.prisma.$queryRaw`SELECT 1`
+      dbStatus = 'connected'
+    } catch (error: any) {
+      dbStatus = 'disconnected'
+      dbError = error.message
+      fastify.log.error({ error }, 'Database health check failed')
+    }
+
+    const isHealthy = dbStatus === 'connected'
+
+    return reply.code(isHealthy ? 200 : 503).send({
+      status: isHealthy ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: serverConfig.environment,
       version: process.env.npm_package_version || '1.0.0',
-      database: 'connected',
+      database: {
+        status: dbStatus,
+        error: dbError
+      },
       websocket: 'active'
-    }
+    })
   })
 
   fastify.get('/api/health', async (request, reply) => {
-    return {
-      status: 'ok',
+    let dbStatus = 'unknown'
+
+    try {
+      await fastify.prisma.$queryRaw`SELECT 1`
+      dbStatus = 'connected'
+    } catch (error) {
+      dbStatus = 'disconnected'
+    }
+
+    const isHealthy = dbStatus === 'connected'
+
+    return reply.code(isHealthy ? 200 : 503).send({
+      status: isHealthy ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: serverConfig.environment,
-      version: process.env.npm_package_version || '1.0.0'
-    }
+      version: process.env.npm_package_version || '1.0.0',
+      database: dbStatus
+    })
   })
 
   // Register route plugins for customer app
@@ -99,12 +162,30 @@ export async function buildApp() {
  */
 export async function startServer() {
   try {
+    console.log('🚀 Starting Garbaking POS Backend...')
+    console.log('📊 Environment:', serverConfig.environment)
+    console.log('🏪 Store ID:', serverConfig.storeId)
+    console.log('💾 Database:', process.env.DATABASE_URL || './dev.db')
+
     // Initialize database
-    await initializeDatabase()
-    console.log('✅ Database initialized')
+    console.log('🔄 Initializing database...')
+    try {
+      await initializeDatabase()
+      console.log('✅ Database initialized')
+    } catch (dbError: any) {
+      console.error('❌ Database initialization failed:', dbError.message)
+      console.error('')
+      console.error('🔧 Quick fix:')
+      console.error('   cd backend')
+      console.error('   npm run db:setup')
+      console.error('')
+      throw dbError
+    }
 
     // Build app
+    console.log('🔄 Building Fastify application...')
     const fastify = await buildApp()
+    console.log('✅ Application built successfully')
 
     // Start sync worker if in offline mode
     if (process.env.OFFLINE_MODE === 'true') {
@@ -113,19 +194,41 @@ export async function startServer() {
     }
 
     // Start listening
+    console.log(`🔄 Starting server on ${serverConfig.host}:${serverConfig.port}...`)
     await fastify.listen({
       port: serverConfig.port,
       host: serverConfig.host
     })
 
-    fastify.log.info(`🚀 Garbaking POS Backend (Fastify) running on port ${serverConfig.port}`)
-    fastify.log.info(`📊 Environment: ${serverConfig.environment}`)
-    fastify.log.info(`🏪 Store ID: ${serverConfig.storeId}`)
-    fastify.log.info(`💾 Database: ${process.env.DATABASE_URL}`)
-    fastify.log.info(`📡 Health check: http://${serverConfig.host === '0.0.0.0' ? 'localhost' : serverConfig.host}:${serverConfig.port}/health`)
+    const displayHost = serverConfig.host === '0.0.0.0' ? 'localhost' : serverConfig.host
 
-  } catch (error) {
-    console.error('❌ Failed to start server:', error)
+    console.log('')
+    console.log('✅ Server started successfully!')
+    console.log('')
+    console.log(`🚀 Garbaking POS Backend (Fastify) running`)
+    console.log(`📡 API: http://${displayHost}:${serverConfig.port}/api`)
+    console.log(`💚 Health: http://${displayHost}:${serverConfig.port}/health`)
+    console.log(`🔌 WebSocket: ws://${displayHost}:${serverConfig.port}`)
+    console.log('')
+
+  } catch (error: any) {
+    console.error('')
+    console.error('❌ Failed to start server')
+    console.error('❌ Error:', error.message)
+    console.error('')
+
+    if (error.code === 'EADDRINUSE') {
+      console.error('⚠️  Port', serverConfig.port, 'is already in use')
+      console.error('🔧 Solutions:')
+      console.error('   1. Stop the other process using port', serverConfig.port)
+      console.error('   2. Change PORT in .env file')
+      console.error('   3. Kill process: lsof -ti:', serverConfig.port, '| xargs kill')
+    } else if (error.message.includes('database') || error.message.includes('Prisma')) {
+      console.error('⚠️  Database error detected')
+      console.error('🔧 Try running: npm run db:setup')
+    }
+
+    console.error('')
     process.exit(1)
   }
 }

@@ -22,7 +22,15 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
     fastify.log.info('📦 Database connection established')
   } catch (error: any) {
     fastify.log.error({ error }, '❌ Failed to connect to database')
-    throw error
+    fastify.log.error('')
+    fastify.log.error('🔧 Database connection failed. Possible causes:')
+    fastify.log.error('   1. Database file does not exist')
+    fastify.log.error('   2. Database schema not initialized')
+    fastify.log.error('   3. Prisma client not generated')
+    fastify.log.error('')
+    fastify.log.error('💡 Fix: Run "npm run db:setup" in the backend directory')
+    fastify.log.error('')
+    throw new Error(`Database connection failed: ${error.message}`)
   }
 
   // Health check
@@ -31,7 +39,13 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
     fastify.log.info('✅ Database health check passed')
   } catch (error: any) {
     fastify.log.error({ error }, '❌ Database health check failed')
-    throw error
+    fastify.log.error('')
+    fastify.log.error('🔧 Database is not properly initialized.')
+    fastify.log.error('   The database file may be empty or missing tables.')
+    fastify.log.error('')
+    fastify.log.error('💡 Fix: Run "npm run db:setup" in the backend directory')
+    fastify.log.error('')
+    throw new Error(`Database health check failed: ${error.message}`)
   }
 
   // Add Prisma as decorator
