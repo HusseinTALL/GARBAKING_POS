@@ -919,7 +919,7 @@ const handleStatusChange = async (orderId: string, newStatus: string) => {
 }
 
 const handleViewDetails = (order: any) => {
-  ordersStore.selectOrder(order)
+  openOrderDetail(order)
 }
 
 const handlePrintReceipt = async (order: any) => {
@@ -1274,14 +1274,6 @@ const printOrderDetails = () => {
   printWindow.document.write(receiptHTML)
   printWindow.document.close()
 }
-
-// Update handleViewDetails to use the new modal
-const handleViewDetailsOld = (order: any) => {
-  ordersStore.selectOrder(order)
-}
-
-// Override handleViewDetails to open modal instead
-const handleViewDetails = openOrderDetail
 
 // Watch for filter changes to clear selection
 watch([activeFilter, searchQuery, advancedFilters], () => {
