@@ -49,26 +49,9 @@ export default fp(databasePlugin, {
   name: 'database'
 })
 
-// Singleton instance for backward compatibility
-let prismaInstance: PrismaClient | null = null
-
-// Export getDB function for backward compatibility with singleton pattern
+// Export getDB function for backward compatibility
 export function getDB(): PrismaClient {
-  if (!prismaInstance) {
-    prismaInstance = new PrismaClient({
-      log: process.env.NODE_ENV === 'development'
-        ? ['error', 'warn']
-        : ['error'],
-      errorFormat: 'minimal'
-    })
-  }
-  return prismaInstance
-}
-
-// Graceful shutdown helper
-export async function disconnectDB(): Promise<void> {
-  if (prismaInstance) {
-    await prismaInstance.$disconnect()
-    prismaInstance = null
-  }
+  // This will be replaced with fastify.prisma in routes
+  // Kept for compatibility during migration
+  return new PrismaClient()
 }

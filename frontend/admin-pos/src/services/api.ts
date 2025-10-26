@@ -36,7 +36,7 @@ export class ApiService {
 
     this.axiosInstance = axios.create({
       baseURL: this.baseURL,
-      timeout: 60000, // 60 seconds - increased for analytics queries and slow networks
+      timeout: 30000, // 30 seconds
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -50,7 +50,7 @@ export class ApiService {
    * Setup request and response interceptors
    */
   private setupInterceptors(): void {
-    // Request interceptor - add auth token and request ID
+    // Request interceptor - add auth token
     this.axiosInstance.interceptors.request.use(
       (config) => {
         const authStore = useAuthStore()
@@ -58,11 +58,6 @@ export class ApiService {
 
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
-        }
-
-        // Add request ID for tracking
-        if (!config.headers['x-request-id']) {
-          config.headers['x-request-id'] = this.generateRequestId()
         }
 
         // Add timestamp to prevent caching
@@ -73,7 +68,7 @@ export class ApiService {
           }
         }
 
-        console.log(`[API] ${config.method?.toUpperCase()} ${config.url} [${config.headers['x-request-id']}]`)
+        console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`)
         return config
       },
       (error) => {
@@ -105,52 +100,6 @@ export class ApiService {
         return this.handleError(error)
       }
     )
-  }
-
-  /**
-   * Generate a unique request ID for tracking
-   */
-  private generateRequestId(): string {
-    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  }
-
-  /**
-   * Check if an error is retryable
-   */
-  private isRetryableError(error: AxiosError): boolean {
-    if (!error.response) {
-      // Network errors are retryable
-      return true
-    }
-
-    const status = error.response.status
-    // Retry on server errors and gateway timeouts
-    return status === 408 || status === 429 || status === 500 ||
-           status === 502 || status === 503 || status === 504
-  }
-
-  /**
-   * Retry a request with exponential backoff
-   */
-  private async retryRequest<T>(
-    request: () => Promise<AxiosResponse<T>>,
-    maxRetries: number = 3,
-    currentRetry: number = 0
-  ): Promise<AxiosResponse<T>> {
-    try {
-      return await request()
-    } catch (error: any) {
-      if (currentRetry >= maxRetries || !this.isRetryableError(error)) {
-        throw error
-      }
-
-      // Calculate delay with exponential backoff: 2^retry * 1000ms
-      const delay = Math.pow(2, currentRetry) * 1000
-      console.log(`[API] Retrying request (${currentRetry + 1}/${maxRetries}) after ${delay}ms...`)
-
-      await new Promise(resolve => setTimeout(resolve, delay))
-      return this.retryRequest(request, maxRetries, currentRetry + 1)
-    }
   }
 
   /**
@@ -225,62 +174,42 @@ export class ApiService {
   }
 
   /**
-   * Generic GET request with retry logic
+   * Generic GET request
    */
   public async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.retryRequest(() =>
-      this.axiosInstance.get<ApiResponse<T>>(url, config)
-    )
+    const response = await this.axiosInstance.get<ApiResponse<T>>(url, config)
     return response.data
   }
 
   /**
-   * Generic POST request with retry logic (only for idempotent operations)
+   * Generic POST request
    */
   public async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    // POST requests are not retried by default to avoid duplicate submissions
-    // Use postWithRetry() for idempotent POST operations
     const response = await this.axiosInstance.post<ApiResponse<T>>(url, data, config)
     return response.data
   }
 
   /**
-   * POST request with retry for idempotent operations
-   */
-  public async postWithRetry<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.retryRequest(() =>
-      this.axiosInstance.post<ApiResponse<T>>(url, data, config)
-    )
-    return response.data
-  }
-
-  /**
-   * Generic PUT request with retry logic
+   * Generic PUT request
    */
   public async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.retryRequest(() =>
-      this.axiosInstance.put<ApiResponse<T>>(url, data, config)
-    )
+    const response = await this.axiosInstance.put<ApiResponse<T>>(url, data, config)
     return response.data
   }
 
   /**
-   * Generic PATCH request with retry logic
+   * Generic PATCH request
    */
   public async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.retryRequest(() =>
-      this.axiosInstance.patch<ApiResponse<T>>(url, data, config)
-    )
+    const response = await this.axiosInstance.patch<ApiResponse<T>>(url, data, config)
     return response.data
   }
 
   /**
-   * Generic DELETE request with retry logic
+   * Generic DELETE request
    */
   public async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response = await this.retryRequest(() =>
-      this.axiosInstance.delete<ApiResponse<T>>(url, config)
-    )
+    const response = await this.axiosInstance.delete<ApiResponse<T>>(url, config)
     return response.data
   }
 
@@ -303,6 +232,33 @@ export class ApiService {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
           onProgress(progress)
         }
+      }
+    }
+
+    const response = await this.axiosInstance.post<ApiResponse<T>>(url, formData, config)
+    return response.data
+  }
+
+  /**
+   * Upload with progress tracking using FormData
+   */
+  public async uploadWithProgress<T = any>(
+    url: string,
+    formData: FormData,
+    onProgress?: (progressEvent: { loaded: number; total?: number }) => void
+  ): Promise<ApiResponse<T>> {
+    const config: AxiosRequestConfig = {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }
+
+    if (onProgress) {
+      config.onUploadProgress = (progressEvent) => {
+        onProgress({
+          loaded: progressEvent.loaded,
+          total: progressEvent.total
+        })
       }
     }
 

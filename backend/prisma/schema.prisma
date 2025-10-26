@@ -96,9 +96,6 @@ model Customer {
   loyaltyTier          LoyaltyTier?           @relation(fields: [loyaltyTierId], references: [id])
   campaignUsages       LoyaltyCampaignUsage[]
 
-  @@index([storeId])
-  @@index([loyaltyTierId])
-  @@index([lastVisit])
   @@map("customers")
 }
 
@@ -154,14 +151,6 @@ model Order {
   orderModifiers OrderModifier[]
   refunds        Refund[]
 
-  @@index([status])
-  @@index([createdAt])
-  @@index([userId])
-  @@index([customerId])
-  @@index([storeId, createdAt])
-  @@index([orderNumber])
-  @@index([orderType])
-  @@index([paymentStatus])
   @@map("orders")
 }
 
@@ -191,9 +180,6 @@ model OrderItem {
   variant            MenuItemVariant?     @relation(fields: [variantId], references: [id])
   orderItemModifiers OrderItemModifier[]
 
-  @@index([orderId])
-  @@index([menuItemId])
-  @@index([status])
   @@map("order_items")
 }
 
@@ -311,11 +297,6 @@ model Payment {
   order   Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   refunds Refund[]
 
-  @@index([orderId])
-  @@index([status])
-  @@index([method])
-  @@index([paymentNumber])
-  @@index([createdAt])
   @@map("payments")
 }
 
@@ -756,10 +737,6 @@ model MenuItem {
   recipes         Recipe[]
   loyaltyCampaigns LoyaltyCampaign[]
 
-  @@index([categoryId])
-  @@index([storeId])
-  @@index([isAvailable, isActive])
-  @@index([sku])
   @@map("menu_items")
 }
 

@@ -426,74 +426,35 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  // Real-time Socket.IO connection with enhanced reconnection
+  // Real-time Socket.IO connection
   const connectWebSocket = () => {
     if (socketConnection.value?.connected) return
 
-    const token = authStore.token
-    if (!token) {
-      console.warn('No auth token available for WebSocket connection')
-      return
-    }
-
     socketConnection.value = io('http://localhost:3001', {
       auth: {
-        token
+        token: authStore.token
       },
       query: {
         clientType: 'admin-pos'
-      },
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000,
-      transports: ['websocket', 'polling']
-    })
-
-    socketConnection.value.on('connect', () => {
-      console.log('✅ Orders WebSocket connected')
-      isConnected.value = true
-      notification.success('Connected', 'Real-time updates enabled')
-    })
-
-    socketConnection.value.on('disconnect', (reason) => {
-      console.log('❌ Orders WebSocket disconnected:', reason)
-      isConnected.value = false
-
-      // If server disconnected us, try to reconnect
-      if (reason === 'io server disconnect') {
-        socketConnection.value?.connect()
       }
     })
 
-    socketConnection.value.on('connect_error', (error) => {
-      console.error('❌ WebSocket connection error:', error.message)
+    socketConnection.value.on('connect', () => {
+      console.log('Orders Socket.IO connected')
+      isConnected.value = true
+    })
+
+    socketConnection.value.on('disconnect', (reason) => {
+      console.log('Orders Socket.IO disconnected:', reason)
       isConnected.value = false
-      notification.error('Connection Error', 'Real-time updates unavailable')
     })
 
-    socketConnection.value.on('reconnect', (attemptNumber) => {
-      console.log(`✅ Reconnected after ${attemptNumber} attempts`)
-      notification.success('Reconnected', 'Real-time updates restored')
-      // Refresh orders after reconnect to sync state
-      fetchOrders()
+    socketConnection.value.on('connect_error', (error) => {
+      console.error('Orders Socket.IO connection error:', error)
+      isConnected.value = false
     })
 
-    socketConnection.value.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`🔄 Reconnection attempt ${attemptNumber}...`)
-    })
-
-    socketConnection.value.on('reconnect_error', (error) => {
-      console.error('❌ Reconnection error:', error)
-    })
-
-    socketConnection.value.on('reconnect_failed', () => {
-      console.error('❌ Reconnection failed after all attempts')
-      notification.error('Connection Failed', 'Please refresh the page')
-    })
-
-    // Listen for order events
+    // Listen for order updates
     socketConnection.value.on('order_updated', (data) => {
       handleRealtimeUpdate({ type: 'ORDER_UPDATED', order: data.order })
     })

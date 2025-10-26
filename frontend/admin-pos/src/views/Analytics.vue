@@ -216,16 +216,56 @@
     </div>
 
     <!-- Export Modal -->
-    <div v-if="showExportModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-      <div class="bg-gray-800 rounded-lg p-6 w-96 border border-gray-700">
+    <div v-if="showExportModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" @click="showExportModal = false">
+      <div class="bg-gray-800 rounded-lg p-6 w-96 border border-gray-700" @click.stop>
         <h3 class="text-lg font-semibold mb-4">Exporter les données</h3>
-        <p class="text-gray-400 mb-4">Fonctionnalité d'export en cours de développement</p>
-        <button
-          @click="showExportModal = false"
-          class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors"
-        >
-          Fermer
-        </button>
+
+        <div class="space-y-4">
+          <!-- Data Type Selection -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Type de données</label>
+            <select
+              v-model="exportConfig.type"
+              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200"
+            >
+              <option value="sales">Ventes</option>
+              <option value="products">Produits</option>
+              <option value="staff">Personnel</option>
+              <option value="customers">Clients</option>
+              <option value="inventory">Inventaire</option>
+            </select>
+          </div>
+
+          <!-- Format Selection -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Format</label>
+            <select
+              v-model="exportConfig.format"
+              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-200"
+            >
+              <option value="CSV">CSV</option>
+              <option value="Excel">Excel (.xlsx)</option>
+              <option value="PDF">PDF</option>
+            </select>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center space-x-3 pt-2">
+            <button
+              @click="handleExport"
+              :disabled="isExporting"
+              class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ isExporting ? 'Export en cours...' : 'Exporter' }}
+            </button>
+            <button
+              @click="showExportModal = false"
+              class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -284,6 +324,11 @@ const {
 const activeChartTab = ref('sales')
 const showExportModal = ref(false)
 const showReportModal = ref(false)
+const isExporting = ref(false)
+const exportConfig = ref({
+  type: 'sales' as 'sales' | 'products' | 'staff' | 'customers' | 'inventory',
+  format: 'Excel' as 'CSV' | 'Excel' | 'PDF'
+})
 
 const chartTabs = [
   { id: 'sales', label: 'Ventes', icon: LineChart },
@@ -342,6 +387,23 @@ const applyCustomRange = async () => {
 const refreshAnalytics = async () => { await analyticsStore.refreshAnalytics() }
 const exportData = async (type:string, format:string) => {
   await analyticsStore.exportData(type as any, format as any, selectedPeriod.value)
+}
+const handleExport = async () => {
+  isExporting.value = true
+  try {
+    const success = await analyticsStore.exportData(
+      exportConfig.value.type,
+      exportConfig.value.format,
+      selectedPeriod.value
+    )
+    if (success) {
+      showExportModal.value = false
+    } else {
+      alert('Échec de l\'export. Veuillez réessayer.')
+    }
+  } finally {
+    isExporting.value = false
+  }
 }
 
 onMounted(async () => {

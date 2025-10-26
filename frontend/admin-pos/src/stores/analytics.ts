@@ -246,17 +246,52 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   })
 
+  // Dashboard-specific state
+  const dashboardData = ref<any>(null)
+  const menuPerformance = ref<any[]>([])
+  const peakHoursData = ref<any>(null)
+  const paymentMethodsData = ref<any>(null)
+  const customerInsightsData = ref<any>(null)
+
   // Actions
+  const fetchDashboardData = async (): Promise<boolean> => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await axios.get('/api/analytics/dashboard')
+
+      if (response.data.success) {
+        dashboardData.value = response.data.data
+        return true
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch dashboard data')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('Dashboard fetch error:', err)
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const fetchSalesData = async (period: string, dateRange?: { start: string; end: string }): Promise<boolean> => {
     isLoading.value = true
     error.value = null
 
     try {
-      const params = { period, ...dateRange }
+      const params: any = {}
+
+      if (dateRange?.start && dateRange?.end) {
+        params.startDate = dateRange.start
+        params.endDate = dateRange.end
+      }
+
       const response = await axios.get('/api/analytics/sales', { params })
 
       if (response.data.success) {
-        salesData.value = response.data.data.sales
+        salesData.value = response.data.data
         return true
       }
 
@@ -266,6 +301,78 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       return false
     } finally {
       isLoading.value = false
+    }
+  }
+
+  const fetchMenuPerformance = async (days: number = 30): Promise<boolean> => {
+    try {
+      const response = await axios.get('/api/analytics/menu-performance', {
+        params: { days }
+      })
+
+      if (response.data.success) {
+        menuPerformance.value = response.data.data.menuItems || []
+        return true
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch menu performance')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      return false
+    }
+  }
+
+  const fetchPeakHours = async (days: number = 7): Promise<boolean> => {
+    try {
+      const response = await axios.get('/api/analytics/peak-hours', {
+        params: { days }
+      })
+
+      if (response.data.success) {
+        peakHoursData.value = response.data.data
+        return true
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch peak hours')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      return false
+    }
+  }
+
+  const fetchPaymentMethods = async (days: number = 30): Promise<boolean> => {
+    try {
+      const response = await axios.get('/api/analytics/payment-methods', {
+        params: { days }
+      })
+
+      if (response.data.success) {
+        paymentMethodsData.value = response.data.data
+        return true
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch payment methods')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      return false
+    }
+  }
+
+  const fetchCustomerInsights = async (days: number = 30): Promise<boolean> => {
+    try {
+      const response = await axios.get('/api/analytics/customer-insights', {
+        params: { days }
+      })
+
+      if (response.data.success) {
+        customerInsightsData.value = response.data.data
+        return true
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch customer insights')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      return false
     }
   }
 
@@ -433,32 +540,117 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   }
 
   const exportData = async (
-    dataType: 'sales' | 'products' | 'staff' | 'customers',
-    format: 'CSV' | 'Excel' | 'PDF',
-    period: string
-  ): Promise<string | null> => {
+    type: 'sales' | 'products' | 'staff' | 'customers' | 'inventory' = 'sales',
+    format: 'CSV' | 'Excel' | 'PDF' = 'CSV',
+    period: string = 'today'
+  ): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/analytics/export', {
-        dataType,
-        format,
+      const params: any = {
+        type,
+        format: format.toLowerCase(),
         period
-      }, {
+      }
+
+      // Add custom date range if applicable
+      if (selectedPeriod.value === 'custom' && customDateRange.value.start && customDateRange.value.end) {
+        params.startDate = customDateRange.value.start
+        params.endDate = customDateRange.value.end
+      }
+
+      const response = await axios.get('/api/analytics/export', {
+        params,
         responseType: 'blob'
       })
 
-      const blob = new Blob([response.data])
+      // Determine MIME type and extension based on format
+      const mimeTypes: Record<string, string> = {
+        'CSV': 'text/csv',
+        'Excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'PDF': 'application/pdf'
+      }
+
+      const extensions: Record<string, string> = {
+        'CSV': 'csv',
+        'Excel': 'xlsx',
+        'PDF': 'pdf'
+      }
+
+      // Handle file download
+      const blob = new Blob([response.data], { type: mimeTypes[format] })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${dataType}-${period}.${format.toLowerCase()}`
+      link.download = `${type}-report-${new Date().toISOString().split('T')[0]}.${extensions[format]}`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
 
-      return url
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
+      console.error('Export error:', err)
+      return false
+    }
+  }
+
+  // New comparison methods for YoY and MoM
+  const fetchYearOverYearComparison = async (): Promise<any | null> => {
+    try {
+      const response = await axios.get('/api/analytics/comparison/yoy')
+
+      if (response.data.success) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch YoY comparison')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('YoY comparison error:', err)
+      return null
+    }
+  }
+
+  const fetchMonthOverMonthComparison = async (): Promise<any | null> => {
+    try {
+      const response = await axios.get('/api/analytics/comparison/mom')
+
+      if (response.data.success) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch MoM comparison')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('MoM comparison error:', err)
+      return null
+    }
+  }
+
+  const fetchCustomComparison = async (
+    startDate1: string,
+    endDate1: string,
+    startDate2: string,
+    endDate2: string
+  ): Promise<any | null> => {
+    try {
+      const response = await axios.get('/api/analytics/comparison/custom', {
+        params: {
+          startDate1,
+          endDate1,
+          startDate2,
+          endDate2
+        }
+      })
+
+      if (response.data.success) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.error || 'Failed to fetch custom comparison')
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('Custom comparison error:', err)
       return null
     }
   }
@@ -469,10 +661,25 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     try {
       const dateRange = selectedPeriod.value === 'custom' ? customDateRange.value : undefined
 
+      // Load dashboard-specific data
+      await fetchDashboardData()
+
       // Silently handle 404s for endpoints that don't exist yet
       await Promise.allSettled([
         fetchSalesData(period, dateRange).catch(err => {
           if (err.response?.status !== 404) console.error('Sales data error:', err)
+        }),
+        fetchMenuPerformance(30).catch(err => {
+          if (err.response?.status !== 404) console.error('Menu performance error:', err)
+        }),
+        fetchPeakHours(7).catch(err => {
+          if (err.response?.status !== 404) console.error('Peak hours error:', err)
+        }),
+        fetchPaymentMethods(30).catch(err => {
+          if (err.response?.status !== 404) console.error('Payment methods error:', err)
+        }),
+        fetchCustomerInsights(30).catch(err => {
+          if (err.response?.status !== 404) console.error('Customer insights error:', err)
         }),
         fetchProductAnalytics(period).catch(err => {
           if (err.response?.status !== 404) console.error('Product analytics error:', err)
@@ -555,6 +762,13 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     isLoading,
     error,
 
+    // Dashboard-specific state
+    dashboardData,
+    menuPerformance,
+    peakHoursData,
+    paymentMethodsData,
+    customerInsightsData,
+
     // Computed
     topSellingProducts,
     mostProfitableProducts,
@@ -565,7 +779,12 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     kpiMetrics,
 
     // Actions
+    fetchDashboardData,
     fetchSalesData,
+    fetchMenuPerformance,
+    fetchPeakHours,
+    fetchPaymentMethods,
+    fetchCustomerInsights,
     fetchProductAnalytics,
     fetchCategoryAnalytics,
     fetchStaffPerformance,
@@ -582,6 +801,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     setPeriod,
     setCustomDateRange,
     clearError,
+    // New comparison methods
+    fetchYearOverYearComparison,
+    fetchMonthOverMonthComparison,
+    fetchCustomComparison,
 
     // Helpers
     formatCurrency,

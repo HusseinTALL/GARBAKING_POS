@@ -18,6 +18,7 @@ import websocketPlugin from './plugins/websocket.plugin'
 import authRoutes from './routes/fastify/auth.routes'
 import menuRoutes from './routes/fastify/menu.routes'
 import orderRoutes from './routes/fastify/orders.routes'
+import uploadRoutes from './routes/fastify/upload.routes'
 
 /**
  * Build Fastify application
@@ -33,44 +34,25 @@ export async function buildApp() {
   await fastify.register(import('@fastify/formbody'))
   await fastify.register(import('@fastify/sensible'))
 
+  // Register static file serving for uploads
+  await fastify.register(import('@fastify/static'), {
+    root: require('path').join(process.cwd(), 'public'),
+    prefix: '/'
+  })
+
+  // Register multipart for file uploads
+  await fastify.register(import('@fastify/multipart'), {
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB max
+      files: 1
+    }
+  })
+
   // Register custom plugins
   await fastify.register(errorHandlerPlugin)
   await fastify.register(databasePlugin)
   await fastify.register(authPlugin)
   await fastify.register(websocketPlugin)
-
-  // Add request/response logging hooks
-  fastify.addHook('onRequest', async (request, reply) => {
-    request.log.info({
-      requestId: (request as any).id,
-      method: request.method,
-      url: request.url,
-      ip: request.ip,
-      userAgent: request.headers['user-agent']
-    }, 'Incoming request')
-  })
-
-  fastify.addHook('onResponse', async (request, reply) => {
-    const responseTime = reply.getResponseTime()
-
-    request.log.info({
-      requestId: (request as any).id,
-      method: request.method,
-      url: request.url,
-      statusCode: reply.statusCode,
-      responseTime: `${responseTime.toFixed(2)}ms`
-    }, 'Request completed')
-
-    // Log slow requests as warnings
-    if (responseTime > 5000) {
-      request.log.warn({
-        requestId: (request as any).id,
-        duration: responseTime,
-        method: request.method,
-        url: request.url
-      }, 'Slow request detected')
-    }
-  })
 
   // Health check endpoints
   fastify.get('/health', async (request, reply) => {
@@ -99,6 +81,7 @@ export async function buildApp() {
   await fastify.register(authRoutes, { prefix: '/api/auth' })
   await fastify.register(menuRoutes, { prefix: '/api/menu' })
   await fastify.register(orderRoutes, { prefix: '/api/orders' })
+  await fastify.register(uploadRoutes, { prefix: '/api/upload' })
 
   // Also register menu under /local prefix for backward compatibility
   await fastify.register(menuRoutes, { prefix: '/local' })

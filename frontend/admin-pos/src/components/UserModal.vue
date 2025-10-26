@@ -120,10 +120,21 @@
             </p>
           </div>
 
-          <!-- UI Restrictions Preview -->
+          <!-- Custom Permissions -->
           <div v-if="form.role" class="bg-slate-50 rounded-lg p-4">
-            <h4 class="text-sm font-medium text-slate-700 mb-3">Role Permissions Preview</h4>
-            <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-medium text-slate-700">Custom Permissions</h4>
+              <button
+                type="button"
+                @click="showCustomPermissions = !showCustomPermissions"
+                class="text-sm text-blue-600 hover:text-blue-700"
+              >
+                {{ showCustomPermissions ? 'Hide' : 'Customize' }}
+              </button>
+            </div>
+
+            <!-- Role Permissions Preview -->
+            <div v-if="!showCustomPermissions" class="grid grid-cols-2 gap-3 text-sm">
               <div class="flex items-center justify-between">
                 <span>Modify Orders</span>
                 <span :class="roleRestrictions.canModifyOrders ? 'text-green-600' : 'text-red-600'">
@@ -145,6 +156,55 @@
               <div class="flex items-center justify-between">
                 <span>Max Discount</span>
                 <span class="text-slate-600">{{ roleRestrictions.maxDiscountPercent }}%</span>
+              </div>
+            </div>
+
+            <!-- Granular Permission Controls -->
+            <div v-else class="space-y-4">
+              <div>
+                <h5 class="text-sm font-medium text-slate-700 mb-2">Order Management</h5>
+                <div class="space-y-2">
+                  <label class="flex items-center space-x-2">
+                    <input type="checkbox" v-model="form.customPermissions.orders_create" class="w-4 h-4 text-blue-600 rounded" />
+                    <span class="text-sm">Create Orders</span>
+                  </label>
+                  <label class="flex items-center space-x-2">
+                    <input type="checkbox" v-model="form.customPermissions.orders_update" class="w-4 h-4 text-blue-600 rounded" />
+                    <span class="text-sm">Update Orders</span>
+                  </label>
+                  <label class="flex items-center space-x-2">
+                    <input type="checkbox" v-model="form.customPermissions.orders_refund" class="w-4 h-4 text-blue-600 rounded" />
+                    <span class="text-sm">Process Refunds</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <h5 class="text-sm font-medium text-slate-700 mb-2">Financial Access</h5>
+                <div class="space-y-2">
+                  <label class="flex items-center space-x-2">
+                    <input type="checkbox" v-model="form.customPermissions.analytics_financial" class="w-4 h-4 text-blue-600 rounded" />
+                    <span class="text-sm">View Financial Reports</span>
+                  </label>
+                  <label class="flex items-center space-x-2">
+                    <input type="checkbox" v-model="form.customPermissions.cash_view_reports" class="w-4 h-4 text-blue-600 rounded" />
+                    <span class="text-sm">View Cash Reports</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <h5 class="text-sm font-medium text-slate-700 mb-2">Menu Management</h5>
+                <div class="space-y-2">
+                  <label class="flex items-center space-x-2">
+                    <input type="checkbox" v-model="form.customPermissions.menu_update" class="w-4 h-4 text-blue-600 rounded" />
+                    <span class="text-sm">Update Menu Items</span>
+                  </label>
+                  <label class="flex items-center space-x-2">
+                    <input type="checkbox" v-model="form.customPermissions.menu_pricing" class="w-4 h-4 text-blue-600 rounded" />
+                    <span class="text-sm">Manage Pricing</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -248,8 +308,19 @@ const form = ref({
   password: '',
   role: '',
   storeId: '',
-  isActive: true
+  isActive: true,
+  customPermissions: {
+    orders_create: false,
+    orders_update: false,
+    orders_refund: false,
+    analytics_financial: false,
+    cash_view_reports: false,
+    menu_update: false,
+    menu_pricing: false
+  }
 })
+
+const showCustomPermissions = ref(false)
 
 // Available options
 const availableRoles = [

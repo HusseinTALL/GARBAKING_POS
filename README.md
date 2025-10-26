@@ -52,25 +52,61 @@ garbaking-pos/
    ```bash
    git clone <repository-url>
    cd garbaking-pos
-   npm run setup
    ```
 
-2. **Start development servers**
+2. **Install dependencies**
    ```bash
-   # Backend API server
+   # Install all dependencies
+   cd backend && npm install && cd ..
+   cd frontend/admin-pos && npm install && cd ../..
+   cd frontend/customer-app && npm install && cd ../..
+   ```
+
+3. **Start all services** (Recommended)
+   ```bash
+   # Use the convenient management scripts
+   ./start-all.sh
+   ```
+
+   **OR manually start each service:**
+   ```bash
+   # Backend API server (Terminal 1)
    cd backend && npm run dev
 
-   # Frontend applications (in separate terminals)
+   # Admin POS (Terminal 2)
    cd frontend/admin-pos && npm run dev
+
+   # Customer App (Terminal 3)
    cd frontend/customer-app && npm run dev
-   cd frontend/kds-app && npm run dev
    ```
 
-3. **Access applications**
+4. **Access applications**
+   - Backend API: http://localhost:3001
    - Admin POS: http://localhost:3000
-   - Customer App: http://localhost:3001
-   - KDS: http://localhost:3002
-   - API: http://localhost:8000
+   - Customer App: http://localhost:3002
+
+### 🎯 Management Scripts
+
+We provide convenient bash scripts to manage all services:
+
+```bash
+# Start all services
+./start-all.sh
+
+# Stop all services
+./stop-all.sh
+
+# Restart all services
+./restart-all.sh
+
+# Check status of all services
+./status.sh
+
+# View logs interactively
+./view-logs.sh
+```
+
+📖 For detailed script documentation, see [SCRIPTS.md](SCRIPTS.md)
 
 ## 📱 Interfaces
 

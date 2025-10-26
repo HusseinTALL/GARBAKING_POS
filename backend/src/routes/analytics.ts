@@ -291,7 +291,7 @@ router.get('/sales', authenticateToken, validatePagination, asyncHandler(async (
  * GET /api/analytics/menu-performance
  * Get menu item performance analytics
  */
-router.get('/menu-performance', asyncHandler(async (req: Request, res: Response) => {
+router.get('/menu-performance', authenticateToken, asyncHandler(async (req: Request, res: Response) => {
   const db = getDB()
   const { days = 30 } = req.query
 
@@ -363,7 +363,7 @@ router.get('/menu-performance', asyncHandler(async (req: Request, res: Response)
  * GET /api/analytics/peak-hours
  * Get peak hours analysis
  */
-router.get('/peak-hours', asyncHandler(async (req: Request, res: Response) => {
+router.get('/peak-hours', authenticateToken, asyncHandler(async (req: Request, res: Response) => {
   const db = getDB()
   const { days = 7 } = req.query
 
@@ -450,7 +450,7 @@ router.get('/peak-hours', asyncHandler(async (req: Request, res: Response) => {
  * GET /api/analytics/payment-methods
  * Get payment method analytics
  */
-router.get('/payment-methods', asyncHandler(async (req: Request, res: Response) => {
+router.get('/payment-methods', authenticateToken, asyncHandler(async (req: Request, res: Response) => {
   const db = getDB()
   const { days = 30 } = req.query
 
@@ -501,7 +501,7 @@ router.get('/payment-methods', asyncHandler(async (req: Request, res: Response) 
  * GET /api/analytics/customer-insights
  * Get customer behavior insights
  */
-router.get('/customer-insights', asyncHandler(async (req: Request, res: Response) => {
+router.get('/customer-insights', authenticateToken, asyncHandler(async (req: Request, res: Response) => {
   const db = getDB()
   const { days = 30 } = req.query
 

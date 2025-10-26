@@ -23,20 +23,12 @@ export const fastifyConfig: FastifyServerOptions = {
   disableRequestLogging: false,
   requestIdHeader: 'x-request-id',
   requestIdLogLabel: 'requestId',
-  genReqId: (req) => {
-    // Use existing request ID if provided, otherwise generate new one
-    const existingId = req.headers['x-request-id']
-    if (existingId && typeof existingId === 'string') {
-      return existingId
-    }
-    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  },
   trustProxy: true,
   bodyLimit: 10485760, // 10MB
   keepAliveTimeout: 5000,
-  connectionTimeout: 60000, // 60 seconds - allows time for slow connections
+  connectionTimeout: 0,
   pluginTimeout: 10000,
-  requestTimeout: 120000, // 120 seconds - allows time for analytics queries
+  requestTimeout: 0,
   ignoreTrailingSlash: true,
   ignoreDuplicateSlashes: true,
   caseSensitive: false,
