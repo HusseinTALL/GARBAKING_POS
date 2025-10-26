@@ -94,15 +94,15 @@
               <!-- Item Image & Details -->
               <div class="cart-item-main">
                 <div class="cart-item-image">
-                  <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" />
+                  <img v-if="item.menuItem.imageUrl" :src="item.menuItem.imageUrl" :alt="item.menuItem.name" />
                   <div v-else class="image-placeholder">
                     <UtensilsCrossed class="w-6 h-6" />
                   </div>
                 </div>
 
                 <div class="cart-item-details">
-                  <h4 class="cart-item-name">{{ truncate(item.name, 25) }}</h4>
-                  <p class="cart-item-price">{{ formatPrice(item.price) }}</p>
+                  <h4 class="cart-item-name">{{ truncate(item.menuItem.name, 25) }}</h4>
+                  <p class="cart-item-price">{{ formatPrice(item.menuItem.price) }}</p>
                 </div>
               </div>
 
@@ -121,14 +121,14 @@
 
               <!-- Item Total -->
               <div class="cart-item-total">
-                {{ formatPrice((item.price || 0) * (item.quantity || 1)) }}
+                {{ formatPrice((item.menuItem.price || 0) * (item.quantity || 1)) }}
               </div>
             </div>
 
             <!-- Order Note Section -->
-            <div v-if="item.notes || showNoteFor === item.id" class="cart-item-note">
+            <div v-if="item.specialInstructions || showNoteFor === item.id" class="cart-item-note">
               <input
-                v-model="item.notes"
+                v-model="item.specialInstructions"
                 type="text"
                 placeholder="Order Note..."
                 class="note-input"
@@ -266,9 +266,7 @@ import {
   UtensilsCrossed,
   Plus,
   Minus,
-  X,
   Trash2,
-  Save,
   Inbox,
   FolderOpen
 } from 'lucide-vue-next'
@@ -301,15 +299,11 @@ function generateOrderNumber(): string {
 
 const subtotal = computed(() => {
   return cartItems.value.reduce((sum, item) => {
-    const price = parseFloat(item.price) || 0
-    const quantity = parseInt(item.quantity) || 1
+    const price = parseFloat(item.menuItem.price.toString()) || 0
+    const quantity = parseInt(item.quantity.toString()) || 1
     return sum + (price * quantity)
   }, 0)
 })
-
-const tax = computed(() => subtotal.value * 0.10)
-
-const total = computed(() => subtotal.value + tax.value - discount.value)
 
 const formatPrice = (amount: number | string | undefined): string => {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
@@ -330,17 +324,17 @@ const truncate = (str: string, length: number): string => {
 }
 
 const removeNote = (item: any) => {
-  item.notes = ''
+  item.specialInstructions = ''
   showNoteFor.value = null
 }
 
 const increaseQuantity = (item: any) => {
-  cartStore.updateQuantity(item.id, item.quantity + 1)
+  cartStore.updateItemQuantity(item.id, item.quantity + 1)
 }
 
 const decreaseQuantity = (item: any) => {
   if (item.quantity > 1) {
-    cartStore.updateQuantity(item.id, item.quantity - 1)
+    cartStore.updateItemQuantity(item.id, item.quantity - 1)
   } else {
     removeItem(item)
   }
@@ -348,7 +342,7 @@ const decreaseQuantity = (item: any) => {
 
 const removeItem = (item: any) => {
   cartStore.removeItem(item.id)
-  toast.info(`${item.name} removed from cart`)
+  toast.info(`${item.menuItem.name} removed from cart`)
 }
 
 const clearCart = () => {
@@ -367,17 +361,6 @@ const updateCustomerName = () => {
 
 const updateCustomerPhone = () => {
   cartStore.updateCustomerInfo({ phone: customerPhone.value })
-}
-
-const handleSaveDraft = () => {
-  if (cartStore.currentDraftId) {
-    // Update existing draft
-    saveDraftNow()
-  } else {
-    // Show modal to enter draft name
-    draftName.value = `Draft ${new Date().toLocaleString()}`
-    showSaveDraftModal.value = true
-  }
 }
 
 const confirmSaveDraft = async () => {
@@ -474,37 +457,24 @@ const placeOrder = async () => {
 
   isSubmitting.value = true
   try {
-    const orderData = {
-      customerName: customerName.value || 'Walk-in Customer',
-      customerPhone: customerPhone.value || null,
-      items: cartItems.value.map(item => ({
-        menuItemId: item.menuItemId || item.id,
-        quantity: item.quantity,
-        unitPrice: item.price,
-        notes: item.notes
-      })),
-      subtotal: subtotal.value,
-      tax: tax.value,
-      total: total.value,
-      paymentMethod: paymentMethod.value,
-      orderType: orderType.value,
-      status: 'PENDING'
+    // Process payment using cart store
+    const result = await cartStore.processPayment(paymentMethod.value as 'cash' | 'card' | 'mobile')
+
+    if (result.success) {
+      toast.success('Order placed successfully!')
+
+      // Clear form
+      customerName.value = ''
+      customerPhone.value = ''
+
+      // Clear current draft ID
+      cartStore.currentDraftId = null
+
+      // Redirect to orders page
+      router.push('/orders')
+    } else {
+      toast.error(result.error || 'Failed to place order')
     }
-
-    // Submit order
-    await cartStore.checkout(orderData)
-
-    toast.success('Order placed successfully!')
-
-    // Clear form
-    customerName.value = ''
-    customerPhone.value = ''
-
-    // Clear current draft ID
-    cartStore.currentDraftId = null
-
-    // Redirect to orders page
-    router.push('/orders')
   } catch (error: any) {
     toast.error(error.message || 'Failed to place order')
   } finally {
@@ -721,7 +691,7 @@ watch(() => cartStore.customerInfo, (newInfo) => {
   background: var(--bg-primary);
   display: flex;
   align-items: center;
-  justify-center;
+  justify-content: center;
   flex-shrink: 0;
   border: 2px solid #e5e7eb;
 }
