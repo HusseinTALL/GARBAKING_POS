@@ -5,7 +5,15 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Go to backend directory (parent of scripts/)
+BACKEND_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+# Change to backend directory for all operations
+cd "$BACKEND_DIR"
+
 echo "🚀 Setting up database..."
+echo "📁 Working directory: $BACKEND_DIR"
 
 # Check if Prisma is installed
 if ! command -v prisma &> /dev/null; then
@@ -17,7 +25,15 @@ fi
 
 # Remove old database if it exists and is invalid
 if [ -f "./dev.db" ]; then
-    DB_SIZE=$(stat -f%z "./dev.db" 2>/dev/null || stat -c%s "./dev.db" 2>/dev/null || echo "0")
+    # Cross-platform file size check
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        DB_SIZE=$(stat -f%z "./dev.db" 2>/dev/null || echo "0")
+    else
+        # Linux
+        DB_SIZE=$(stat -c%s "./dev.db" 2>/dev/null || echo "0")
+    fi
+
     if [ "$DB_SIZE" -lt 1000 ]; then
         echo "🗑️  Removing invalid database file..."
         rm -f ./dev.db ./dev.db-journal
@@ -52,7 +68,17 @@ npm run db:seed || {
 echo "✅ Database setup complete!"
 echo ""
 echo "📋 Database info:"
-DB_SIZE=$(stat -f%z "./dev.db" 2>/dev/null || stat -c%s "./dev.db" 2>/dev/null || echo "0")
+
+# Cross-platform file size check
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    DB_SIZE=$(stat -f%z "./dev.db" 2>/dev/null || echo "0")
+else
+    # Linux
+    DB_SIZE=$(stat -c%s "./dev.db" 2>/dev/null || echo "0")
+fi
+
+echo "   Path: $BACKEND_DIR/dev.db"
 echo "   Size: $DB_SIZE bytes"
 echo ""
 
@@ -63,6 +89,8 @@ if command -v sqlite3 &> /dev/null; then
                       SELECT 'Categories: ' || COUNT(*) FROM categories;
                       SELECT 'Menu Items: ' || COUNT(*) FROM menu_items;
                       SELECT 'Orders: ' || COUNT(*) FROM orders;" 2>/dev/null || true
+else
+    echo "⚠️  sqlite3 command not found, skipping table count verification"
 fi
 
 echo ""
