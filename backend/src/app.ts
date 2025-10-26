@@ -39,6 +39,39 @@ export async function buildApp() {
   await fastify.register(authPlugin)
   await fastify.register(websocketPlugin)
 
+  // Add request/response logging hooks
+  fastify.addHook('onRequest', async (request, reply) => {
+    request.log.info({
+      requestId: (request as any).id,
+      method: request.method,
+      url: request.url,
+      ip: request.ip,
+      userAgent: request.headers['user-agent']
+    }, 'Incoming request')
+  })
+
+  fastify.addHook('onResponse', async (request, reply) => {
+    const responseTime = reply.getResponseTime()
+
+    request.log.info({
+      requestId: (request as any).id,
+      method: request.method,
+      url: request.url,
+      statusCode: reply.statusCode,
+      responseTime: `${responseTime.toFixed(2)}ms`
+    }, 'Request completed')
+
+    // Log slow requests as warnings
+    if (responseTime > 5000) {
+      request.log.warn({
+        requestId: (request as any).id,
+        duration: responseTime,
+        method: request.method,
+        url: request.url
+      }, 'Slow request detected')
+    }
+  })
+
   // Health check endpoints
   fastify.get('/health', async (request, reply) => {
     return {

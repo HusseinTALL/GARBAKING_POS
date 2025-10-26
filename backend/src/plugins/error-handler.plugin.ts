@@ -13,12 +13,27 @@ interface CustomError extends Error {
 }
 
 const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
+  // Helper function to determine if error is retryable
+  const isRetryable = (statusCode: number): boolean => {
+    return [408, 429, 500, 502, 503, 504].includes(statusCode)
+  }
+
+  // Helper function to get error code
+  const getErrorCode = (error: CustomError): string => {
+    if (error.code?.startsWith('P')) {
+      return `DB_${error.code}`
+    }
+    if (error.name === 'ValidationError') return 'VALIDATION_ERROR'
+    if (error.statusCode === 504) return 'GATEWAY_TIMEOUT'
+    return error.code || 'INTERNAL_ERROR'
+  }
+
   // Set custom error handler
   fastify.setErrorHandler(
     async (error: CustomError, request: FastifyRequest, reply: FastifyReply) => {
       const statusCode = error.statusCode || 500
 
-      // Log error
+      // Log error with request ID
       fastify.log.error({
         error: {
           message: error.message,
@@ -27,6 +42,7 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
           statusCode
         },
         request: {
+          id: (request as any).id,
           method: request.method,
           url: request.url,
           params: request.params,
@@ -34,42 +50,54 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
         }
       }, 'Error occurred')
 
+      // Base response object
+      const baseResponse = {
+        success: false,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+        requestId: (request as any).id || 'unknown'
+      }
+
       // Handle validation errors
       if (error.validation) {
         return reply.status(400).send({
-          success: false,
+          ...baseResponse,
           error: 'Validation Error',
           code: 'VALIDATION_ERROR',
           details: error.validation,
-          message: 'Request validation failed'
+          message: 'Request validation failed',
+          retryable: false
         })
       }
 
       // Handle JWT errors
       if (error.code === 'FST_JWT_NO_AUTHORIZATION_IN_HEADER') {
         return reply.status(401).send({
-          success: false,
+          ...baseResponse,
           error: 'Unauthorized',
           code: 'TOKEN_REQUIRED',
-          message: 'Access token required'
+          message: 'Access token required',
+          retryable: false
         })
       }
 
       if (error.code === 'FST_JWT_AUTHORIZATION_TOKEN_EXPIRED') {
         return reply.status(401).send({
-          success: false,
+          ...baseResponse,
           error: 'Unauthorized',
           code: 'TOKEN_EXPIRED',
-          message: 'Token has expired'
+          message: 'Token has expired',
+          retryable: false
         })
       }
 
       if (error.code === 'FST_JWT_AUTHORIZATION_TOKEN_INVALID') {
         return reply.status(401).send({
-          success: false,
+          ...baseResponse,
           error: 'Unauthorized',
           code: 'TOKEN_INVALID',
-          message: 'Invalid or malformed token'
+          message: 'Invalid or malformed token',
+          retryable: false
         })
       }
 
@@ -77,41 +105,45 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
       if (error.code?.startsWith('P')) {
         if (error.code === 'P2002') {
           return reply.status(409).send({
-            success: false,
+            ...baseResponse,
             error: 'Conflict',
             code: 'DUPLICATE_ENTRY',
-            message: 'Record already exists'
+            message: 'Record already exists',
+            retryable: false
           })
         }
 
         if (error.code === 'P2025') {
           return reply.status(404).send({
-            success: false,
+            ...baseResponse,
             error: 'Not Found',
             code: 'RECORD_NOT_FOUND',
-            message: 'Record not found'
+            message: 'Record not found',
+            retryable: false
           })
         }
 
         // Generic database error
         return reply.status(500).send({
-          success: false,
+          ...baseResponse,
           error: 'Database Error',
-          code: 'DATABASE_ERROR',
+          code: getErrorCode(error),
           message: process.env.NODE_ENV === 'production'
             ? 'A database error occurred'
-            : error.message
+            : error.message,
+          retryable: true
         })
       }
 
       // Default error response
       reply.status(statusCode).send({
-        success: false,
+        ...baseResponse,
         error: statusCode >= 500 ? 'Internal Server Error' : error.message,
-        code: error.code || 'UNKNOWN_ERROR',
+        code: getErrorCode(error),
         message: process.env.NODE_ENV === 'production' && statusCode >= 500
           ? 'An unexpected error occurred'
-          : error.message
+          : error.message,
+        retryable: isRetryable(statusCode)
       })
     }
   )
@@ -124,7 +156,10 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
       code: 'ROUTE_NOT_FOUND',
       message: `Route ${request.method} ${request.url} not found`,
       path: request.url,
-      method: request.method
+      method: request.method,
+      timestamp: new Date().toISOString(),
+      requestId: (request as any).id || 'unknown',
+      retryable: false
     })
   })
 

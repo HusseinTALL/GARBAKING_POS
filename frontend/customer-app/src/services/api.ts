@@ -15,7 +15,7 @@ const LOCAL_API_URL = ''
 
 // Create axios instance
 const apiClient = axios.create({
-  timeout: 10000,
+  timeout: 60000, // 60 seconds - increased for slow networks and heavy menu loads
   headers: {
     'Content-Type': 'application/json',
   }
