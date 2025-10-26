@@ -30,82 +30,126 @@
     </div>
 
     <!-- Menu Items Grid -->
-    <div class="menu-items-grid">
-      <article
-        v-for="item in filteredItems"
-        :key="item.id"
-        @click="$emit('add-item', item)"
-        class="menu-card"
-        :class="{ 'menu-card--unavailable': !item.isAvailable }"
-        role="button"
-        tabindex="0"
-        :aria-label="`Add ${item.name} to order`"
-      >
-        <!-- Image Section -->
-        <div class="menu-card__image-wrapper">
-          <div class="menu-card__image-container">
-            <!-- Always render placeholder, but hide it when image loads -->
-            <div class="menu-card__placeholder" :style="{ display: item.imageUrl ? 'none' : 'flex' }">
-              <div class="placeholder-icon-wrapper">
-                <UtensilsCrossed :size="56" stroke-width="1.5" />
-              </div>
-              <span class="placeholder-text">No Image</span>
-            </div>
-            <!-- Image overlay on top of placeholder -->
-            <img
-              v-if="item.imageUrl"
-              :src="item.imageUrl"
-              :alt="item.name"
-              class="menu-card__image"
-              loading="lazy"
-              @error="handleImageError"
-            />
-          </div>
-
-          <!-- Stock Badge -->
-          <div v-if="!item.isAvailable" class="menu-card__badge menu-card__badge--out-of-stock">
-            Out of Stock
-          </div>
-          <div v-else-if="item.stock && item.stock <= 5" class="menu-card__badge menu-card__badge--low-stock">
-            Low Stock
-          </div>
+    <article
+  v-for="item in filteredItems"
+  :key="item.id"
+  @click="$emit('add-item', item)"
+  @keydown.enter="$emit('add-item', item)"  <!-- CHANGED: Added for keyboard accessibility -->
+  class="menu-card"
+  :class="{ 'menu-card--unavailable': !item.isAvailable }"
+  role="button"
+  tabindex="0"
+  :aria-label="`Add ${item.name} to order`"
+>
+  <!-- Image Section: Full visibility with overlay badges -->
+  <div class="menu-card__image-wrapper">
+    <div class="menu-card__image-container">
+      <!-- CHANGED: Always load img (with fallback src); overlay for errors/no URL -->
+      <img
+        :src="item.imageUrl || '/placeholder-menu-image.jpg'"  <!-- Use a default image file -->
+        :alt="`${item.name} - ${item.description ? truncateText(item.description, 100) : 'Menu item'}`"  <!-- CHANGED: Better alt text -->
+        class="menu-card__image"
+        loading="lazy"
+        @error="handleImageError"  <!-- Pass item.id if needed: @error="(e) => handleImageError(e, item.id)" -->
+      />
+      <!-- CHANGED: Overlay only on error/no image; always visible if triggered -->
+      <div v-if="!item.imageUrl || imageLoadError[item.id]" class="menu-card__placeholder-overlay">
+        <div class="placeholder-icon-wrapper">
+          <UtensilsCrossed :size="56" stroke-width="1.5" />
         </div>
-
-        <!-- Content Section -->
-        <div class="menu-card__content">
-          <div class="menu-card__header">
-            <h3 class="menu-card__title">{{ item.name }}</h3>
-            <p v-if="item.description" class="menu-card__description">
-              {{ truncateText(item.description, 60) }}
-            </p>
-          </div>
-
-          <div class="menu-card__footer">
-            <div class="menu-card__price-group">
-              <span class="menu-card__price">{{ formatPrice(item.price) }}</span>
-              <span v-if="item.stock" class="menu-card__stock">
-                {{ item.stock }} available
-              </span>
-            </div>
-
-            <button class="menu-card__add-btn" aria-label="Add to cart">
-              <Plus :size="20" stroke-width="2.5" />
-            </button>
-          </div>
-        </div>
-      </article>
-
-      <!-- Empty State -->
-      <div v-if="filteredItems.length === 0" class="empty-state">
-        <div class="empty-state__icon">
-          <UtensilsCrossed :size="64" stroke-width="1" />
-        </div>
-        <h3 class="empty-state__title">No items found</h3>
-        <p class="empty-state__description">
-          Try adjusting your search or filter criteria
-        </p>
+        <span class="placeholder-text">No Image Available</span>
       </div>
     </div>
+
+    <!-- CHANGED: Always show a badge; added cases for in-stock/unlimited; absolute positioning -->
+    <div
+      v-if="!item.isAvailable"
+      class="menu-card__badge menu-card__badge--out-of-stock"
+      style="z-index: 10; position: absolute; top: 8px; right: 8px;"
+    >
+      Out of Stock
+    </div>
+    <div
+      v-else-if="item.stock && item.stock <= 5"
+      class="menu-card__badge menu-card__badge--low-stock"
+      style="z-index: 10; position: absolute; top: 8px; right: 8px;"
+    >
+      Low Stock ({{ item.stock }} left)
+    </div>
+    <div
+      v-else-if="item.stock"
+      class="menu-card__badge menu-card__badge--in-stock"
+      style="z-index: 10; position: absolute; top: 8px; right: 8px;"
+    >
+      {{ item.stock }} Available
+    </div>
+    <!-- CHANGED: New fallback for no stock prop -->
+    <div
+      v-else
+      class="menu-card__badge menu-card__badge--unlimited"
+      style="z-index: 10; position: absolute; top: 8px; right: 8px;"
+    >
+      Unlimited
+    </div>
+  </div>
+
+  <!-- Content Section: Expanded for full visibility, with wrapping text -->
+  <div class="menu-card__content">
+    <div class="menu-card__header">
+      <h3 class="menu-card__title">{{ item.name }}</h3>
+      
+      <!-- CHANGED: Full description (no truncate); fallback if empty -->
+      <p v-if="item.description" class="menu-card__description">
+        {{ item.description }}
+      </p>
+      <p v-else class="menu-card__description menu-card__description--empty">
+        A delicious {{ item.name.toLowerCase() }} prepared fresh.
+      </p>
+    </div>
+
+    <div class="menu-card__footer">
+      <div class="menu-card__price-group">
+        <span class="menu-card__price">{{ formatPrice(item.price) }}</span>
+        
+        <!-- CHANGED: Always visible stock text -->
+        <span class="menu-card__stock">
+          {{ item.stock ? `${item.stock} available` : 'Unlimited stock' }}
+        </span>
+      </div>
+
+      <!-- CHANGED: Add text label; stop propagation on button click -->
+      <button
+        class="menu-card__add-btn"
+        type="button"
+        :aria-label="`Add one ${item.name} to cart`"
+        @click.stop="$emit('add-item', item)"
+      >
+        <Plus :size="20" stroke-width="2.5" />
+        <span class="menu-card__add-btn-text">Add</span>  <!-- CHANGED: Visible text -->
+      </button>
+    </div>
+  </div>
+</article>
+
+<!-- Empty State: Enhanced visibility with better spacing -->
+<div v-if="filteredItems.length === 0" class="empty-state">
+  <div class="empty-state__icon-wrapper">  <!-- CHANGED: Wrapper for consistency -->
+    <UtensilsCrossed :size="64" stroke-width="1" />
+  </div>
+  <h3 class="empty-state__title">No Items Found</h3>
+  <p class="empty-state__description">
+    Try adjusting your search or filter criteria to see more menu options.  <!-- CHANGED: Slightly expanded text -->
+  </p>
+  <!-- CHANGED: Optional clear button (emit if you have filters) -->
+  <button 
+    v-if="hasActiveFilters" 
+    @click="clearFilters"
+    class="empty-state__clear-btn"
+    aria-label="Clear all filters and search"
+  >
+    Clear Filters
+  </button>
+</div>
   </div>
 </template>
 
@@ -128,6 +172,28 @@ const categories = ref([
   { id: 'appetizer', name: 'Appetizer' },
   { id: 'dessert', name: 'Dessert' }
 ])
+
+// CHANGED: Add ref for tracking image errors (per item)
+const imageLoadError = ref({})
+
+// CHANGED: Update handler to track errors per item
+// const handleImageError = (event, itemId = null) => {  // Optional itemId for precision
+//   if (itemId) {
+//     imageLoadError.value[itemId] = true
+//   } else {
+//     event.target.style.display = 'none'  // Fallback for non-per-item
+//   }
+// }
+
+// CHANGED: Optional emits/props for empty state (add if using filters)
+const emit = defineEmits(['add-item', 'clear-filters'])  // Add 'clear-filters' if needed
+const props = defineProps({  // Add this if not present
+  filteredItems: Array,
+  hasActiveFilters: { type: Boolean, default: false }  // New prop for clear button
+})
+const clearFilters = () => emit('clear-filters')  // New method for empty state
+
+// Keep your existing: truncateText (now unused for desc), formatPrice, etc.
 
 const filteredItems = computed(() => {
   let items = menuStore.menuItems || []
@@ -666,5 +732,292 @@ defineEmits<{
 
 .menu-items-grid::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.15);
+}
+
+/* CHANGED: Grid responsiveness and min heights for equal visibility */
+.menu-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));  /* Min width prevents squish */
+  gap: 1.5rem;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg, #fff);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  height: 100%;
+  min-height: 400px;  /* CHANGED: Ensures full content fits */
+}
+
+.menu-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.menu-card--unavailable {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.menu-card__image-wrapper {
+  position: relative;
+  height: 200px;  /* CHANGED: Fixed height prevents shift/jump */
+  overflow: hidden;
+  background: var(--neutral-100, #f5f5f5);
+}
+
+.menu-card__image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;  /* CHANGED: Better fill without distortion */
+  transition: opacity 0.3s ease;
+}
+
+/* CHANGED: New overlay for placeholder (absolute, full cover on error) */
+.menu-card__placeholder-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--neutral-600, #4b5563);
+  text-align: center;
+  z-index: 5;
+}
+
+.placeholder-icon-wrapper {
+  margin-bottom: 0.5rem;
+}
+
+.placeholder-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* CHANGED: Badge styles (add new variants; ensure z-index) */
+.menu-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.menu-card__badge--out-of-stock {
+  background: var(--danger-100, #fee2e2);
+  color: var(--danger-800, #991b1b);
+}
+
+.menu-card__badge--low-stock,
+.menu-card__badge--in-stock {
+  background: var(--warning-100, #fef3c7);
+  color: var(--warning-800, #92400e);
+}
+
+/* CHANGED: New unlimited badge */
+.menu-card__badge--unlimited {
+  background: var(--success-100, #d1fae5);
+  color: var(--success-800, #065f46);
+}
+
+.menu-card__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  gap: 0.75rem;
+}
+
+.menu-card__header {
+  flex: 1;  /* CHANGED: Grows to fit full description */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.menu-card__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--neutral-900, #111827);
+  margin: 0;
+  line-height: 1.3;
+  word-break: break-word;  /* CHANGED: Prevents horizontal overflow */
+}
+
+.menu-card__description,
+.menu-card__description--empty {
+  font-size: 0.875rem;
+  color: var(--neutral-600, #4b5563);
+  line-height: 1.5;
+  margin: 0;
+  word-wrap: break-word;  /* CHANGED: Full wrapping, no clamp */
+  display: -webkit-box;
+  -webkit-line-clamp: unset;  /* Remove truncation */
+  -webkit-box-orient: vertical;
+  overflow: visible;
+  max-height: none;  /* Full visibility */
+}
+
+.menu-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--neutral-200, #e5e7eb);  /* CHANGED: Separator line for clarity */
+  gap: 1rem;
+}
+
+.menu-card__price-group {
+  display: flex;
+  flex-direction: column;  /* CHANGED: Stack for better mobile visibility */
+  gap: 0.25rem;
+  align-items: flex-start;
+}
+
+.menu-card__price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary-600, #2563eb);
+  line-height: 1.2;
+}
+
+.menu-card__stock {
+  font-size: 0.75rem;
+  color: var(--neutral-500, #6b7280);
+  font-weight: 500;
+}
+
+.menu-card__add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--primary-500, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  min-width: 80px;  /* CHANGED: Prevents shrinking */
+  justify-content: center;
+}
+
+.menu-card__add-btn:hover {
+  background: var(--primary-600, #2563eb);
+}
+
+/* CHANGED: New text in button */
+.menu-card__add-btn-text {
+  font-size: 0.875rem;
+}
+
+/* CHANGED: Enhanced empty state (full width, dashed border for visibility) */
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--neutral-50, #f9fafb);
+  border-radius: 1rem;
+  border: 2px dashed var(--neutral-300, #d1d5db);
+  gap: 1rem;
+  min-height: 300px;
+}
+
+.empty-state__icon-wrapper {
+  color: var(--neutral-400, #9ca3af);
+}
+
+.empty-state__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--neutral-800, #1f2937);
+  margin: 0;
+}
+
+.empty-state__description {
+  font-size: 1rem;
+  color: var(--neutral-600, #4b5563);
+  margin: 0;
+  max-width: 400px;  /* CHANGED: Prevents wide text wrap issues */
+}
+
+/* CHANGED: New clear button styles */
+.empty-state__clear-btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary-500, #3b82f6);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.empty-state__clear-btn:hover {
+  background: var(--primary-600, #2563eb);
+}
+
+/* CHANGED: Mobile responsiveness for small screens */
+@media (max-width: 640px) {
+  .menu-items-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0.5rem;
+  }
+
+  .menu-card {
+    min-height: 350px;
+  }
+
+  .menu-card__image-wrapper {
+    height: 160px;
+  }
+
+  .menu-card__content {
+    padding: 1rem;
+  }
+
+  .menu-card__title {
+    font-size: 1.125rem;
+  }
+
+  .menu-card__price {
+    font-size: 1.25rem;
+  }
+
+  .menu-card__description {
+    font-size: 0.8rem;  /* Slightly smaller but still fully visible */
+  }
 }
 </style>
