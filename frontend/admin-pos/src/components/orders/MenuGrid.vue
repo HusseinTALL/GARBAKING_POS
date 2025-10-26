@@ -34,8 +34,8 @@
       <article
         v-for="item in filteredItems"
         :key="item.id"
-        @click="$emit('add-item', item)"
-        @keydown.enter="$emit('add-item', item)"
+        @click="emit('add-item', item)"
+        @keydown.enter="emit('add-item', item)"
         class="menu-card"
         :class="{ 'menu-card--unavailable': !item.isAvailable }"
         role="button"
@@ -123,7 +123,7 @@
               class="menu-card__add-btn"
               type="button"
               :aria-label="`Add one ${item.name} to cart`"
-              @click.stop="$emit('add-item', item)"
+              @click.stop="emit('add-item', item)"
             >
               <Plus :size="20" stroke-width="2.5" />
               <span class="menu-card__add-btn-text">Add</span>
@@ -185,8 +185,8 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'add-item': [item: any]
-  'clear-filters'?: []
+  (e: 'add-item', item: any): void
+  (e: 'clear-filters'): void
 }>()
 
 const clearFilters = () => emit('clear-filters')
