@@ -37,11 +37,13 @@
         @click="$emit('add-item', item)"
         class="menu-item-card"
       >
-        <!-- Item Image -->
-        <div class="item-image">
-          <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" />
-          <div v-else class="item-placeholder">
-            <UtensilsCrossed class="w-12 h-12" />
+        <!-- Item Image Container -->
+        <div class="item-image-container">
+          <div class="item-image-circle">
+            <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" class="item-image" />
+            <div v-else class="item-placeholder">
+              <UtensilsCrossed class="placeholder-icon" />
+            </div>
           </div>
         </div>
 
@@ -49,10 +51,10 @@
         <div class="item-info">
           <h4 class="item-name">{{ item.name }}</h4>
           <p class="item-price">{{ formatPrice(item.price) }}</p>
-          <span v-if="item.isAvailable" class="availability-badge available">
-            {{ item.stock || 0 }} Available
+          <span v-if="item.isAvailable" class="availability-text available">
+            {{ item.stock || 20 }} Bowls available
           </span>
-          <span v-else class="availability-badge unavailable">
+          <span v-else class="availability-text unavailable">
             Out of Stock
           </span>
         </div>
@@ -214,101 +216,136 @@ defineEmits<{
 .menu-items-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 32px;
   overflow-y: auto;
   padding-right: 8px;
 }
 
 .menu-item-card {
-  background: #1e293b;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   position: relative;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
 }
 
 .menu-item-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }
 
-.item-image {
-  width: 100%;
-  height: 180px;
+.menu-item-card:active {
+  transform: translateY(-4px) scale(1.01);
+}
+
+/* Item Image Container - Top 60% */
+.item-image-container {
+  height: 60%;
+  min-height: 240px;
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  position: relative;
   padding: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
-.item-image img {
-  width: 140px;
-  height: 140px;
-  object-fit: cover;
+/* Circular Image Frame */
+.item-image-circle {
+  width: 250px;
+  height: 250px;
   border-radius: 50%;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
+}
+
+.item-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.menu-item-card:hover .item-image {
+  transform: scale(1.1);
 }
 
 .item-placeholder {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  background: rgba(100, 116, 139, 0.1);
 }
 
+.placeholder-icon {
+  width: 80px;
+  height: 80px;
+  color: #64748b;
+  opacity: 0.5;
+}
+
+/* Item Info - Bottom 40% */
 .item-info {
-  padding: 20px;
+  flex: 1;
+  padding: 24px 20px 20px;
   text-align: center;
-  background: #1e293b;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
 }
 
 .item-name {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
-  color: #f1f5f9;
-  margin-bottom: 12px;
-  text-transform: uppercase;
+  color: #f8fafc;
   letter-spacing: 0.5px;
   line-height: 1.4;
-  min-height: 40px;
+  min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  margin: 0;
 }
 
 .item-price {
-  font-size: 24px;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin-bottom: 8px;
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.availability-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+.availability-text {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }
 
-.availability-badge.available {
-  background: rgba(76, 175, 80, 0.15);
-  color: #94a3b8;
+.availability-text.available {
+  color: #d1d5db;
 }
 
-.availability-badge.unavailable {
-  background: rgba(244, 67, 54, 0.15);
+.availability-text.unavailable {
   color: #ef4444;
+  font-weight: 500;
 }
 
 /* Empty State */
@@ -330,7 +367,13 @@ defineEmits<{
 /* Responsive */
 @media (max-width: 1024px) {
   .menu-items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 24px;
+  }
+
+  .item-image-circle {
+    width: 200px;
+    height: 200px;
   }
 }
 
@@ -340,12 +383,45 @@ defineEmits<{
   }
 
   .menu-items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
   }
 
-  .item-image {
-    height: 120px;
+  .menu-item-card {
+    min-height: 320px;
+  }
+
+  .item-image-container {
+    min-height: 200px;
+  }
+
+  .item-image-circle {
+    width: 180px;
+    height: 180px;
+  }
+
+  .item-name {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .item-price {
+    font-size: 24px;
+  }
+
+  .availability-text {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-items-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .menu-item-card {
+    max-width: 100%;
   }
 }
 </style>
