@@ -8,7 +8,7 @@
     <!-- Header -->
     <div class="cart-header">
       <div class="cart-title-section">
-        <h2 class="cart-title">Current Order</h2>
+        <h2 class="cart-title">Orders #{{ orderNumber }}</h2>
         <span v-if="cartStore.hasUnsavedChanges" class="unsaved-indicator" title="Unsaved changes">
           ●
         </span>
@@ -26,6 +26,31 @@
           Clear
         </button>
       </div>
+    </div>
+
+    <!-- Order Type Selectors -->
+    <div class="order-type-section">
+      <button
+        @click="orderType = 'DINE_IN'"
+        class="order-type-btn"
+        :class="{ 'active': orderType === 'DINE_IN' }"
+      >
+        Dine In
+      </button>
+      <button
+        @click="orderType = 'TO_GO'"
+        class="order-type-btn"
+        :class="{ 'active': orderType === 'TO_GO' }"
+      >
+        To Go
+      </button>
+      <button
+        @click="orderType = 'DELIVERY'"
+        class="order-type-btn"
+        :class="{ 'active': orderType === 'DELIVERY' }"
+      >
+        Delivery
+      </button>
     </div>
 
     <!-- Customer Info (Optional) -->
@@ -54,43 +79,68 @@
         <p class="empty-subtext">Add items from the menu</p>
       </div>
 
-      <div v-else class="items-list">
-        <div v-for="item in cartItems" :key="item.id" class="cart-item">
-          <!-- Item Image -->
-          <div class="cart-item-image">
-            <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" />
-            <div v-else class="image-placeholder">
-              <UtensilsCrossed class="w-6 h-6" />
+      <div v-else>
+        <!-- Column Headers -->
+        <div class="items-header">
+          <div class="header-item">Item</div>
+          <div class="header-qty">Qty</div>
+          <div class="header-price">Price</div>
+        </div>
+
+        <!-- Items List -->
+        <div class="items-list">
+          <div v-for="item in cartItems" :key="item.id" class="cart-item-row">
+            <div class="cart-item">
+              <!-- Item Image & Details -->
+              <div class="cart-item-main">
+                <div class="cart-item-image">
+                  <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" />
+                  <div v-else class="image-placeholder">
+                    <UtensilsCrossed class="w-6 h-6" />
+                  </div>
+                </div>
+
+                <div class="cart-item-details">
+                  <h4 class="cart-item-name">{{ truncate(item.name, 25) }}</h4>
+                  <p class="cart-item-price">{{ formatPrice(item.price) }}</p>
+                </div>
+              </div>
+
+              <!-- Quantity Controls -->
+              <div class="cart-item-qty">
+                <div class="quantity-controls">
+                  <button @click="decreaseQuantity(item)" class="qty-btn">
+                    <Minus class="w-3 h-3" />
+                  </button>
+                  <span class="qty-value">{{ item.quantity }}</span>
+                  <button @click="increaseQuantity(item)" class="qty-btn">
+                    <Plus class="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              <!-- Item Total -->
+              <div class="cart-item-total">
+                {{ formatPrice((item.price || 0) * (item.quantity || 1)) }}
+              </div>
             </div>
-          </div>
 
-          <!-- Item Details -->
-          <div class="cart-item-details">
-            <h4 class="cart-item-name">{{ item.name }}</h4>
-            <p class="cart-item-price">{{ formatPrice(item.price) }}</p>
-            <p v-if="item.notes" class="cart-item-notes">{{ item.notes }}</p>
-          </div>
-
-          <!-- Quantity Controls -->
-          <div class="quantity-controls">
-            <button @click="decreaseQuantity(item)" class="qty-btn">
-              <Minus class="w-4 h-4" />
-            </button>
-            <span class="qty-value">{{ item.quantity }}</span>
-            <button @click="increaseQuantity(item)" class="qty-btn">
-              <Plus class="w-4 h-4" />
+            <!-- Order Note Section -->
+            <div v-if="item.notes || showNoteFor === item.id" class="cart-item-note">
+              <input
+                v-model="item.notes"
+                type="text"
+                placeholder="Order Note..."
+                class="note-input"
+              />
+              <button @click="removeNote(item)" class="note-delete-btn" title="Remove Note">
+                <Trash2 class="w-4 h-4" />
+              </button>
+            </div>
+            <button v-else @click="showNoteFor = item.id" class="add-note-btn">
+              + Add Note
             </button>
           </div>
-
-          <!-- Item Total -->
-          <div class="cart-item-total">
-            {{ formatPrice(item.price * item.quantity) }}
-          </div>
-
-          <!-- Remove Button -->
-          <button @click="removeItem(item)" class="remove-btn">
-            <X class="w-4 h-4" />
-          </button>
         </div>
       </div>
     </div>
@@ -98,39 +148,19 @@
     <!-- Order Summary -->
     <div v-if="cartItems.length > 0" class="order-summary">
       <div class="summary-row">
+        <span class="summary-label">Discount</span>
+        <span class="summary-value">{{ formatPrice(discount) }}</span>
+      </div>
+      <div class="summary-row summary-subtotal">
         <span class="summary-label">Subtotal</span>
         <span class="summary-value">{{ formatPrice(subtotal) }}</span>
       </div>
-      <div class="summary-row">
-        <span class="summary-label">Tax (10%)</span>
-        <span class="summary-value">{{ formatPrice(tax) }}</span>
-      </div>
-      <div class="summary-row summary-total">
-        <span class="summary-label">Total</span>
-        <span class="summary-value">{{ formatPrice(total) }}</span>
-      </div>
 
-      <!-- Payment Method -->
-      <div class="payment-method">
-        <label class="payment-label">Payment Method</label>
-        <select v-model="paymentMethod" class="payment-select">
-          <option value="CASH">Cash</option>
-          <option value="CARD">Card</option>
-          <option value="MOBILE_MONEY">Mobile Money</option>
-        </select>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="action-buttons">
-        <button @click="handleSaveDraft" class="btn btn-outline" :disabled="cartItems.length === 0">
-          <Save class="w-4 h-4" />
-          Save Draft
-        </button>
-        <button @click="placeOrder" class="btn btn-primary" :disabled="isSubmitting">
-          <span v-if="isSubmitting">Processing...</span>
-          <span v-else>Place Order</span>
-        </button>
-      </div>
+      <!-- Action Button -->
+      <button @click="placeOrder" class="btn btn-continue" :disabled="isSubmitting">
+        <span v-if="isSubmitting">Processing...</span>
+        <span v-else>Continue to Payment</span>
+      </button>
     </div>
 
     <!-- Drafts Management Modal -->
@@ -251,6 +281,9 @@ const customerName = ref('')
 const customerPhone = ref('')
 const paymentMethod = ref('CASH')
 const isSubmitting = ref(false)
+const orderType = ref('DINE_IN')
+const orderNumber = ref(generateOrderNumber())
+const showNoteFor = ref<string | null>(null)
 
 // Draft management state
 const showDraftsModal = ref(false)
@@ -260,21 +293,45 @@ const draftCount = ref(0)
 
 const cartItems = computed(() => cartStore.items || [])
 
+const discount = ref(0)
+
+function generateOrderNumber(): string {
+  return Math.floor(10000 + Math.random() * 90000).toString()
+}
+
 const subtotal = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  return cartItems.value.reduce((sum, item) => {
+    const price = parseFloat(item.price) || 0
+    const quantity = parseInt(item.quantity) || 1
+    return sum + (price * quantity)
+  }, 0)
 })
 
 const tax = computed(() => subtotal.value * 0.10)
 
-const total = computed(() => subtotal.value + tax.value)
+const total = computed(() => subtotal.value + tax.value - discount.value)
 
-const formatPrice = (amount: number): string => {
+const formatPrice = (amount: number | string | undefined): string => {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+  if (isNaN(numAmount as number) || numAmount === undefined || numAmount === null) {
+    return '0 F CFA'
+  }
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'XOF',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
-  }).format(amount)
+  }).format(numAmount as number).replace('XOF', 'F CFA')
+}
+
+const truncate = (str: string, length: number): string => {
+  if (!str) return ''
+  return str.length > length ? str.substring(0, length) + '...' : str
+}
+
+const removeNote = (item: any) => {
+  item.notes = ''
+  showNoteFor.value = null
 }
 
 const increaseQuantity = (item: any) => {
@@ -430,7 +487,7 @@ const placeOrder = async () => {
       tax: tax.value,
       total: total.value,
       paymentMethod: paymentMethod.value,
-      orderType: 'DINE_IN',
+      orderType: orderType.value,
       status: 'PENDING'
     }
 
@@ -513,8 +570,41 @@ watch(() => cartStore.customerInfo, (newInfo) => {
   color: var(--accent-red);
 }
 
+/* Order Type Selectors */
+.order-type-section {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+}
+
+.order-type-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.order-type-btn.active {
+  background: #ec4899;
+  border-color: #ec4899;
+  color: white;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
+}
+
+.order-type-btn:hover:not(.active) {
+  border-color: #6b7280;
+  color: var(--text-primary);
+}
+
 .customer-section {
-  padding: 20px 24px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -564,32 +654,76 @@ watch(() => cartStore.customerInfo, (newInfo) => {
   color: var(--text-tertiary);
 }
 
+/* Items Header */
+.items-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #374151;
+  margin-bottom: 12px;
+}
+
+.items-header > div {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f9fafb;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-item {
+  text-align: left;
+  padding-left: 8px;
+}
+
+.header-qty {
+  text-align: center;
+}
+
+.header-price {
+  text-align: right;
+}
+
 .items-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+}
+
+.cart-item-row {
+  border-bottom: 1px solid #374151;
+  padding-bottom: 12px;
+}
+
+.cart-item-row:last-child {
+  border-bottom: none;
 }
 
 .cart-item {
   display: grid;
-  grid-template-columns: 60px 1fr auto auto auto;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 12px;
   align-items: center;
-  padding: 12px;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+}
+
+.cart-item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .cart-item-image {
   width: 60px;
   height: 60px;
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
   overflow: hidden;
   background: var(--bg-primary);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-center;
+  flex-shrink: 0;
+  border: 2px solid #e5e7eb;
 }
 
 .cart-item-image img {
@@ -608,85 +742,130 @@ watch(() => cartStore.customerInfo, (newInfo) => {
 }
 
 .cart-item-name {
-  font-size: var(--font-size-body);
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #f9fafb;
   margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .cart-item-price {
-  font-size: var(--font-size-small);
-  color: var(--text-secondary);
+  font-size: 13px;
+  color: #9ca3af;
 }
 
-.cart-item-notes {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  font-style: italic;
-  margin-top: 4px;
+.cart-item-qty {
+  display: flex;
+  justify-content: center;
 }
 
 .quantity-controls {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg-primary);
-  border-radius: var(--radius-sm);
-  padding: 4px;
+  background: #1f2937;
+  border-radius: 6px;
+  padding: 4px 8px;
 }
 
 .qty-btn {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: 1px solid var(--border);
+  border: 1px solid #374151;
   border-radius: 4px;
-  color: var(--text-secondary);
+  color: #9ca3af;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .qty-btn:hover {
-  border-color: var(--accent-orange);
-  color: var(--accent-orange);
+  border-color: #ec4899;
+  color: #ec4899;
 }
 
 .qty-value {
-  min-width: 24px;
+  min-width: 20px;
   text-align: center;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: #f9fafb;
+  font-size: 14px;
 }
 
 .cart-item-total {
-  font-weight: 600;
-  color: var(--accent-orange);
-  font-size: var(--font-size-body);
+  font-weight: 700;
+  color: #f9fafb;
+  font-size: 16px;
+  text-align: right;
 }
 
-.remove-btn {
+/* Note Section */
+.cart-item-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 72px;
+}
+
+.note-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 20px;
+  color: #9ca3af;
+  font-size: 13px;
+  transition: all 0.3s;
+}
+
+.note-input:focus {
+  outline: none;
+  border-color: #ec4899;
+  color: #f3f4f6;
+}
+
+.note-input::placeholder {
+  color: #6b7280;
+}
+
+.note-delete-btn {
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: none;
-  color: var(--text-tertiary);
+  border: 1px solid #ef4444;
+  border-radius: 50%;
+  color: #ef4444;
   cursor: pointer;
   transition: all 0.2s;
-  border-radius: 4px;
 }
 
-.remove-btn:hover {
-  background: rgba(244, 67, 54, 0.1);
-  color: var(--accent-red);
+.note-delete-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.add-note-btn {
+  margin-top: 8px;
+  margin-left: 72px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px dashed #374151;
+  border-radius: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-note-btn:hover {
+  border-color: #ec4899;
+  color: #ec4899;
 }
 
 .order-summary {
@@ -712,21 +891,49 @@ watch(() => cartStore.customerInfo, (newInfo) => {
   font-size: var(--font-size-body);
 }
 
-.summary-total {
+.summary-subtotal {
   padding-top: 12px;
   margin-top: 12px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #374151;
+  margin-bottom: 20px;
 }
 
-.summary-total .summary-label {
-  font-size: var(--font-size-h3);
+.summary-subtotal .summary-label {
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #f9fafb;
 }
 
-.summary-total .summary-value {
-  font-size: var(--font-size-h3);
-  color: var(--accent-orange);
+.summary-subtotal .summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f9fafb;
+}
+
+.btn-continue {
+  width: 100%;
+  padding: 16px 20px;
+  background: #ec4899;
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.btn-continue:hover:not(:disabled) {
+  background: #db2777;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+}
+
+.btn-continue:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .payment-method {

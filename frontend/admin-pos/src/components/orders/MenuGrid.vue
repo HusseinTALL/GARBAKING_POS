@@ -214,84 +214,101 @@ defineEmits<{
 .menu-items-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px;
   overflow-y: auto;
   padding-right: 8px;
 }
 
 .menu-item-card {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  background: #1e293b;
+  border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .menu-item-card:hover {
-  border-color: var(--accent-orange);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
 }
 
 .item-image {
   width: 100%;
-  height: 160px;
-  background: var(--bg-tertiary);
+  height: 180px;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
+  padding: 20px;
 }
 
 .item-image img {
-  width: 100%;
-  height: 100%;
+  width: 140px;
+  height: 140px;
   object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .item-placeholder {
-  color: var(--text-tertiary);
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
 }
 
 .item-info {
-  padding: 16px;
+  padding: 20px;
+  text-align: center;
+  background: #1e293b;
 }
 
 .item-name {
-  font-size: var(--font-size-body);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .item-price {
-  font-size: var(--font-size-h3);
+  font-size: 24px;
   font-weight: 700;
-  color: var(--accent-orange);
+  color: #f1f5f9;
   margin-bottom: 8px;
 }
 
 .availability-badge {
   display: inline-block;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .availability-badge.available {
-  background: rgba(76, 175, 80, 0.2);
-  color: var(--accent-green);
+  background: rgba(76, 175, 80, 0.15);
+  color: #94a3b8;
 }
 
 .availability-badge.unavailable {
-  background: rgba(244, 67, 54, 0.2);
-  color: var(--accent-red);
+  background: rgba(244, 67, 54, 0.15);
+  color: #ef4444;
 }
 
 /* Empty State */
