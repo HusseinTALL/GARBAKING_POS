@@ -31,7 +31,7 @@ spring:
         - id: inventory-service
           uri: lb://inventory-service
           predicates:
-            - Path=/api/inventory/**, /api/menu/**
+            - Path=/api/categories/**, /api/menu-items/**
           filters:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 
