@@ -454,21 +454,18 @@ export const useUsersStore = defineStore('users', () => {
     try {
       const data = await passwordApi.requestReset(email)
 
-        const resetRequest = data.resetRequest
-        passwordResets.value.push(resetRequest)
+      const resetRequest = data.resetRequest
+      passwordResets.value.push(resetRequest)
 
-        // Log audit
-        await logAudit({
-          action: AuditAction.PASSWORD_RESET_REQUESTED,
-          resource: 'users',
-          details: { email },
-          severity: 'WARNING'
-        })
+      // Log audit
+      await logAudit({
+        action: AuditAction.PASSWORD_RESET_REQUESTED,
+        resource: 'users',
+        details: { email },
+        severity: 'WARNING'
+      })
 
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to request password reset')
+      return true
     } catch (err: any) {
       console.error('Failed to request password reset:', err)
       throw err
@@ -477,28 +474,22 @@ export const useUsersStore = defineStore('users', () => {
 
   const resetPassword = async (token: string, newPassword: string): Promise<boolean> => {
     try {
-      const data = await passwordApi.completeReset(
-        token,
-        newPassword
-      })
+      const data = await passwordApi.completeReset(token, newPassword)
 
-        // Mark reset as used
-        const reset = passwordResets.value.find(r => r.token === token)
-        if (reset) {
-          reset.used = true
-        }
-
-        // Log audit
-        await logAudit({
-          action: AuditAction.PASSWORD_RESET_COMPLETED,
-          resource: 'users',
-          severity: 'WARNING'
-        })
-
-        return true
+      // Mark reset as used
+      const reset = passwordResets.value.find(r => r.token === token)
+      if (reset) {
+        reset.used = true
       }
 
-      throw new Error(response.data.error || 'Failed to reset password')
+      // Log audit
+      await logAudit({
+        action: AuditAction.PASSWORD_RESET_COMPLETED,
+        resource: 'users',
+        severity: 'WARNING'
+      })
+
+      return true
     } catch (err: any) {
       console.error('Failed to reset password:', err)
       throw err
@@ -507,23 +498,17 @@ export const useUsersStore = defineStore('users', () => {
 
   const changePassword = async (userId: string, currentPassword: string, newPassword: string): Promise<boolean> => {
     try {
-      const data = await passwordApi.changePassword(userId,
-        currentPassword,
-        newPassword
+      const data = await passwordApi.changePassword(userId, currentPassword, newPassword)
+
+      // Log audit
+      await logAudit({
+        action: AuditAction.PASSWORD_CHANGED,
+        resource: 'users',
+        resourceId: userId,
+        severity: 'WARNING'
       })
 
-        // Log audit
-        await logAudit({
-          action: AuditAction.PASSWORD_CHANGED,
-          resource: 'users',
-          resourceId: userId,
-          severity: 'WARNING'
-        })
-
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to change password')
+      return true
     } catch (err: any) {
       console.error('Failed to change password:', err)
       throw err
@@ -545,16 +530,11 @@ export const useUsersStore = defineStore('users', () => {
   // Performance Tracking
   const fetchStaffPerformance = async (userId: string, startDate: string, endDate: string): Promise<StaffPerformance | null> => {
     try {
-      const data = await usersApi.getPerformance(userId,
-        params: { startDate, endDate }
-      })
+      const data = await usersApi.getPerformance(userId, { startDate, endDate })
 
-        const performance = data.performance
-        staffPerformance.value.set(userId, performance)
-        return performance
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch performance')
+      const performance = data.performance
+      staffPerformance.value.set(userId, performance)
+      return performance
     } catch (err: any) {
       console.error('Failed to fetch staff performance:', err)
       return null
@@ -563,18 +543,13 @@ export const useUsersStore = defineStore('users', () => {
 
   const fetchAllStaffPerformance = async (startDate: string, endDate: string): Promise<boolean> => {
     try {
-      const data = await usersApi.getAllPerformance(
-        params: { startDate, endDate }
+      const data = await usersApi.getAllPerformance({ startDate, endDate })
+
+      const performances = data.performances || []
+      performances.forEach((perf: StaffPerformance) => {
+        staffPerformance.value.set(perf.userId, perf)
       })
-
-        const performances = data.performances || []
-        performances.forEach((perf: StaffPerformance) => {
-          staffPerformance.value.set(perf.userId, perf)
-        })
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch all performance data')
+      return true
     } catch (err: any) {
       console.error('Failed to fetch all staff performance:', err)
       return false
@@ -590,24 +565,21 @@ export const useUsersStore = defineStore('users', () => {
     try {
       const data = await usersApi.updatePermissions(userId, permissions)
 
-        const user = users.value.find(u => u.id === userId)
-        if (user) {
-          user.permissions = permissions
-        }
-
-        // Log audit
-        await logAudit({
-          action: AuditAction.PERMISSION_CHANGED,
-          resource: 'users',
-          resourceId: userId,
-          details: { permissions },
-          severity: 'WARNING'
-        })
-
-        return true
+      const user = users.value.find(u => u.id === userId)
+      if (user) {
+        user.permissions = permissions
       }
 
-      throw new Error(response.data.error || 'Failed to update permissions')
+      // Log audit
+      await logAudit({
+        action: AuditAction.PERMISSION_CHANGED,
+        resource: 'users',
+        resourceId: userId,
+        details: { permissions },
+        severity: 'WARNING'
+      })
+
+      return true
     } catch (err: any) {
       console.error('Failed to update permissions:', err)
       throw err

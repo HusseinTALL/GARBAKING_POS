@@ -293,9 +293,7 @@ export const usePaymentStore = defineStore('payment', () => {
 
   const openCashDrawer = async (startingAmount: number): Promise<boolean> => {
     try {
-      const data = await paymentApi.openCashDrawer(
-        startingAmount
-      })
+      const data = await paymentApi.openCashDrawer(startingAmount)
 
       cashDrawer.value = data.cashDrawer || data
       return true

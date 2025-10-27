@@ -151,10 +151,8 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
       })
 
       const enrollment = data.enrollment || data
-        customers.value.push(enrollment)
-        return enrollment
-}
-      throw new Error('Failed to enroll customer')
+      customers.value.push(enrollment)
+      return enrollment
     } catch (err: any) {
       error.value = err.message
       return null
