@@ -14,6 +14,7 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.0.0",
     "@vueuse/core": "^10.4.1",
     "axios": "^1.5.0",
     "idb": "^7.1.1",
@@ -21,6 +22,7 @@
     "lucide-vue-next": "^0.544.0",
     "pinia": "^2.1.6",
     "socket.io-client": "^4.8.1",
+    "sockjs-client": "^1.6.1",
     "uuid": "^9.0.1",
     "vue": "^3.3.4",
     "vue-router": "^4.2.5",

@@ -368,13 +368,18 @@ import {
 import { useKitchenStore } from '@/stores/kitchen'
 import type { KitchenOrder, OrderItem, KitchenStation } from '@/stores/kitchen'
 import { audioService } from '@/utils/audioNotifications'
-import { useGlobalWebSocket } from '../composables/useWebSocket'
+import adminWsService from '@/services/websocket-admin'
+import { ordersApi } from '@/services/api-spring'
 
 // Store
 const kitchenStore = useKitchenStore()
 
-// WebSocket
-const { connectionStatus, isConnected, kitchenEvents, orderActions } = useGlobalWebSocket()
+// WebSocket connection state
+const isConnected = ref(false)
+const connectionStatus = ref({
+  connecting: false,
+  error: false
+})
 
 // UI State
 const currentTime = ref('')
@@ -587,40 +592,60 @@ const playNewOrderAlert = async () => {
 }
 
 // WebSocket event handlers
-const handleNewKitchenOrder = (data: any) => {
-  console.log('New kitchen order received:', data)
+const handleOrderUpdate = (order: any) => {
+  console.log('Order update received:', order)
   kitchenStore.fetchOrders()
-  playNewOrderAlert()
+
+  // Play alert for new orders
+  if (order.status === 'PENDING' || order.status === 'CONFIRMED') {
+    playNewOrderAlert()
+  }
 }
 
-const handleKitchenOrderUpdated = (data: any) => {
-  console.log('Kitchen order updated:', data)
-  kitchenStore.fetchOrders()
-}
-
-const handleItemPrepared = (data: any) => {
-  console.log('Item prepared:', data)
-  kitchenStore.fetchOrders()
-}
+let timeInterval: number | null = null
+let unsubscribeWs: (() => void) | null = null
 
 // Lifecycle
 onMounted(async () => {
   // Fetch initial orders
   await kitchenStore.fetchOrders()
 
-  // Register WebSocket listeners
-  kitchenEvents.onNewKitchenOrder(handleNewKitchenOrder)
-  kitchenEvents.onKitchenOrderUpdated(handleKitchenOrderUpdated)
-  kitchenEvents.onItemPrepared(handleItemPrepared)
+  // Connect to WebSocket
+  connectionStatus.value.connecting = true
+  adminWsService.connect(
+    () => {
+      // On connected
+      isConnected.value = true
+      connectionStatus.value.connecting = false
+      connectionStatus.value.error = false
+      console.log('Kitchen Display connected to WebSocket')
+    },
+    (error) => {
+      // On error
+      isConnected.value = false
+      connectionStatus.value.connecting = false
+      connectionStatus.value.error = true
+      console.error('Kitchen Display WebSocket error:', error)
+    }
+  )
+
+  // Register order update callback
+  unsubscribeWs = adminWsService.onOrderUpdate(handleOrderUpdate)
 
   // Update time
   updateCurrentTime()
-  const timeInterval = setInterval(updateCurrentTime, 1000)
+  timeInterval = window.setInterval(updateCurrentTime, 1000)
+})
 
-  // Cleanup
-  onUnmounted(() => {
+// Cleanup
+onUnmounted(() => {
+  if (timeInterval !== null) {
     clearInterval(timeInterval)
-  })
+  }
+  if (unsubscribeWs) {
+    unsubscribeWs()
+  }
+  // Note: We don't disconnect the WebSocket service as it's shared across the app
 })
 </script>
 
