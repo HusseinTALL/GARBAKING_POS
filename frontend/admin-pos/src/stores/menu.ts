@@ -1,11 +1,12 @@
 /**
  * Menu management store for categories and menu items
  * Handles CRUD operations, real-time updates, and menu state management
+ * Updated to use Spring Boot microservices backend
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiService } from '@/services/api'
+import { categoriesApi, menuItemsApi } from '@/services/api-spring'
 
 // Types
 export interface MenuCategory {
@@ -101,8 +102,8 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.categories()
-      categories.value = response.data.categories || []
+      const data = await categoriesApi.getAll()
+      categories.value = Array.isArray(data) ? data : (data.categories || [])
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch categories'
       console.error('Error fetching categories:', err)
@@ -115,8 +116,8 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.items(params)
-      menuItems.value = response.data.menuItems || []
+      const data = await menuItemsApi.getAll(params)
+      menuItems.value = Array.isArray(data) ? data : (data.menuItems || [])
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch menu items'
       console.error('Error fetching menu items:', err)
@@ -129,10 +130,10 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.public()
+      const data = await menuItemsApi.getPublic()
 
       // Extract categories and items from public menu response
-      const publicCategories = response.data.categories || []
+      const publicCategories = Array.isArray(data) ? data : (data.categories || [])
       categories.value = publicCategories
 
       // Flatten menu items from all categories
@@ -161,8 +162,8 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.createCategory(categoryData)
-      const newCategory = response.data.category
+      const data = await categoriesApi.create(categoryData)
+      const newCategory = data
       categories.value.push(newCategory)
       return newCategory
     } catch (err: any) {
@@ -178,8 +179,8 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.updateCategory(id, categoryData)
-      const updatedCategory = response.data.category
+      const data = await categoriesApi.update(id, categoryData)
+      const updatedCategory = data
 
       const index = categories.value.findIndex(cat => cat.id === id)
       if (index !== -1) {
@@ -199,7 +200,7 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      await apiService.menu.deleteCategory(id)
+      await categoriesApi.delete(id)
       categories.value = categories.value.filter(cat => cat.id !== id)
     } catch (err: any) {
       error.value = err.message || 'Failed to delete category'
@@ -214,8 +215,8 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.createItem(itemData)
-      const newItem = response.data.menuItem
+      const data = await menuItemsApi.create(itemData)
+      const newItem = data
       menuItems.value.push(newItem)
       return newItem
     } catch (err: any) {
@@ -237,8 +238,8 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.updateItem(id, itemData)
-      const updatedItem = response.data.menuItem
+      const data = await menuItemsApi.update(id, itemData)
+      const updatedItem = data
 
       const index = menuItems.value.findIndex(item => item.id === id)
       if (index !== -1) {
@@ -264,7 +265,7 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      await apiService.menu.deleteItem(id)
+      await menuItemsApi.delete(id)
       menuItems.value = menuItems.value.filter(item => item.id !== id)
     } catch (err: any) {
       error.value = err.message || 'Failed to delete menu item'
@@ -277,8 +278,8 @@ export const useMenuStore = defineStore('menu', () => {
 
   const toggleItemAvailability = async (id: string, isAvailable: boolean) => {
     try {
-      const response = await apiService.menu.updateAvailability(id, isAvailable)
-      const updatedItem = response.data.menuItem
+      const data = await menuItemsApi.updateAvailability(id, isAvailable)
+      const updatedItem = data
 
       const index = menuItems.value.findIndex(item => item.id === id)
       if (index !== -1) {
