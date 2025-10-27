@@ -145,13 +145,12 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
     programId?: string
   }): Promise<LoyaltyEnrollment | null> => {
     try {
-      const data = await loyaltyApi.enrollCustomer(', {
+      const data = await loyaltyApi.enrollCustomer({
         ...customerData,
         programId: customerData.programId || defaultProgram.value?.id
-})
+      })
 
-      
-        const enrollment = data.enrollment || data
+      const enrollment = data.enrollment || data
         customers.value.push(enrollment)
         return enrollment
 }

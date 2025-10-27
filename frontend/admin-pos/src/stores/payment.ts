@@ -270,10 +270,7 @@ export const usePaymentStore = defineStore('payment', () => {
     reason: string
   ): Promise<boolean> => {
     try {
-      const data = await paymentApi.refundPayment(transactionId,
-        amount,
-        reason
-      })
+      const data = await paymentApi.refundPayment(transactionId, amount, reason)
 
         // Update transaction status
         const transactionIndex = recentTransactions.value.findIndex(t => t.id === transactionId)

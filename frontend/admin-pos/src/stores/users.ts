@@ -441,12 +441,8 @@ export const useUsersStore = defineStore('users', () => {
   }): Promise<boolean> => {
     try {
       const data = await auditLogsApi.getLogs(filters)
-
-        auditLogs.value = data.logs || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch audit logs')
+      auditLogs.value = data.logs || []
+      return true
     } catch (err: any) {
       console.error('Failed to fetch audit logs:', err)
       return false
