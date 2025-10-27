@@ -135,7 +135,7 @@
               {{ entry.totalHours ? `${entry.totalHours.toFixed(2)}h` : '--' }}
             </div>
             <div v-if="entry.overtimeHours && entry.overtimeHours > 0" class="text-xs text-amber-600">
-              +{{ entry.overtimeHours.toFixed(2)}h OT
+              + {{ entry.overtimeHours.toFixed(2) }}h OT
             </div>
           </div>
         </div>
@@ -192,8 +192,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useUsersStore } from '@/stores/users'
-import { useAuthStore } from '@/stores/auth'
+import { useUsersStore } from '../stores/users'
+import { useAuthStore } from '../stores/auth'
 import { Clock, LogIn, LogOut, Pause, Play } from 'lucide-vue-next'
 
 const usersStore = useUsersStore()

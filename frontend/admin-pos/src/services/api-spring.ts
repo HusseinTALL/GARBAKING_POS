@@ -4,7 +4,8 @@
  * Handles authentication, menu/inventory management, and order management
  */
 
-import axios, { AxiosResponse, AxiosError, AxiosInstance } from 'axios'
+import axios from 'axios'
+import type { AxiosResponse, AxiosError, AxiosInstance } from 'axios'
 import { useToast } from 'vue-toastification'
 
 // API Configuration - Spring Boot API Gateway

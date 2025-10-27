@@ -28,7 +28,8 @@ class HealthCheckService {
   }
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+    // Use API Gateway URL (Spring Boot) instead of old Node.js backend
+    this.baseURL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8080'
   }
 
   /**
@@ -68,7 +69,7 @@ class HealthCheckService {
     const startTime = Date.now()
 
     try {
-      const response = await axios.get(`${this.baseURL}/health`, {
+      const response = await axios.get(`${this.baseURL}/actuator/health`, {
         timeout: 5000,
         headers: {
           'Cache-Control': 'no-cache'
@@ -77,7 +78,7 @@ class HealthCheckService {
 
       const responseTime = Date.now() - startTime
 
-      if (response.status === 200 && response.data.status === 'ok') {
+      if (response.status === 200 && (response.data.status === 'UP' || response.data.status === 'ok')) {
         const wasDown = !this.currentStatus.isHealthy
 
         this.currentStatus = {

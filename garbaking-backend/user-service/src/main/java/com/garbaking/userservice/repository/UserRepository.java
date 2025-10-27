@@ -35,7 +35,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * Find all active users
      */
-    List<User> findByIsActiveTrue();
+    List<User> findByActiveTrue();
 
     /**
      * Find users by store ID
@@ -45,6 +45,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * Custom query: Find active users by role and store
      */
-    @Query("SELECT u FROM User u WHERE u.role = :role AND u.storeId = :storeId AND u.isActive = true")
+    @Query("SELECT u FROM User u WHERE u.role = :role AND u.storeId = :storeId AND u.active = true")
     List<User> findActiveUsersByRoleAndStore(User.UserRole role, String storeId);
 }

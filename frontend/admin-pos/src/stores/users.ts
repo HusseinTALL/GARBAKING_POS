@@ -189,6 +189,39 @@ export const useUsersStore = defineStore('users', () => {
     auditLogs.value.slice(0, 100)
   )
 
+  // Helper functions
+  const generateId = (): string => {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  const getUserById = (userId: string): User | undefined => {
+    return users.value.find(u => u.id === userId)
+  }
+
+  const getCurrentClockEntry = (userId: string): ClockEntry | undefined => {
+    const today = new Date().toISOString().split('T')[0]
+    return clockEntries.value.find(entry =>
+      entry.userId === userId &&
+      entry.shiftDate === today &&
+      entry.status !== 'CLOCKED_OUT'
+    )
+  }
+
+  const isUserClockedIn = (userId: string): boolean => {
+    return !!getCurrentClockEntry(userId)
+  }
+
+  const getTotalHoursWorked = (userId: string, startDate: string, endDate: string): number => {
+    const userEntries = clockEntries.value.filter(entry =>
+      entry.userId === userId &&
+      entry.shiftDate >= startDate &&
+      entry.shiftDate <= endDate &&
+      entry.totalHours
+    )
+
+    return userEntries.reduce((total, entry) => total + (entry.totalHours || 0), 0)
+  }
+
   // Actions - User CRUD
   const fetchUsers = async (): Promise<boolean> => {
     isLoading.value = true
@@ -454,8 +487,14 @@ export const useUsersStore = defineStore('users', () => {
     try {
       const data = await passwordApi.requestReset(email)
 
+<<<<<<< HEAD
       const resetRequest = data.resetRequest
       passwordResets.value.push(resetRequest)
+=======
+      if (data) {
+        const resetRequest = data.resetRequest
+        passwordResets.value.push(resetRequest)
+>>>>>>> b68d8a2 (app start well inside docker)
 
       // Log audit
       await logAudit({
@@ -465,7 +504,14 @@ export const useUsersStore = defineStore('users', () => {
         severity: 'WARNING'
       })
 
+<<<<<<< HEAD
       return true
+=======
+        return true
+      }
+
+      throw new Error('Failed to request password reset')
+>>>>>>> b68d8a2 (app start well inside docker)
     } catch (err: any) {
       console.error('Failed to request password reset:', err)
       throw err
@@ -474,6 +520,7 @@ export const useUsersStore = defineStore('users', () => {
 
   const resetPassword = async (token: string, newPassword: string): Promise<boolean> => {
     try {
+<<<<<<< HEAD
       const data = await passwordApi.completeReset(token, newPassword)
 
       // Mark reset as used
@@ -490,6 +537,31 @@ export const useUsersStore = defineStore('users', () => {
       })
 
       return true
+=======
+      const data = await passwordApi.completeReset(
+        token,
+        newPassword
+      )
+
+      if (data) {
+        // Mark reset as used
+        const reset = passwordResets.value.find(r => r.token === token)
+        if (reset) {
+          reset.used = true
+        }
+
+        // Log audit
+        await logAudit({
+          action: AuditAction.PASSWORD_RESET_COMPLETED,
+          resource: 'users',
+          severity: 'WARNING'
+        })
+
+        return true
+      }
+
+      throw new Error('Failed to reset password')
+>>>>>>> b68d8a2 (app start well inside docker)
     } catch (err: any) {
       console.error('Failed to reset password:', err)
       throw err
@@ -498,6 +570,7 @@ export const useUsersStore = defineStore('users', () => {
 
   const changePassword = async (userId: string, currentPassword: string, newPassword: string): Promise<boolean> => {
     try {
+<<<<<<< HEAD
       const data = await passwordApi.changePassword(userId, currentPassword, newPassword)
 
       // Log audit
@@ -509,6 +582,26 @@ export const useUsersStore = defineStore('users', () => {
       })
 
       return true
+=======
+      const data = await passwordApi.changePassword(userId,
+        currentPassword,
+        newPassword
+      )
+
+      if (data) {
+        // Log audit
+        await logAudit({
+          action: AuditAction.PASSWORD_CHANGED,
+          resource: 'users',
+          resourceId: userId,
+          severity: 'WARNING'
+        })
+
+        return true
+      }
+
+      throw new Error('Failed to change password')
+>>>>>>> b68d8a2 (app start well inside docker)
     } catch (err: any) {
       console.error('Failed to change password:', err)
       throw err
@@ -530,11 +623,25 @@ export const useUsersStore = defineStore('users', () => {
   // Performance Tracking
   const fetchStaffPerformance = async (userId: string, startDate: string, endDate: string): Promise<StaffPerformance | null> => {
     try {
+<<<<<<< HEAD
       const data = await usersApi.getPerformance(userId, { startDate, endDate })
 
       const performance = data.performance
       staffPerformance.value.set(userId, performance)
       return performance
+=======
+      const data = await usersApi.getPerformance(userId, {
+        params: { startDate, endDate }
+      })
+
+      if (data) {
+        const performance = data.performance
+        staffPerformance.value.set(userId, performance)
+        return performance
+      }
+
+      throw new Error('Failed to fetch performance')
+>>>>>>> b68d8a2 (app start well inside docker)
     } catch (err: any) {
       console.error('Failed to fetch staff performance:', err)
       return null
@@ -543,6 +650,7 @@ export const useUsersStore = defineStore('users', () => {
 
   const fetchAllStaffPerformance = async (startDate: string, endDate: string): Promise<boolean> => {
     try {
+<<<<<<< HEAD
       const data = await usersApi.getAllPerformance({ startDate, endDate })
 
       const performances = data.performances || []
@@ -550,6 +658,21 @@ export const useUsersStore = defineStore('users', () => {
         staffPerformance.value.set(perf.userId, perf)
       })
       return true
+=======
+      const data = await usersApi.getAllPerformance({
+        params: { startDate, endDate }
+      })
+
+      if (data) {
+        const performances = data.performances || []
+        performances.forEach((perf: StaffPerformance) => {
+          staffPerformance.value.set(perf.userId, perf)
+        })
+        return true
+      }
+
+      throw new Error('Failed to fetch all performance data')
+>>>>>>> b68d8a2 (app start well inside docker)
     } catch (err: any) {
       console.error('Failed to fetch all staff performance:', err)
       return false
@@ -581,8 +704,9 @@ export const useUsersStore = defineStore('users', () => {
 
       return true
     } catch (err: any) {
+      error.value = err.message || 'Failed to update permissions'
       console.error('Failed to update permissions:', err)
-      throw err
+      return false
     }
   }
 
@@ -617,39 +741,6 @@ export const useUsersStore = defineStore('users', () => {
       console.error('Failed to remove custom permission:', err)
       return false
     }
-  }
-
-  // Helper functions
-  const generateId = (): string => {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-  }
-
-  const getUserById = (userId: string): User | undefined => {
-    return users.value.find(u => u.id === userId)
-  }
-
-  const getCurrentClockEntry = (userId: string): ClockEntry | undefined => {
-    const today = new Date().toISOString().split('T')[0]
-    return clockEntries.value.find(entry =>
-      entry.userId === userId &&
-      entry.shiftDate === today &&
-      entry.status !== 'CLOCKED_OUT'
-    )
-  }
-
-  const isUserClockedIn = (userId: string): boolean => {
-    return !!getCurrentClockEntry(userId)
-  }
-
-  const getTotalHoursWorked = (userId: string, startDate: string, endDate: string): number => {
-    const userEntries = clockEntries.value.filter(entry =>
-      entry.userId === userId &&
-      entry.shiftDate >= startDate &&
-      entry.shiftDate <= endDate &&
-      entry.totalHours
-    )
-
-    return userEntries.reduce((total, entry) => total + (entry.totalHours || 0), 0)
   }
 
   return {
@@ -702,6 +793,7 @@ export const useUsersStore = defineStore('users', () => {
     removeCustomPermission,
 
     // Helpers
+    generateId,
     getUserById,
     getCurrentClockEntry,
     isUserClockedIn,

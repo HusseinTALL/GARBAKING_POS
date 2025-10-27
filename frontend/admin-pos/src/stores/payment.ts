@@ -293,7 +293,13 @@ export const usePaymentStore = defineStore('payment', () => {
 
   const openCashDrawer = async (startingAmount: number): Promise<boolean> => {
     try {
+<<<<<<< HEAD
       const data = await paymentApi.openCashDrawer(startingAmount)
+=======
+      const data = await paymentApi.openCashDrawer(
+        startingAmount
+      )
+>>>>>>> b68d8a2 (app start well inside docker)
 
       cashDrawer.value = data.cashDrawer || data
       return true
