@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { receiptsApi, printersApi } from '@/services/api-spring'
 import type { Transaction } from './payment'
 import type { Order } from './orders'
 
@@ -190,14 +190,9 @@ export const useReceiptsStore = defineStore('receipts', () => {
   // Actions
   const fetchTemplates = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/receipts/templates')
-
-      if (response.data.success) {
-        templates.value = response.data.data.templates || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch templates')
+      const data = await receiptsApi.getTemplates()
+      templates.value = data.templates || data || []
+      return true
     } catch (err: any) {
       console.error('Failed to fetch receipt templates:', err)
       return false
@@ -233,24 +228,20 @@ export const useReceiptsStore = defineStore('receipts', () => {
         maxAttempts: 3
       }
 
-      const response = await axios.post('/api/receipts/print', {
+      const data = await receiptsApi.printReceipt({
         ...printJob,
         copies: options.copies || template.config.formatting.copies,
         immediate: options.immediate || settings.value.autoPrint
       })
 
-      if (response.data.success) {
-        const job = response.data.data.job
-        printQueue.value.unshift(job)
+      const job = data.job || data
+      printQueue.value.unshift(job)
 
-        if (options.immediate && printerStatus.value.connected) {
-          await processQueue()
-        }
-
-        return job.id
+      if (options.immediate && printerStatus.value.connected) {
+        await processQueue()
       }
 
-      throw new Error(response.data.error || 'Failed to queue print job')
+      return job.id
     } catch (err: any) {
       console.error('Failed to print receipt:', err)
       return null
@@ -379,19 +370,15 @@ export const useReceiptsStore = defineStore('receipts', () => {
 
       const receiptContent = await generateReceiptContent(job.data, template)
 
-      const response = await axios.post('/api/receipts/print-direct', {
+      await receiptsApi.printDirect({
         content: receiptContent,
         config: template.config.formatting
       })
 
-      if (response.data.success) {
-        job.status = PrintJobStatus.COMPLETED
-        job.processedAt = new Date().toISOString()
-        printerStatus.value.totalPrints++
-        printerStatus.value.lastPrint = new Date().toISOString()
-      } else {
-        throw new Error(response.data.error || 'Print failed')
-      }
+      job.status = PrintJobStatus.COMPLETED
+      job.processedAt = new Date().toISOString()
+      printerStatus.value.totalPrints++
+      printerStatus.value.lastPrint = new Date().toISOString()
     } catch (err: any) {
       job.status = job.attempts >= job.maxAttempts
         ? PrintJobStatus.FAILED
@@ -585,14 +572,9 @@ export const useReceiptsStore = defineStore('receipts', () => {
 
   const checkPrinterStatus = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/receipts/printer/status')
-
-      if (response.data.success) {
-        printerStatus.value = response.data.data.status
-        return true
-      }
-
-      return false
+      const data = await receiptsApi.getPrinterStatus()
+      printerStatus.value = data.status || data
+      return true
     } catch (err) {
       printerStatus.value.connected = false
       return false
@@ -678,14 +660,9 @@ export const useReceiptsStore = defineStore('receipts', () => {
 
   const fetchPrinters = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/printers')
-
-      if (response.data.success) {
-        printers.value = response.data.data.printers || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch printers')
+      const data = await printersApi.getAll()
+      printers.value = data.printers || data || []
+      return true
     } catch (err: any) {
       console.error('Failed to fetch printers:', err)
       return false
@@ -694,15 +671,10 @@ export const useReceiptsStore = defineStore('receipts', () => {
 
   const addPrinter = async (printer: Omit<Printer, 'id' | 'createdAt'>): Promise<Printer | null> => {
     try {
-      const response = await axios.post('/api/printers', printer)
-
-      if (response.data.success) {
-        const newPrinter = response.data.data.printer
-        printers.value.push(newPrinter)
-        return newPrinter
-      }
-
-      throw new Error(response.data.error || 'Failed to add printer')
+      const data = await printersApi.create(printer)
+      const newPrinter = data.printer || data
+      printers.value.push(newPrinter)
+      return newPrinter
     } catch (err: any) {
       console.error('Failed to add printer:', err)
       return null
@@ -711,17 +683,12 @@ export const useReceiptsStore = defineStore('receipts', () => {
 
   const updatePrinter = async (printerId: string, updates: Partial<Printer>): Promise<boolean> => {
     try {
-      const response = await axios.put(`/api/printers/${printerId}`, updates)
-
-      if (response.data.success) {
-        const index = printers.value.findIndex(p => p.id === printerId)
-        if (index !== -1) {
-          printers.value[index] = { ...printers.value[index], ...updates }
-        }
-        return true
+      await printersApi.update(printerId, updates)
+      const index = printers.value.findIndex(p => p.id === printerId)
+      if (index !== -1) {
+        printers.value[index] = { ...printers.value[index], ...updates }
       }
-
-      throw new Error(response.data.error || 'Failed to update printer')
+      return true
     } catch (err: any) {
       console.error('Failed to update printer:', err)
       return false
@@ -730,14 +697,9 @@ export const useReceiptsStore = defineStore('receipts', () => {
 
   const deletePrinter = async (printerId: string): Promise<boolean> => {
     try {
-      const response = await axios.delete(`/api/printers/${printerId}`)
-
-      if (response.data.success) {
-        printers.value = printers.value.filter(p => p.id !== printerId)
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to delete printer')
+      await printersApi.delete(printerId)
+      printers.value = printers.value.filter(p => p.id !== printerId)
+      return true
     } catch (err: any) {
       console.error('Failed to delete printer:', err)
       return false
@@ -746,13 +708,8 @@ export const useReceiptsStore = defineStore('receipts', () => {
 
   const testPrinter = async (printerId: string): Promise<boolean> => {
     try {
-      const response = await axios.post(`/api/printers/${printerId}/test`)
-
-      if (response.data.success) {
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to test printer')
+      await printersApi.test(printerId)
+      return true
     } catch (err: any) {
       console.error('Failed to test printer:', err)
       return false
@@ -805,7 +762,7 @@ export const useReceiptsStore = defineStore('receipts', () => {
       receiptArchive.value.unshift(archive)
 
       // Send to backend for persistent storage
-      await axios.post('/api/receipts/archive', archive)
+      await receiptsApi.archiveReceipt(archive)
 
       // Clean up old archives based on retention policy
       await cleanupOldArchives()
@@ -880,14 +837,9 @@ export const useReceiptsStore = defineStore('receipts', () => {
     limit?: number
   }): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/receipts/archive', { params: filters })
-
-      if (response.data.success) {
-        receiptArchive.value = response.data.data.archive || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch archive')
+      const data = await receiptsApi.getArchive(filters)
+      receiptArchive.value = data.archive || data || []
+      return true
     } catch (err: any) {
       console.error('Failed to fetch archive:', err)
       return false

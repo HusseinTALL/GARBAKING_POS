@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { loyaltyApi } from '@/services/api-spring'
 import type {
   LoyaltyProgram,
   LoyaltyTier,
@@ -99,12 +99,9 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const fetchPrograms = async (): Promise<boolean> => {
     isLoading.value = true
     try {
-      const response = await axios.get('/api/loyalty/programs')
-      if (response.data.success) {
-        programs.value = response.data.data.programs || []
-        return true
-      }
-      throw new Error(response.data.error || 'Failed to fetch programs')
+      const data = await loyaltyApi.getPrograms()
+      programs.value = data.programs || data || []
+      return true
     } catch (err: any) {
       error.value = err.message
       return false
@@ -115,13 +112,10 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const createProgram = async (program: Omit<LoyaltyProgram, 'id'>): Promise<LoyaltyProgram | null> => {
     try {
-      const response = await axios.post('/api/loyalty/programs', program)
-      if (response.data.success) {
-        const newProgram = response.data.data.program
-        programs.value.push(newProgram)
-        return newProgram
-      }
-      throw new Error(response.data.error || 'Failed to create program')
+      const data = await loyaltyApi.createProgram(program)
+      const newProgram = data.program || data
+      programs.value.push(newProgram)
+      return newProgram
     } catch (err: any) {
       error.value = err.message
       return null
@@ -130,15 +124,12 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const updateProgram = async (programId: string, updates: Partial<LoyaltyProgram>): Promise<boolean> => {
     try {
-      const response = await axios.put(`/api/loyalty/programs/${programId}`, updates)
-      if (response.data.success) {
-        const index = programs.value.findIndex(p => p.id === programId)
-        if (index !== -1) {
-          programs.value[index] = { ...programs.value[index], ...updates }
-        }
-        return true
-      }
-      throw new Error(response.data.error || 'Failed to update program')
+      await loyaltyApi.updateProgram(programId, updates)
+      const index = programs.value.findIndex(p => p.id === programId)
+      if (index !== -1) {
+        programs.value[index] = { ...programs.value[index], ...updates }
+}
+      return true
     } catch (err: any) {
       error.value = err.message
       return false
@@ -154,17 +145,17 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
     programId?: string
   }): Promise<LoyaltyEnrollment | null> => {
     try {
-      const response = await axios.post('/api/loyalty/enroll', {
+      const data = await loyaltyApi.enrollCustomer(', {
         ...customerData,
         programId: customerData.programId || defaultProgram.value?.id
-      })
+})
 
-      if (response.data.success) {
-        const enrollment = response.data.data.enrollment
+      
+        const enrollment = data.enrollment || data
         customers.value.push(enrollment)
         return enrollment
-      }
-      throw new Error(response.data.error || 'Failed to enroll customer')
+}
+      throw new Error('Failed to enroll customer')
     } catch (err: any) {
       error.value = err.message
       return null
@@ -178,12 +169,12 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   }): Promise<boolean> => {
     isLoading.value = true
     try {
-      const response = await axios.get('/api/loyalty/customers', { params: filters })
-      if (response.data.success) {
-        customers.value = response.data.data.customers || []
+      const data = await loyaltyApi.getCustomers(filters)
+      
+        customers.value = data.customers || data || []
         return true
-      }
-      throw new Error(response.data.error || 'Failed to fetch customers')
+}
+      throw new Error('Failed to fetch customers')
     } catch (err: any) {
       error.value = err.message
       return false
@@ -194,11 +185,11 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const getCustomerDetails = async (customerId: string): Promise<any> => {
     try {
-      const response = await axios.get(`/api/loyalty/customers/${customerId}`)
-      if (response.data.success) {
-        return response.data.data.customer
-      }
-      throw new Error(response.data.error || 'Failed to fetch customer')
+      const data = await loyaltyApi.getCustomerDetails(customerId)
+      
+        return data.customer || data
+}
+      throw new Error('Failed to fetch customer')
     } catch (err: any) {
       error.value = err.message
       return null
@@ -208,26 +199,26 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   // Points Management
   const awardPoints = async (customerId: string, points: number, reason: string, orderId?: string): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/loyalty/points/award', {
+      const data = await loyaltyApi.awardPoints(', {
         customerId,
         points,
         reason,
         orderId
-      })
+})
 
-      if (response.data.success) {
-        const transaction = response.data.data.transaction
+      
+        const transaction = data.transaction || data
         pointsTransactions.value.unshift(transaction)
 
         // Update customer points
         const customer = customers.value.find(c => c.customerId === customerId)
         if (customer) {
           customer.points += points
-        }
+  }
 
         return true
-      }
-      throw new Error(response.data.error || 'Failed to award points')
+}
+      throw new Error('Failed to award points')
     } catch (err: any) {
       error.value = err.message
       return false
@@ -240,14 +231,14 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
     newBalance?: number
   }> => {
     try {
-      const response = await axios.post('/api/loyalty/points/redeem', {
+      const data = await loyaltyApi.redeemPoints(', {
         customerId,
         points,
         orderId
-      })
+})
 
-      if (response.data.success) {
-        const { discountValue, newBalance, transaction, redemption } = response.data.data
+      
+        const { discountValue, newBalance, transaction, redemption } = data
 
         pointsTransactions.value.unshift(transaction)
         redemptions.value.unshift(redemption)
@@ -256,11 +247,11 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
         const customer = customers.value.find(c => c.customerId === customerId)
         if (customer) {
           customer.points = newBalance
-        }
+  }
 
         return { success: true, discountValue, newBalance }
-      }
-      throw new Error(response.data.error || 'Failed to redeem points')
+}
+      throw new Error('Failed to redeem points')
     } catch (err: any) {
       error.value = err.message
       return { success: false }
@@ -269,24 +260,24 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const adjustPoints = async (customerId: string, points: number, reason: string): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/loyalty/points/adjust', {
+      const data = await loyaltyApi.adjustPoints(', {
         customerId,
         points,
         reason
-      })
+})
 
-      if (response.data.success) {
-        const transaction = response.data.data.transaction
+      
+        const transaction = data.transaction || data
         pointsTransactions.value.unshift(transaction)
 
         const customer = customers.value.find(c => c.customerId === customerId)
         if (customer) {
           customer.points = transaction.balance
-        }
+  }
 
         return true
-      }
-      throw new Error(response.data.error || 'Failed to adjust points')
+}
+      throw new Error('Failed to adjust points')
     } catch (err: any) {
       error.value = err.message
       return false
@@ -295,11 +286,11 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const fetchPointsHistory = async (customerId: string): Promise<PointsTransaction[]> => {
     try {
-      const response = await axios.get(`/api/loyalty/points/history/${customerId}`)
-      if (response.data.success) {
-        return response.data.data.transactions || []
-      }
-      throw new Error(response.data.error || 'Failed to fetch history')
+      const data = await loyaltyApi.getPointsHistory(customerId)
+      
+        return data.transaction || datas || []
+}
+      throw new Error('Failed to fetch history')
     } catch (err: any) {
       error.value = err.message
       return []
@@ -309,17 +300,17 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   // Tier Management
   const createTier = async (programId: string, tier: Omit<LoyaltyTier, 'id' | 'programId'>): Promise<LoyaltyTier | null> => {
     try {
-      const response = await axios.post(`/api/loyalty/programs/${programId}/tiers`, tier)
-      if (response.data.success) {
-        const newTier = response.data.data.tier
+      const data = await loyaltyApi.createTier(programId, tier)
+      
+        const newTier = data.tier || data
         const program = programs.value.find(p => p.id === programId)
         if (program) {
           if (!program.tiers) program.tiers = []
           program.tiers.push(newTier)
-        }
+  }
         return newTier
-      }
-      throw new Error(response.data.error || 'Failed to create tier')
+}
+      throw new Error('Failed to create tier')
     } catch (err: any) {
       error.value = err.message
       return null
@@ -328,19 +319,19 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const updateTier = async (tierId: string, updates: Partial<LoyaltyTier>): Promise<boolean> => {
     try {
-      const response = await axios.put(`/api/loyalty/tiers/${tierId}`, updates)
-      if (response.data.success) {
+      const data = await loyaltyApi.updateTier(tierId, updates)
+      
         programs.value.forEach(program => {
           if (program.tiers) {
             const index = program.tiers.findIndex(t => t.id === tierId)
             if (index !== -1) {
               program.tiers[index] = { ...program.tiers[index], ...updates }
-            }
-          }
-        })
-        return true
       }
-      throw new Error(response.data.error || 'Failed to update tier')
+    }
+  })
+        return true
+}
+      throw new Error('Failed to update tier')
     } catch (err: any) {
       error.value = err.message
       return false
@@ -349,16 +340,16 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const deleteTier = async (tierId: string): Promise<boolean> => {
     try {
-      const response = await axios.delete(`/api/loyalty/tiers/${tierId}`)
-      if (response.data.success) {
+      const data = await loyaltyApi.deleteTier(tierId)
+      
         programs.value.forEach(program => {
           if (program.tiers) {
             program.tiers = program.tiers.filter(t => t.id !== tierId)
-          }
-        })
+    }
+  })
         return true
-      }
-      throw new Error(response.data.error || 'Failed to delete tier')
+}
+      throw new Error('Failed to delete tier')
     } catch (err: any) {
       error.value = err.message
       return false
@@ -368,13 +359,13 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   // Campaign Management
   const createCampaign = async (campaign: Omit<LoyaltyCampaign, 'id' | 'usageCount'>): Promise<LoyaltyCampaign | null> => {
     try {
-      const response = await axios.post('/api/loyalty/campaigns', campaign)
-      if (response.data.success) {
-        const newCampaign = response.data.data.campaign
+      const data = await loyaltyApi.createCampaign(campaign)
+      
+        const newCampaign = data.campaign || data
         campaigns.value.push(newCampaign)
         return newCampaign
-      }
-      throw new Error(response.data.error || 'Failed to create campaign')
+}
+      throw new Error('Failed to create campaign')
     } catch (err: any) {
       error.value = err.message
       return null
@@ -383,15 +374,15 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const updateCampaign = async (campaignId: string, updates: Partial<LoyaltyCampaign>): Promise<boolean> => {
     try {
-      const response = await axios.put(`/api/loyalty/campaigns/${campaignId}`, updates)
-      if (response.data.success) {
+      const data = await loyaltyApi.updateCampaign(campaignId, updates)
+      
         const index = campaigns.value.findIndex(c => c.id === campaignId)
         if (index !== -1) {
           campaigns.value[index] = { ...campaigns.value[index], ...updates }
-        }
+  }
         return true
-      }
-      throw new Error(response.data.error || 'Failed to update campaign')
+}
+      throw new Error('Failed to update campaign')
     } catch (err: any) {
       error.value = err.message
       return false
@@ -400,12 +391,12 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const deleteCampaign = async (campaignId: string): Promise<boolean> => {
     try {
-      const response = await axios.delete(`/api/loyalty/campaigns/${campaignId}`)
-      if (response.data.success) {
+      const data = await loyaltyApi.deleteCampaign(campaignId)
+      
         campaigns.value = campaigns.value.filter(c => c.id !== campaignId)
         return true
-      }
-      throw new Error(response.data.error || 'Failed to delete campaign')
+}
+      throw new Error('Failed to delete campaign')
     } catch (err: any) {
       error.value = err.message
       return false
@@ -414,12 +405,12 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const fetchCampaigns = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/loyalty/campaigns')
-      if (response.data.success) {
-        campaigns.value = response.data.data.campaigns || []
+      const data = await loyaltyApi.getCampaigns()
+      
+        campaigns.value = data.campaign || datas || []
         return true
-      }
-      throw new Error(response.data.error || 'Failed to fetch campaigns')
+}
+      throw new Error('Failed to fetch campaigns')
     } catch (err: any) {
       error.value = err.message
       return false
@@ -429,14 +420,14 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   // Analytics
   const fetchAnalytics = async (startDate?: string, endDate?: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/loyalty/analytics', {
+      const data = await loyaltyApi.getAnalytics({
         params: { startDate, endDate }
-      })
-      if (response.data.success) {
-        analytics.value = response.data.data.analytics
+})
+      
+        analytics.value = data.analytics || data
         return true
-      }
-      throw new Error(response.data.error || 'Failed to fetch analytics')
+}
+      throw new Error('Failed to fetch analytics')
     } catch (err: any) {
       error.value = err.message
       return false
@@ -446,14 +437,14 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   // Data Export
   const exportData = async (type: 'customers' | 'transactions' | 'campaigns', format: 'CSV' | 'EXCEL'): Promise<boolean> => {
     try {
-      const response = await axios.get(`/api/loyalty/export/${type}`, {
+      const response = await loyaltyApi.exportData(type, {
         params: { format },
         responseType: 'blob'
-      })
+})
 
       const blob = new Blob([response.data], {
         type: format === 'CSV' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      })
+})
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url

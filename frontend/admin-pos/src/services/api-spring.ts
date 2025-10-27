@@ -347,6 +347,9 @@ export const ordersApi = {
 }
 
 // Statistics/Analytics API
+// Analytics API (Analytics Service - To be implemented)
+// NOTE: These endpoints are not yet fully implemented in Spring Boot backend
+// Some endpoints may aggregate data from existing services
 export const analyticsApi = {
   async getDashboardStats() {
     // This can be implemented later with a dedicated analytics service
@@ -381,6 +384,145 @@ export const analyticsApi = {
         lowStockItems: 0
       }
     }
+  },
+
+  async getDashboardData() {
+    const response = await apiClient.get('/api/analytics/dashboard')
+    return response.data
+  },
+
+  async getSalesData(params?: { startDate?: string; endDate?: string }) {
+    const response = await apiClient.get('/api/analytics/sales', { params })
+    return response.data
+  },
+
+  async getMenuPerformance(days: number = 30) {
+    const response = await apiClient.get('/api/analytics/menu-performance', {
+      params: { days }
+    })
+    return response.data
+  },
+
+  async getPeakHours(days: number = 7) {
+    const response = await apiClient.get('/api/analytics/peak-hours', {
+      params: { days }
+    })
+    return response.data
+  },
+
+  async getPaymentMethods(days: number = 30) {
+    const response = await apiClient.get('/api/analytics/payment-methods', {
+      params: { days }
+    })
+    return response.data
+  },
+
+  async getCustomerInsights(days: number = 30) {
+    const response = await apiClient.get('/api/analytics/customer-insights', {
+      params: { days }
+    })
+    return response.data
+  },
+
+  async getProductAnalytics(period: string) {
+    const response = await apiClient.get('/api/analytics/products', {
+      params: { period }
+    })
+    return response.data
+  },
+
+  async getCategoryAnalytics(period: string) {
+    const response = await apiClient.get('/api/analytics/categories', {
+      params: { period }
+    })
+    return response.data
+  },
+
+  async getStaffPerformance(period: string) {
+    const response = await apiClient.get('/api/analytics/staff', {
+      params: { period }
+    })
+    return response.data
+  },
+
+  async getCustomerAnalytics(period: string) {
+    const response = await apiClient.get('/api/analytics/customers', {
+      params: { period }
+    })
+    return response.data
+  },
+
+  async getTimeAnalytics(period: string) {
+    const response = await apiClient.get('/api/analytics/time', {
+      params: { period }
+    })
+    return response.data
+  },
+
+  async getComparisonData(period: string) {
+    const response = await apiClient.get('/api/analytics/comparison', {
+      params: { period }
+    })
+    return response.data
+  },
+
+  async getInventoryAnalytics() {
+    const response = await apiClient.get('/api/analytics/inventory')
+    return response.data
+  },
+
+  async generateReport(reportType: string, config: any) {
+    const response = await apiClient.post('/api/analytics/reports/generate', {
+      type: reportType,
+      config
+    })
+    return response.data
+  },
+
+  async scheduleReport(config: any) {
+    const response = await apiClient.post('/api/analytics/reports/schedule', config)
+    return response.data
+  },
+
+  async getReportConfigs() {
+    const response = await apiClient.get('/api/analytics/reports/configs')
+    return response.data
+  },
+
+  async exportData(params: {
+    type: string;
+    format: string;
+    period: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const response = await apiClient.get('/api/analytics/export', {
+      params,
+      responseType: 'blob'
+    })
+    return response
+  },
+
+  async getYearOverYearComparison() {
+    const response = await apiClient.get('/api/analytics/comparison/yoy')
+    return response.data
+  },
+
+  async getMonthOverMonthComparison() {
+    const response = await apiClient.get('/api/analytics/comparison/mom')
+    return response.data
+  },
+
+  async getCustomComparison(params: {
+    startDate1: string;
+    endDate1: string;
+    startDate2: string;
+    endDate2: string;
+  }) {
+    const response = await apiClient.get('/api/analytics/comparison/custom', {
+      params
+    })
+    return response.data
   }
 }
 
@@ -495,6 +637,229 @@ export const preferencesApi = {
   }
 }
 
+// Loyalty API (Loyalty Service - To be implemented)
+// NOTE: These endpoints are not yet implemented in Spring Boot backend
+export const loyaltyApi = {
+  async getPrograms() {
+    const response = await apiClient.get('/api/loyalty/programs')
+    return response.data
+  },
+
+  async createProgram(program: any) {
+    const response = await apiClient.post('/api/loyalty/programs', program)
+    return response.data
+  },
+
+  async updateProgram(programId: string, updates: any) {
+    const response = await apiClient.put(`/api/loyalty/programs/${programId}`, updates)
+    return response.data
+  },
+
+  async enrollCustomer(payload: any) {
+    const response = await apiClient.post('/api/loyalty/enroll', payload)
+    return response.data
+  },
+
+  async getCustomers(filters?: any) {
+    const response = await apiClient.get('/api/loyalty/customers', { params: filters })
+    return response.data
+  },
+
+  async getCustomerDetails(customerId: string) {
+    const response = await apiClient.get(`/api/loyalty/customers/${customerId}`)
+    return response.data
+  },
+
+  async awardPoints(payload: any) {
+    const response = await apiClient.post('/api/loyalty/points/award', payload)
+    return response.data
+  },
+
+  async redeemPoints(payload: any) {
+    const response = await apiClient.post('/api/loyalty/points/redeem', payload)
+    return response.data
+  },
+
+  async adjustPoints(payload: any) {
+    const response = await apiClient.post('/api/loyalty/points/adjust', payload)
+    return response.data
+  },
+
+  async getPointsHistory(customerId: string) {
+    const response = await apiClient.get(`/api/loyalty/points/history/${customerId}`)
+    return response.data
+  },
+
+  async createTier(programId: string, tier: any) {
+    const response = await apiClient.post(`/api/loyalty/programs/${programId}/tiers`, tier)
+    return response.data
+  },
+
+  async updateTier(tierId: string, updates: any) {
+    const response = await apiClient.put(`/api/loyalty/tiers/${tierId}`, updates)
+    return response.data
+  },
+
+  async deleteTier(tierId: string) {
+    const response = await apiClient.delete(`/api/loyalty/tiers/${tierId}`)
+    return response.data
+  },
+
+  async createCampaign(campaign: any) {
+    const response = await apiClient.post('/api/loyalty/campaigns', campaign)
+    return response.data
+  },
+
+  async updateCampaign(campaignId: string, updates: any) {
+    const response = await apiClient.put(`/api/loyalty/campaigns/${campaignId}`, updates)
+    return response.data
+  },
+
+  async deleteCampaign(campaignId: string) {
+    const response = await apiClient.delete(`/api/loyalty/campaigns/${campaignId}`)
+    return response.data
+  },
+
+  async getCampaigns() {
+    const response = await apiClient.get('/api/loyalty/campaigns')
+    return response.data
+  },
+
+  async getAnalytics(params?: any) {
+    const response = await apiClient.get('/api/loyalty/analytics', { params })
+    return response.data
+  },
+
+  async exportData(type: string, params?: any) {
+    const response = await apiClient.get(`/api/loyalty/export/${type}`, {
+      params,
+      responseType: 'blob'
+    })
+    return response
+  }
+}
+
+// Tables API (Table Service - To be implemented)
+// NOTE: These endpoints are not yet implemented in Spring Boot backend
+export const tablesApi = {
+  async getAll() {
+    const response = await apiClient.get('/api/tables')
+    return response.data
+  },
+
+  async updateStatus(tableId: string, payload: { status: string; notes?: string }) {
+    const response = await apiClient.patch(`/api/tables/${tableId}/status`, payload)
+    return response.data
+  },
+
+  async assignOrder(tableId: string, orderId: string) {
+    const response = await apiClient.post(`/api/tables/${tableId}/assign-order`, { orderId })
+    return response.data
+  },
+
+  async clearTable(tableId: string) {
+    const response = await apiClient.post(`/api/tables/${tableId}/clear`)
+    return response.data
+  },
+
+  async createReservation(tableId: string, reservation: any) {
+    const response = await apiClient.post(`/api/tables/${tableId}/reservations`, reservation)
+    return response.data
+  },
+
+  async updateReservation(tableId: string, reservationId: string, updates: any) {
+    const response = await apiClient.patch(`/api/tables/${tableId}/reservations/${reservationId}`, updates)
+    return response.data
+  },
+
+  async seatReservation(tableId: string, reservationId: string) {
+    const response = await apiClient.post(`/api/tables/${tableId}/reservations/${reservationId}/seat`)
+    return response.data
+  },
+
+  async updatePosition(tableId: string, position: { x: number; y: number }) {
+    const response = await apiClient.patch(`/api/tables/${tableId}/position`, { position })
+    return response.data
+  },
+
+  async bulkUpdateStatus(tableIds: string[], status: string) {
+    const response = await apiClient.patch('/api/tables/bulk-status', { tableIds, status })
+    return response.data
+  }
+}
+
+// Floor Plans API (Table Service - To be implemented)
+// NOTE: These endpoints are not yet implemented in Spring Boot backend
+export const floorPlansApi = {
+  async getActive() {
+    const response = await apiClient.get('/api/floor-plans/active')
+    return response.data
+  }
+}
+
+// Receipts API (Receipt Service - To be implemented)
+// NOTE: These endpoints are not yet fully implemented in Spring Boot backend
+export const receiptsApi = {
+  async getTemplates() {
+    const response = await apiClient.get('/api/receipts/templates')
+    return response.data
+  },
+
+  async printReceipt(printJob: any) {
+    const response = await apiClient.post('/api/receipts/print', printJob)
+    return response.data
+  },
+
+  async printDirect(payload: { content: string; config: any }) {
+    const response = await apiClient.post('/api/receipts/print-direct', payload)
+    return response.data
+  },
+
+  async getPrinterStatus() {
+    const response = await apiClient.get('/api/receipts/printer/status')
+    return response.data
+  },
+
+  async archiveReceipt(archive: any) {
+    const response = await apiClient.post('/api/receipts/archive', archive)
+    return response.data
+  },
+
+  async getArchive(filters?: any) {
+    const response = await apiClient.get('/api/receipts/archive', { params: filters })
+    return response.data
+  }
+}
+
+// Printers API (Printer Service - To be implemented)
+// NOTE: These endpoints are not yet implemented in Spring Boot backend
+export const printersApi = {
+  async getAll() {
+    const response = await apiClient.get('/api/printers')
+    return response.data
+  },
+
+  async create(printer: any) {
+    const response = await apiClient.post('/api/printers', printer)
+    return response.data
+  },
+
+  async update(printerId: string, updates: any) {
+    const response = await apiClient.put(`/api/printers/${printerId}`, updates)
+    return response.data
+  },
+
+  async delete(printerId: string) {
+    const response = await apiClient.delete(`/api/printers/${printerId}`)
+    return response.data
+  },
+
+  async test(printerId: string) {
+    const response = await apiClient.post(`/api/printers/${printerId}/test`)
+    return response.data
+  }
+}
+
 // Payment API (Payment Service - To be implemented)
 // NOTE: These endpoints are not yet implemented in Spring Boot backend
 // They need to be created in a new Payment Service microservice
@@ -572,5 +937,10 @@ export default {
   clockEntries: clockEntriesApi,
   auditLogs: auditLogsApi,
   password: passwordApi,
+  loyalty: loyaltyApi,
+  tables: tablesApi,
+  floorPlans: floorPlansApi,
+  receipts: receiptsApi,
+  printers: printersApi,
   payment: paymentApi
 }

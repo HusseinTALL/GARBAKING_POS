@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { analyticsApi } from '@/services/api-spring'
 
 // Types
 export interface SalesData {
@@ -259,14 +259,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     error.value = null
 
     try {
-      const response = await axios.get('/api/analytics/dashboard')
-
-      if (response.data.success) {
-        dashboardData.value = response.data.data
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch dashboard data')
+      const data = await analyticsApi.getDashboardData()
+      dashboardData.value = data
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       console.error('Dashboard fetch error:', err)
@@ -288,14 +283,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         params.endDate = dateRange.end
       }
 
-      const response = await axios.get('/api/analytics/sales', { params })
-
-      if (response.data.success) {
-        salesData.value = response.data.data
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch sales data')
+      const data = await analyticsApi.getSalesData(params)
+      salesData.value = data
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -306,16 +296,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchMenuPerformance = async (days: number = 30): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/menu-performance', {
-        params: { days }
-      })
-
-      if (response.data.success) {
-        menuPerformance.value = response.data.data.menuItems || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch menu performance')
+      const data = await analyticsApi.getMenuPerformance(days)
+      menuPerformance.value = data.menuItems || data || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -324,16 +307,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchPeakHours = async (days: number = 7): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/peak-hours', {
-        params: { days }
-      })
-
-      if (response.data.success) {
-        peakHoursData.value = response.data.data
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch peak hours')
+      const data = await analyticsApi.getPeakHours(days)
+      peakHoursData.value = data
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -342,16 +318,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchPaymentMethods = async (days: number = 30): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/payment-methods', {
-        params: { days }
-      })
-
-      if (response.data.success) {
-        paymentMethodsData.value = response.data.data
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch payment methods')
+      const data = await analyticsApi.getPaymentMethods(days)
+      paymentMethodsData.value = data
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -360,16 +329,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchCustomerInsights = async (days: number = 30): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/customer-insights', {
-        params: { days }
-      })
-
-      if (response.data.success) {
-        customerInsightsData.value = response.data.data
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch customer insights')
+      const data = await analyticsApi.getCustomerInsights(days)
+      customerInsightsData.value = data
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -378,14 +340,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchProductAnalytics = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/products', { params: { period } })
-
-      if (response.data.success) {
-        productAnalytics.value = response.data.data.products || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch product analytics')
+      const data = await analyticsApi.getProductAnalytics(period)
+      productAnalytics.value = data.products || data || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -394,14 +351,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchCategoryAnalytics = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/categories', { params: { period } })
-
-      if (response.data.success) {
-        categoryAnalytics.value = response.data.data.categories || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch category analytics')
+      const data = await analyticsApi.getCategoryAnalytics(period)
+      categoryAnalytics.value = data.categories || data || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -410,14 +362,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchStaffPerformance = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/staff', { params: { period } })
-
-      if (response.data.success) {
-        staffPerformance.value = response.data.data.staff || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch staff performance')
+      const data = await analyticsApi.getStaffPerformance(period)
+      staffPerformance.value = data.staff || data || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -426,14 +373,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchCustomerAnalytics = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/customers', { params: { period } })
-
-      if (response.data.success) {
-        customerAnalytics.value = response.data.data.customers
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch customer analytics')
+      const data = await analyticsApi.getCustomerAnalytics(period)
+      customerAnalytics.value = data.customers || data
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -442,14 +384,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchTimeAnalytics = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/time', { params: { period } })
-
-      if (response.data.success) {
-        timeAnalytics.value = response.data.data.timeData || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch time analytics')
+      const data = await analyticsApi.getTimeAnalytics(period)
+      timeAnalytics.value = data.timeData || data || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -458,14 +395,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchComparisonData = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/comparison', { params: { period } })
-
-      if (response.data.success) {
-        comparisonData.value = response.data.data.comparison
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch comparison data')
+      const data = await analyticsApi.getComparisonData(period)
+      comparisonData.value = data.comparison || data
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -474,14 +406,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchInventoryAnalytics = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/inventory')
-
-      if (response.data.success) {
-        inventoryAnalytics.value = response.data.data.inventory
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch inventory analytics')
+      const data = await analyticsApi.getInventoryAnalytics()
+      inventoryAnalytics.value = data.inventory || data
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -490,16 +417,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const generateReport = async (reportType: ReportType, config: any): Promise<string | null> => {
     try {
-      const response = await axios.post('/api/analytics/reports/generate', {
-        type: reportType,
-        config
-      })
-
-      if (response.data.success) {
-        return response.data.data.reportUrl
-      }
-
-      throw new Error(response.data.error || 'Failed to generate report')
+      const data = await analyticsApi.generateReport(reportType, config)
+      return data.reportUrl || data
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return null
@@ -508,15 +427,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const scheduleReport = async (config: Omit<ReportConfig, 'id'>): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/analytics/reports/schedule', config)
-
-      if (response.data.success) {
-        const newReport = response.data.data.report
-        reportConfigs.value.push(newReport)
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to schedule report')
+      const data = await analyticsApi.scheduleReport(config)
+      const newReport = data.report || data
+      reportConfigs.value.push(newReport)
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -525,14 +439,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchReportConfigs = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/reports/configs')
-
-      if (response.data.success) {
-        reportConfigs.value = response.data.data.configs || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch report configs')
+      const data = await analyticsApi.getReportConfigs()
+      reportConfigs.value = data.configs || data || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -557,10 +466,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         params.endDate = customDateRange.value.end
       }
 
-      const response = await axios.get('/api/analytics/export', {
-        params,
-        responseType: 'blob'
-      })
+      const response = await analyticsApi.exportData(params)
 
       // Determine MIME type and extension based on format
       const mimeTypes: Record<string, string> = {
@@ -597,13 +503,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   // New comparison methods for YoY and MoM
   const fetchYearOverYearComparison = async (): Promise<any | null> => {
     try {
-      const response = await axios.get('/api/analytics/comparison/yoy')
-
-      if (response.data.success) {
-        return response.data.data
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch YoY comparison')
+      const data = await analyticsApi.getYearOverYearComparison()
+      return data
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       console.error('YoY comparison error:', err)
@@ -613,13 +514,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchMonthOverMonthComparison = async (): Promise<any | null> => {
     try {
-      const response = await axios.get('/api/analytics/comparison/mom')
-
-      if (response.data.success) {
-        return response.data.data
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch MoM comparison')
+      const data = await analyticsApi.getMonthOverMonthComparison()
+      return data
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       console.error('MoM comparison error:', err)
@@ -634,20 +530,13 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     endDate2: string
   ): Promise<any | null> => {
     try {
-      const response = await axios.get('/api/analytics/comparison/custom', {
-        params: {
-          startDate1,
-          endDate1,
-          startDate2,
-          endDate2
-        }
+      const data = await analyticsApi.getCustomComparison({
+        startDate1,
+        endDate1,
+        startDate2,
+        endDate2
       })
-
-      if (response.data.success) {
-        return response.data.data
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch custom comparison')
+      return data
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       console.error('Custom comparison error:', err)

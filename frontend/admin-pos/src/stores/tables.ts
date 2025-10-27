@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { tablesApi, floorPlansApi } from '@/services/api-spring'
 
 // Types
 export interface Table {
@@ -160,15 +160,10 @@ export const useTablesStore = defineStore('tables', () => {
     error.value = null
 
     try {
-      const response = await axios.get('/api/tables')
-
-      if (response.data.success) {
-        tables.value = response.data.data.tables || []
-        lastUpdate.value = new Date()
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch tables')
+      const data = await tablesApi.getAll()
+      tables.value = data.tables || data || []
+      lastUpdate.value = new Date()
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message || 'Failed to fetch tables'
       console.error('Error fetching tables:', err)
@@ -180,14 +175,9 @@ export const useTablesStore = defineStore('tables', () => {
 
   const fetchFloorPlan = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/floor-plans/active')
-
-      if (response.data.success) {
-        floorPlan.value = response.data.data.floorPlan
-        return true
-      }
-
-      return false
+      const data = await floorPlansApi.getActive()
+      floorPlan.value = data.floorPlan || data
+      return true
     } catch (err: any) {
       console.error('Error fetching floor plan:', err)
       return false
@@ -196,32 +186,25 @@ export const useTablesStore = defineStore('tables', () => {
 
   const updateTableStatus = async (tableId: string, status: TableStatus, notes?: string): Promise<boolean> => {
     try {
-      const response = await axios.patch(`/api/tables/${tableId}/status`, {
-        status,
-        notes
-      })
+      await tablesApi.updateStatus(tableId, { status, notes })
 
-      if (response.data.success) {
-        const tableIndex = tables.value.findIndex(t => t.id === tableId)
-        if (tableIndex !== -1) {
-          tables.value[tableIndex].status = status
-          if (notes !== undefined) {
-            tables.value[tableIndex].notes = notes
-          }
-
-          // Special handling for status changes
-          if (status === TableStatus.NEEDS_CLEANING) {
-            tables.value[tableIndex].currentOrder = undefined
-          } else if (status === TableStatus.AVAILABLE) {
-            tables.value[tableIndex].lastCleaned = new Date().toISOString()
-            tables.value[tableIndex].notes = undefined
-          }
+      const tableIndex = tables.value.findIndex(t => t.id === tableId)
+      if (tableIndex !== -1) {
+        tables.value[tableIndex].status = status
+        if (notes !== undefined) {
+          tables.value[tableIndex].notes = notes
         }
 
-        return true
+        // Special handling for status changes
+        if (status === TableStatus.NEEDS_CLEANING) {
+          tables.value[tableIndex].currentOrder = undefined
+        } else if (status === TableStatus.AVAILABLE) {
+          tables.value[tableIndex].lastCleaned = new Date().toISOString()
+          tables.value[tableIndex].notes = undefined
+        }
       }
 
-      throw new Error(response.data.error || 'Failed to update status')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -230,21 +213,15 @@ export const useTablesStore = defineStore('tables', () => {
 
   const assignOrderToTable = async (tableId: string, orderId: string): Promise<boolean> => {
     try {
-      const response = await axios.post(`/api/tables/${tableId}/assign-order`, {
-        orderId
-      })
+      const data = await tablesApi.assignOrder(tableId, orderId)
 
-      if (response.data.success) {
-        const tableIndex = tables.value.findIndex(t => t.id === tableId)
-        if (tableIndex !== -1) {
-          tables.value[tableIndex].status = TableStatus.OCCUPIED
-          tables.value[tableIndex].currentOrder = response.data.data.orderSummary
-        }
-
-        return true
+      const tableIndex = tables.value.findIndex(t => t.id === tableId)
+      if (tableIndex !== -1) {
+        tables.value[tableIndex].status = TableStatus.OCCUPIED
+        tables.value[tableIndex].currentOrder = data.orderSummary || data
       }
 
-      throw new Error(response.data.error || 'Failed to assign order')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -253,19 +230,15 @@ export const useTablesStore = defineStore('tables', () => {
 
   const clearTable = async (tableId: string): Promise<boolean> => {
     try {
-      const response = await axios.post(`/api/tables/${tableId}/clear`)
+      await tablesApi.clearTable(tableId)
 
-      if (response.data.success) {
-        const tableIndex = tables.value.findIndex(t => t.id === tableId)
-        if (tableIndex !== -1) {
-          tables.value[tableIndex].status = TableStatus.NEEDS_CLEANING
-          tables.value[tableIndex].currentOrder = undefined
-        }
-
-        return true
+      const tableIndex = tables.value.findIndex(t => t.id === tableId)
+      if (tableIndex !== -1) {
+        tables.value[tableIndex].status = TableStatus.NEEDS_CLEANING
+        tables.value[tableIndex].currentOrder = undefined
       }
 
-      throw new Error(response.data.error || 'Failed to clear table')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -274,27 +247,23 @@ export const useTablesStore = defineStore('tables', () => {
 
   const createReservation = async (tableId: string, reservation: Omit<Reservation, 'id' | 'createdAt' | 'status'>): Promise<boolean> => {
     try {
-      const response = await axios.post(`/api/tables/${tableId}/reservations`, reservation)
+      const data = await tablesApi.createReservation(tableId, reservation)
 
-      if (response.data.success) {
-        const tableIndex = tables.value.findIndex(t => t.id === tableId)
-        if (tableIndex !== -1) {
-          tables.value[tableIndex].reservations.push(response.data.data.reservation)
+      const tableIndex = tables.value.findIndex(t => t.id === tableId)
+      if (tableIndex !== -1) {
+        tables.value[tableIndex].reservations.push(data.reservation || data)
 
-          // Check if reservation is soon and update table status
-          const reservationTime = new Date(reservation.reservationTime)
-          const now = new Date()
-          const timeDiff = reservationTime.getTime() - now.getTime()
+        // Check if reservation is soon and update table status
+        const reservationTime = new Date(reservation.reservationTime)
+        const now = new Date()
+        const timeDiff = reservationTime.getTime() - now.getTime()
 
-          if (timeDiff <= 30 * 60 * 1000 && tables.value[tableIndex].status === TableStatus.AVAILABLE) {
-            tables.value[tableIndex].status = TableStatus.RESERVED
-          }
+        if (timeDiff <= 30 * 60 * 1000 && tables.value[tableIndex].status === TableStatus.AVAILABLE) {
+          tables.value[tableIndex].status = TableStatus.RESERVED
         }
-
-        return true
       }
 
-      throw new Error(response.data.error || 'Failed to create reservation')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -303,24 +272,20 @@ export const useTablesStore = defineStore('tables', () => {
 
   const updateReservation = async (tableId: string, reservationId: string, updates: Partial<Reservation>): Promise<boolean> => {
     try {
-      const response = await axios.patch(`/api/tables/${tableId}/reservations/${reservationId}`, updates)
+      await tablesApi.updateReservation(tableId, reservationId, updates)
 
-      if (response.data.success) {
-        const tableIndex = tables.value.findIndex(t => t.id === tableId)
-        if (tableIndex !== -1) {
-          const reservationIndex = tables.value[tableIndex].reservations.findIndex(r => r.id === reservationId)
-          if (reservationIndex !== -1) {
-            tables.value[tableIndex].reservations[reservationIndex] = {
-              ...tables.value[tableIndex].reservations[reservationIndex],
-              ...updates
-            }
+      const tableIndex = tables.value.findIndex(t => t.id === tableId)
+      if (tableIndex !== -1) {
+        const reservationIndex = tables.value[tableIndex].reservations.findIndex(r => r.id === reservationId)
+        if (reservationIndex !== -1) {
+          tables.value[tableIndex].reservations[reservationIndex] = {
+            ...tables.value[tableIndex].reservations[reservationIndex],
+            ...updates
           }
         }
-
-        return true
       }
 
-      throw new Error(response.data.error || 'Failed to update reservation')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -329,23 +294,19 @@ export const useTablesStore = defineStore('tables', () => {
 
   const seatReservation = async (tableId: string, reservationId: string): Promise<boolean> => {
     try {
-      const response = await axios.post(`/api/tables/${tableId}/reservations/${reservationId}/seat`)
+      await tablesApi.seatReservation(tableId, reservationId)
 
-      if (response.data.success) {
-        const tableIndex = tables.value.findIndex(t => t.id === tableId)
-        if (tableIndex !== -1) {
-          tables.value[tableIndex].status = TableStatus.OCCUPIED
+      const tableIndex = tables.value.findIndex(t => t.id === tableId)
+      if (tableIndex !== -1) {
+        tables.value[tableIndex].status = TableStatus.OCCUPIED
 
-          const reservationIndex = tables.value[tableIndex].reservations.findIndex(r => r.id === reservationId)
-          if (reservationIndex !== -1) {
-            tables.value[tableIndex].reservations[reservationIndex].status = 'SEATED'
-          }
+        const reservationIndex = tables.value[tableIndex].reservations.findIndex(r => r.id === reservationId)
+        if (reservationIndex !== -1) {
+          tables.value[tableIndex].reservations[reservationIndex].status = 'SEATED'
         }
-
-        return true
       }
 
-      throw new Error(response.data.error || 'Failed to seat reservation')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -354,20 +315,14 @@ export const useTablesStore = defineStore('tables', () => {
 
   const moveTable = async (tableId: string, newPosition: { x: number; y: number }): Promise<boolean> => {
     try {
-      const response = await axios.patch(`/api/tables/${tableId}/position`, {
-        position: newPosition
-      })
+      await tablesApi.updatePosition(tableId, newPosition)
 
-      if (response.data.success) {
-        const tableIndex = tables.value.findIndex(t => t.id === tableId)
-        if (tableIndex !== -1) {
-          tables.value[tableIndex].position = newPosition
-        }
-
-        return true
+      const tableIndex = tables.value.findIndex(t => t.id === tableId)
+      if (tableIndex !== -1) {
+        tables.value[tableIndex].position = newPosition
       }
 
-      throw new Error(response.data.error || 'Failed to move table')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -400,23 +355,16 @@ export const useTablesStore = defineStore('tables', () => {
 
   const bulkUpdateStatus = async (tableIds: string[], status: TableStatus): Promise<boolean> => {
     try {
-      const response = await axios.patch('/api/tables/bulk-status', {
-        tableIds,
-        status
+      await tablesApi.bulkUpdateStatus(tableIds, status)
+
+      tableIds.forEach(tableId => {
+        const tableIndex = tables.value.findIndex(t => t.id === tableId)
+        if (tableIndex !== -1) {
+          tables.value[tableIndex].status = status
+        }
       })
 
-      if (response.data.success) {
-        tableIds.forEach(tableId => {
-          const tableIndex = tables.value.findIndex(t => t.id === tableId)
-          if (tableIndex !== -1) {
-            tables.value[tableIndex].status = status
-          }
-        })
-
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to bulk update')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
