@@ -62,7 +62,7 @@ public class User {
     private UserRole role = UserRole.CUSTOMER;
 
     @Column(name = "is_active")
-    private Boolean isActive = true;
+    private Boolean active = true;
 
     @Column(name = "store_id")
     private String storeId;
@@ -81,5 +81,13 @@ public class User {
         CASHIER,
         KITCHEN,
         ADMIN
+    }
+
+    /**
+     * Custom isActive() method for boolean checking
+     * Lombok generates getActive() for Boolean type, but we need isActive() for consistency
+     */
+    public boolean isActive() {
+        return active != null && active;
     }
 }
