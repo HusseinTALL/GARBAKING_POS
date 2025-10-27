@@ -1,14 +1,12 @@
 /**
  * Authentication store for POS staff management
  * Handles login, role-based permissions, and session management with backend RBAC integration
+ * Updated to use Spring Boot microservices backend via api-spring.ts
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
-
-// Configure axios base URL
-axios.defaults.baseURL = 'http://localhost:3001'
+import { authApi, shiftsApi, preferencesApi } from '@/services/api-spring'
 
 // Backend role types matching our permissions system
 export type BackendRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'CASHIER' | 'KITCHEN'
@@ -192,13 +190,13 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const response = await axios.post('/api/auth/login', {
+      const response = await authApi.login({
         email: credentials.employeeId,
         password: credentials.password
       })
 
-      if (response.data.success && response.data.user && response.data.tokens) {
-        const { user, tokens } = response.data
+      if (response && response.user && response.token) {
+        const { user, token: authToken } = response
 
         // Set authentication data with backend permissions
         currentUser.value = {
@@ -207,7 +205,7 @@ export const useAuthStore = defineStore('auth', () => {
           firstName: user.name.split(' ')[0] || user.name,
           lastName: user.name.split(' ').slice(1).join(' ') || '',
           email: user.email,
-          storeId: user.storeId,
+          storeId: user.storeId || 'store_001',
           role: {
             id: user.id,
             name: user.role as BackendRole,
@@ -229,33 +227,32 @@ export const useAuthStore = defineStore('auth', () => {
             canRefundOrders: false
           },
           shift: null,
-          isActive: user.isActive,
-          hireDate: new Date().toISOString(),
+          isActive: user.active !== undefined ? user.active : true,
+          hireDate: user.createdAt || new Date().toISOString(),
           preferences: {
             language: 'fr',
             theme: 'light',
             soundEnabled: true,
             notificationsEnabled: true
           },
-          createdAt: new Date().toISOString()
+          createdAt: user.createdAt || new Date().toISOString()
         }
-        token.value = tokens.accessToken
-        refreshToken.value = tokens.refreshToken
+        token.value = authToken
+        refreshToken.value = authToken // Spring Boot returns same token for now
 
-        // Store in localStorage for persistence
-        localStorage.setItem('pos_auth_token', tokens.accessToken)
-        localStorage.setItem('pos_refresh_token', tokens.refreshToken)
+        // Store in localStorage for persistence (both formats for compatibility)
+        localStorage.setItem('pos_auth_token', authToken)
+        localStorage.setItem('pos_refresh_token', authToken)
         localStorage.setItem('pos_user', JSON.stringify(currentUser.value))
-
-        // Set axios default header
-        axios.defaults.headers.common['Authorization'] = `Bearer ${tokens.accessToken}`
+        localStorage.setItem('auth_token', authToken)
+        localStorage.setItem('user', JSON.stringify(user))
 
         // Set session timeout (15 minutes for access token)
         setSessionTimeout(15 * 60 * 1000)
 
         return true
       } else {
-        error.value = response.data.message || 'Login failed'
+        error.value = response.message || 'Login failed'
         return false
       }
     } catch (err: any) {
@@ -272,7 +269,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // Notify server of logout
       if (token.value) {
-        await axios.post('/api/auth/logout', { reason })
+        await authApi.logout(reason)
       }
     } catch (err) {
       console.warn('Logout API call failed:', err)
@@ -287,20 +284,15 @@ export const useAuthStore = defineStore('auth', () => {
     if (!refreshToken.value) return false
 
     try {
-      const response = await axios.post('/api/auth/refresh', {
-        refreshToken: refreshToken.value
-      })
+      const response = await authApi.refresh(refreshToken.value)
 
-      if (response.data.success && response.data.tokens) {
-        const { tokens } = response.data
+      if (response && response.token) {
+        token.value = response.token
+        refreshToken.value = response.token
 
-        token.value = tokens.accessToken
-        refreshToken.value = tokens.refreshToken
-
-        localStorage.setItem('pos_auth_token', tokens.accessToken)
-        localStorage.setItem('pos_refresh_token', tokens.refreshToken)
-
-        axios.defaults.headers.common['Authorization'] = `Bearer ${tokens.accessToken}`
+        localStorage.setItem('pos_auth_token', response.token)
+        localStorage.setItem('pos_refresh_token', response.token)
+        localStorage.setItem('auth_token', response.token)
 
         // Set session timeout for new access token (15 minutes)
         setSessionTimeout(15 * 60 * 1000)
@@ -322,14 +314,14 @@ export const useAuthStore = defineStore('auth', () => {
     currentShift.value = null
     error.value = null
 
-    // Clear localStorage
+    // Clear localStorage (all auth-related keys)
     localStorage.removeItem('pos_auth_token')
     localStorage.removeItem('pos_refresh_token')
     localStorage.removeItem('pos_user')
     localStorage.removeItem('pos_last_verified')
-
-    // Clear axios header
-    delete axios.defaults.headers.common['Authorization']
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('refresh_token')
 
     // Clear session timeout
     if (sessionTimeout.value) {
@@ -355,21 +347,19 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const loadFromStorage = async (): Promise<boolean> => {
-    const storedToken = localStorage.getItem('pos_auth_token')
-    const storedUser = localStorage.getItem('pos_user')
-    const storedRefreshToken = localStorage.getItem('pos_refresh_token')
+    const storedToken = localStorage.getItem('pos_auth_token') || localStorage.getItem('auth_token')
+    const storedUser = localStorage.getItem('pos_user') || localStorage.getItem('user')
+    const storedRefreshToken = localStorage.getItem('pos_refresh_token') || localStorage.getItem('refresh_token')
     const lastVerified = localStorage.getItem('pos_last_verified')
 
-    if (!storedToken || !storedUser || !storedRefreshToken) {
+    if (!storedToken || !storedUser) {
       return false
     }
 
     try {
       currentUser.value = JSON.parse(storedUser)
       token.value = storedToken
-      refreshToken.value = storedRefreshToken
-
-      axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
+      refreshToken.value = storedRefreshToken || storedToken
 
       // Check if token was verified recently (within last 5 minutes)
       const now = Date.now()
@@ -379,7 +369,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Only verify if it's been more than 5 minutes since last verification
       if (lastVerifiedTime < fiveMinutesAgo) {
         try {
-          await axios.get('/api/auth/verify')
+          await authApi.verify()
           // Token is valid, update last verified time and set timeout for refresh
           localStorage.setItem('pos_last_verified', now.toString())
           setSessionTimeout(15 * 60 * 1000)
@@ -411,20 +401,17 @@ export const useAuthStore = defineStore('auth', () => {
     if (!currentUser.value) return false
 
     try {
-      const response = await axios.post('/api/staff/shifts/start', {
-        staffId: currentUser.value.id,
-        cashDrawerStart: cashDrawerAmount
-      })
+      const response = await shiftsApi.startShift(currentUser.value.id, cashDrawerAmount)
 
-      if (response.data.success) {
-        currentShift.value = response.data.data.shift
+      if (response && response.shift) {
+        currentShift.value = response.shift
         return true
       }
 
-      error.value = response.data.error || 'Failed to start shift'
+      error.value = 'Failed to start shift'
       return false
     } catch (err: any) {
-      error.value = err.response?.data?.error || 'Failed to start shift'
+      error.value = err.response?.data?.message || 'Failed to start shift'
       return false
     }
   }
@@ -433,20 +420,17 @@ export const useAuthStore = defineStore('auth', () => {
     if (!currentShift.value) return false
 
     try {
-      const response = await axios.post(`/api/staff/shifts/${currentShift.value.id}/end`, {
-        cashDrawerEnd: cashDrawerAmount,
-        notes
-      })
+      const response = await shiftsApi.endShift(currentShift.value.id, cashDrawerAmount, notes)
 
-      if (response.data.success) {
+      if (response) {
         currentShift.value = null
         return true
       }
 
-      error.value = response.data.error || 'Failed to end shift'
+      error.value = 'Failed to end shift'
       return false
     } catch (err: any) {
-      error.value = err.response?.data?.error || 'Failed to end shift'
+      error.value = err.response?.data?.message || 'Failed to end shift'
       return false
     }
   }
@@ -455,9 +439,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (!currentShift.value) return false
 
     try {
-      const response = await axios.post(`/api/staff/shifts/${currentShift.value.id}/break/start`)
+      const response = await shiftsApi.startBreak(currentShift.value.id)
 
-      if (response.data.success) {
+      if (response) {
         if (currentShift.value) {
           currentShift.value.breakStartTime = new Date().toISOString()
           currentShift.value.status = 'break'
@@ -475,9 +459,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (!currentShift.value) return false
 
     try {
-      const response = await axios.post(`/api/staff/shifts/${currentShift.value.id}/break/end`)
+      const response = await shiftsApi.endBreak(currentShift.value.id)
 
-      if (response.data.success) {
+      if (response) {
         if (currentShift.value) {
           currentShift.value.breakEndTime = new Date().toISOString()
           currentShift.value.status = 'active'
@@ -495,10 +479,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (!currentUser.value) return
 
     try {
-      const response = await axios.get(`/api/staff/${currentUser.value.id}/shifts/active`)
+      const response = await shiftsApi.getActiveShift(currentUser.value.id)
 
-      if (response.data.success && response.data.data?.shift) {
-        currentShift.value = response.data.data.shift
+      if (response && response.shift) {
+        currentShift.value = response.shift
       }
     } catch (err) {
       console.warn('Failed to load active shift:', err)
@@ -509,9 +493,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (!currentUser.value) return false
 
     try {
-      const response = await axios.patch(`/api/staff/${currentUser.value.id}/preferences`, preferences)
+      const response = await preferencesApi.updatePreferences(currentUser.value.id, preferences)
 
-      if (response.data.success) {
+      if (response) {
         currentUser.value.preferences = { ...currentUser.value.preferences, ...preferences }
         localStorage.setItem('pos_user', JSON.stringify(currentUser.value))
         return true

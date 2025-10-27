@@ -1,11 +1,12 @@
 /**
  * Users store for comprehensive user management
  * Handles CRUD, clock in/out, audit logs, performance tracking, and password management
+ * Updated to use Spring Boot microservices backend via api-spring.ts
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { usersApi, clockEntriesApi, auditLogsApi, passwordApi } from '@/services/api-spring'
 import type { Role } from '@/constants/permissions'
 
 // Types
@@ -194,16 +195,11 @@ export const useUsersStore = defineStore('users', () => {
     error.value = null
 
     try {
-      const response = await axios.get('/api/users')
-
-      if (response.data.success) {
-        users.value = response.data.data.users || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch users')
+      const data = await usersApi.getAllUsers()
+      users.value = Array.isArray(data) ? data : (data.users || [])
+      return true
     } catch (err: any) {
-      error.value = err.message
+      error.value = err.message || 'Failed to fetch users'
       console.error('Failed to fetch users:', err)
       return false
     } finally {
@@ -213,10 +209,9 @@ export const useUsersStore = defineStore('users', () => {
 
   const createUser = async (userData: Partial<User>): Promise<User | null> => {
     try {
-      const response = await axios.post('/api/users', userData)
+      const newUser = await usersApi.createUser(userData)
 
-      if (response.data.success) {
-        const newUser = response.data.data.user
+      if (newUser) {
         users.value.push(newUser)
 
         // Log audit
@@ -231,7 +226,7 @@ export const useUsersStore = defineStore('users', () => {
         return newUser
       }
 
-      throw new Error(response.data.error || 'Failed to create user')
+      throw new Error('Failed to create user')
     } catch (err: any) {
       console.error('Failed to create user:', err)
       throw err
@@ -240,10 +235,9 @@ export const useUsersStore = defineStore('users', () => {
 
   const updateUser = async (userId: string, updates: Partial<User>): Promise<User | null> => {
     try {
-      const response = await axios.put(`/api/users/${userId}`, updates)
+      const updatedUser = await usersApi.updateUser(userId, updates)
 
-      if (response.data.success) {
-        const updatedUser = response.data.data.user
+      if (updatedUser) {
         const index = users.value.findIndex(u => u.id === userId)
         if (index !== -1) {
           users.value[index] = updatedUser
@@ -272,7 +266,7 @@ export const useUsersStore = defineStore('users', () => {
         return updatedUser
       }
 
-      throw new Error(response.data.error || 'Failed to update user')
+      throw new Error('Failed to update user')
     } catch (err: any) {
       console.error('Failed to update user:', err)
       throw err
@@ -282,24 +276,20 @@ export const useUsersStore = defineStore('users', () => {
   const deleteUser = async (userId: string): Promise<boolean> => {
     try {
       const user = users.value.find(u => u.id === userId)
-      const response = await axios.delete(`/api/users/${userId}`)
+      await usersApi.deleteUser(userId)
 
-      if (response.data.success) {
-        users.value = users.value.filter(u => u.id !== userId)
+      users.value = users.value.filter(u => u.id !== userId)
 
-        // Log audit
-        await logAudit({
-          action: AuditAction.USER_DELETED,
-          resource: 'users',
-          resourceId: userId,
-          details: { userName: user?.name },
-          severity: 'WARNING'
-        })
+      // Log audit
+      await logAudit({
+        action: AuditAction.USER_DELETED,
+        resource: 'users',
+        resourceId: userId,
+        details: { userName: user?.name },
+        severity: 'WARNING'
+      })
 
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to delete user')
+      return true
     } catch (err: any) {
       console.error('Failed to delete user:', err)
       throw err
@@ -309,13 +299,9 @@ export const useUsersStore = defineStore('users', () => {
   // Clock In/Out Management
   const clockIn = async (userId: string, location?: string): Promise<ClockEntry | null> => {
     try {
-      const response = await axios.post(`/api/users/${userId}/clock-in`, {
-        location,
-        timestamp: new Date().toISOString()
-      })
+      const clockEntry = await clockEntriesApi.clockIn(userId, location)
 
-      if (response.data.success) {
-        const clockEntry = response.data.data.clockEntry
+      if (clockEntry) {
         clockEntries.value.unshift(clockEntry)
 
         // Log audit
@@ -330,7 +316,7 @@ export const useUsersStore = defineStore('users', () => {
         return clockEntry
       }
 
-      throw new Error(response.data.error || 'Failed to clock in')
+      throw new Error('Failed to clock in')
     } catch (err: any) {
       console.error('Failed to clock in:', err)
       throw err
@@ -339,13 +325,9 @@ export const useUsersStore = defineStore('users', () => {
 
   const clockOut = async (clockEntryId: string, notes?: string): Promise<ClockEntry | null> => {
     try {
-      const response = await axios.post(`/api/clock-entries/${clockEntryId}/clock-out`, {
-        timestamp: new Date().toISOString(),
-        notes
-      })
+      const updatedEntry = await clockEntriesApi.clockOut(clockEntryId, notes)
 
-      if (response.data.success) {
-        const updatedEntry = response.data.data.clockEntry
+      if (updatedEntry) {
         const index = clockEntries.value.findIndex(e => e.id === clockEntryId)
         if (index !== -1) {
           clockEntries.value[index] = updatedEntry
@@ -363,7 +345,7 @@ export const useUsersStore = defineStore('users', () => {
         return updatedEntry
       }
 
-      throw new Error(response.data.error || 'Failed to clock out')
+      throw new Error('Failed to clock out')
     } catch (err: any) {
       console.error('Failed to clock out:', err)
       throw err
@@ -417,14 +399,9 @@ export const useUsersStore = defineStore('users', () => {
       if (startDate) params.startDate = startDate
       if (endDate) params.endDate = endDate
 
-      const response = await axios.get('/api/clock-entries', { params })
-
-      if (response.data.success) {
-        clockEntries.value = response.data.data.entries || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch clock entries')
+      const entries = await clockEntriesApi.getEntries(params)
+      clockEntries.value = Array.isArray(entries) ? entries : (entries.entries || [])
+      return true
     } catch (err: any) {
       console.error('Failed to fetch clock entries:', err)
       return false
@@ -448,7 +425,7 @@ export const useUsersStore = defineStore('users', () => {
       auditLogs.value.unshift(auditEntry)
 
       // Send to backend
-      await axios.post('/api/audit-logs', auditEntry)
+      await auditLogsApi.create(auditEntry)
     } catch (err) {
       console.error('Failed to log audit:', err)
     }
@@ -463,10 +440,9 @@ export const useUsersStore = defineStore('users', () => {
     severity?: string
   }): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/audit-logs', { params: filters })
+      const data = await auditLogsApi.getLogs(filters)
 
-      if (response.data.success) {
-        auditLogs.value = response.data.data.logs || []
+        auditLogs.value = data.logs || []
         return true
       }
 
@@ -480,10 +456,9 @@ export const useUsersStore = defineStore('users', () => {
   // Password Management
   const requestPasswordReset = async (email: string): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/users/password-reset/request', { email })
+      const data = await passwordApi.requestReset(email)
 
-      if (response.data.success) {
-        const resetRequest = response.data.data.resetRequest
+        const resetRequest = data.resetRequest
         passwordResets.value.push(resetRequest)
 
         // Log audit
@@ -506,12 +481,11 @@ export const useUsersStore = defineStore('users', () => {
 
   const resetPassword = async (token: string, newPassword: string): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/users/password-reset/complete', {
+      const data = await passwordApi.completeReset(
         token,
         newPassword
       })
 
-      if (response.data.success) {
         // Mark reset as used
         const reset = passwordResets.value.find(r => r.token === token)
         if (reset) {
@@ -537,12 +511,11 @@ export const useUsersStore = defineStore('users', () => {
 
   const changePassword = async (userId: string, currentPassword: string, newPassword: string): Promise<boolean> => {
     try {
-      const response = await axios.post(`/api/users/${userId}/change-password`, {
+      const data = await passwordApi.changePassword(userId,
         currentPassword,
         newPassword
       })
 
-      if (response.data.success) {
         // Log audit
         await logAudit({
           action: AuditAction.PASSWORD_CHANGED,
@@ -576,12 +549,11 @@ export const useUsersStore = defineStore('users', () => {
   // Performance Tracking
   const fetchStaffPerformance = async (userId: string, startDate: string, endDate: string): Promise<StaffPerformance | null> => {
     try {
-      const response = await axios.get(`/api/users/${userId}/performance`, {
+      const data = await usersApi.getPerformance(userId,
         params: { startDate, endDate }
       })
 
-      if (response.data.success) {
-        const performance = response.data.data.performance
+        const performance = data.performance
         staffPerformance.value.set(userId, performance)
         return performance
       }
@@ -595,12 +567,11 @@ export const useUsersStore = defineStore('users', () => {
 
   const fetchAllStaffPerformance = async (startDate: string, endDate: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/users/performance', {
+      const data = await usersApi.getAllPerformance(
         params: { startDate, endDate }
       })
 
-      if (response.data.success) {
-        const performances = response.data.data.performances || []
+        const performances = data.performances || []
         performances.forEach((perf: StaffPerformance) => {
           staffPerformance.value.set(perf.userId, perf)
         })
@@ -621,9 +592,8 @@ export const useUsersStore = defineStore('users', () => {
   // Permission Management
   const updateUserPermissions = async (userId: string, permissions: string[]): Promise<boolean> => {
     try {
-      const response = await axios.put(`/api/users/${userId}/permissions`, { permissions })
+      const data = await usersApi.updatePermissions(userId, permissions)
 
-      if (response.data.success) {
         const user = users.value.find(u => u.id === userId)
         if (user) {
           user.permissions = permissions

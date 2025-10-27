@@ -84,9 +84,52 @@ export const authApi = {
     }
   },
 
-  logout() {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user')
+  async logout(reason?: string) {
+    try {
+      await apiClient.post('/api/auth/logout', { reason })
+    } catch (error) {
+      console.warn('Logout API call failed:', error)
+    } finally {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('pos_auth_token')
+      localStorage.removeItem('pos_refresh_token')
+      localStorage.removeItem('pos_user')
+      localStorage.removeItem('pos_last_verified')
+    }
+  },
+
+  async refresh(refreshToken: string) {
+    try {
+      const response = await apiClient.post('/api/auth/refresh', { refreshToken })
+      const { token, user } = response.data
+      if (token) {
+        localStorage.setItem('auth_token', token)
+        localStorage.setItem('user', JSON.stringify(user))
+      }
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
+  },
+
+  async verify() {
+    try {
+      const response = await apiClient.get('/api/auth/verify')
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
+  },
+
+  async getMe() {
+    try {
+      const response = await apiClient.get('/api/users/me')
+      return response.data
+    } catch (error: any) {
+      throw error
+    }
   },
 
   getCurrentUser(): any | null {
@@ -106,7 +149,7 @@ export const usersApi = {
     return response.data || []
   },
 
-  async getUserById(id: number) {
+  async getUserById(id: number | string) {
     const response = await apiClient.get(`/api/users/${id}`)
     return response.data
   },
@@ -116,13 +159,33 @@ export const usersApi = {
     return response.data || []
   },
 
-  async updateUser(id: number, userData: any) {
+  async createUser(userData: any) {
+    const response = await apiClient.post('/api/users', userData)
+    return response.data
+  },
+
+  async updateUser(id: number | string, userData: any) {
     const response = await apiClient.put(`/api/users/${id}`, userData)
     return response.data
   },
 
-  async deleteUser(id: number) {
+  async deleteUser(id: number | string) {
     await apiClient.delete(`/api/users/${id}`)
+  },
+
+  async updatePermissions(userId: string, permissions: string[]) {
+    const response = await apiClient.put(`/api/users/${userId}/permissions`, { permissions })
+    return response.data
+  },
+
+  async getPerformance(userId: string, params?: any) {
+    const response = await apiClient.get(`/api/users/${userId}/performance`, { params })
+    return response.data
+  },
+
+  async getAllPerformance(params?: any) {
+    const response = await apiClient.get('/api/users/performance', { params })
+    return response.data
   }
 }
 
@@ -321,6 +384,117 @@ export const analyticsApi = {
   }
 }
 
+// Clock Entries API (User Service)
+export const clockEntriesApi = {
+  async clockIn(userId: string, location?: string, device?: string) {
+    const response = await apiClient.post(`/api/users/${userId}/clock-in`, {
+      location,
+      device
+    })
+    return response.data
+  },
+
+  async clockOut(clockEntryId: string, notes?: string) {
+    const response = await apiClient.post(`/api/clock-entries/${clockEntryId}/clock-out`, {
+      notes
+    })
+    return response.data
+  },
+
+  async startBreak(clockEntryId: string) {
+    const response = await apiClient.post(`/api/clock-entries/${clockEntryId}/break-start`)
+    return response.data
+  },
+
+  async endBreak(clockEntryId: string) {
+    const response = await apiClient.post(`/api/clock-entries/${clockEntryId}/break-end`)
+    return response.data
+  },
+
+  async getEntries(params?: any) {
+    const response = await apiClient.get('/api/clock-entries', { params })
+    return response.data || []
+  }
+}
+
+// Audit Logs API (User Service)
+export const auditLogsApi = {
+  async create(auditEntry: any) {
+    await apiClient.post('/api/audit-logs', auditEntry)
+  },
+
+  async getLogs(filters?: any) {
+    const response = await apiClient.get('/api/audit-logs', { params: filters })
+    return response.data || []
+  }
+}
+
+// Password Management API (User Service)
+export const passwordApi = {
+  async requestReset(email: string) {
+    const response = await apiClient.post('/api/users/password-reset/request', { email })
+    return response.data
+  },
+
+  async completeReset(token: string, newPassword: string) {
+    const response = await apiClient.post('/api/users/password-reset/complete', {
+      token,
+      newPassword
+    })
+    return response.data
+  },
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const response = await apiClient.post(`/api/users/${userId}/change-password`, {
+      currentPassword,
+      newPassword
+    })
+    return response.data
+  }
+}
+
+// Shifts API (Staff/User Service)
+export const shiftsApi = {
+  async startShift(staffId: string, cashDrawerStart?: number) {
+    const response = await apiClient.post('/api/staff/shifts/start', {
+      staffId,
+      cashDrawerStart
+    })
+    return response.data
+  },
+
+  async endShift(shiftId: string, cashDrawerEnd?: number, notes?: string) {
+    const response = await apiClient.post(`/api/staff/shifts/${shiftId}/end`, {
+      cashDrawerEnd,
+      notes
+    })
+    return response.data
+  },
+
+  async startBreak(shiftId: string) {
+    const response = await apiClient.post(`/api/staff/shifts/${shiftId}/break/start`)
+    return response.data
+  },
+
+  async endBreak(shiftId: string) {
+    const response = await apiClient.post(`/api/staff/shifts/${shiftId}/break/end`)
+    return response.data
+  },
+
+  async getActiveShift(staffId: string) {
+    const response = await apiClient.get(`/api/staff/${staffId}/shifts/active`)
+    return response.data
+  }
+}
+
+// Preferences API (User Service)
+export const preferencesApi = {
+  async updatePreferences(userId: string, preferences: any) {
+    const response = await apiClient.patch(`/api/staff/${userId}/preferences`, preferences)
+    return response.data
+  }
+}
+
 // Export axios instance
 export { apiClient }
 
@@ -331,5 +505,10 @@ export default {
   categories: categoriesApi,
   menuItems: menuItemsApi,
   orders: ordersApi,
-  analytics: analyticsApi
+  analytics: analyticsApi,
+  shifts: shiftsApi,
+  preferences: preferencesApi,
+  clockEntries: clockEntriesApi,
+  auditLogs: auditLogsApi,
+  password: passwordApi
 }
