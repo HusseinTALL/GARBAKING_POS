@@ -1,11 +1,13 @@
 /**
  * Payment processing store for POS transactions
  * Handles multiple payment methods, receipts, and transaction management
+ * Updated to use Spring Boot microservices backend
+ * NOTE: Payment Service endpoints need to be implemented in Spring Boot backend
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { paymentApi } from '@/services/api-spring'
 
 // Types
 export interface PaymentMethod {
@@ -153,14 +155,9 @@ export const usePaymentStore = defineStore('payment', () => {
   // Actions
   const fetchPaymentMethods = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/payment/methods')
-
-      if (response.data.success) {
-        paymentMethods.value = response.data.data.methods || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch payment methods')
+      const data = await paymentApi.getPaymentMethods()
+      paymentMethods.value = Array.isArray(data) ? data : (data.methods || [])
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -195,30 +192,25 @@ export const usePaymentStore = defineStore('payment', () => {
         ...options
       }
 
-      const response = await axios.post('/api/payment/process', payload)
+      const data = await paymentApi.processPayment(payload)
+      const transaction = data.transaction || data
+      currentTransaction.value = transaction
+      recentTransactions.value.unshift(transaction)
 
-      if (response.data.success) {
-        const transaction = response.data.data.transaction
-        currentTransaction.value = transaction
-        recentTransactions.value.unshift(transaction)
-
-        // Update cash drawer if cash payment
-        if (paymentMethod.type === PaymentType.CASH && cashDrawer.value) {
-          cashDrawer.value.currentAmount += amount
-          cashDrawer.value.transactions.push({
-            id: transaction.id,
-            type: 'SALE',
-            amount,
-            description: `Sale - Order #${transaction.orderNumber}`,
-            reference: transaction.orderNumber,
-            timestamp: new Date().toISOString()
-          })
-        }
-
-        return transaction
+      // Update cash drawer if cash payment
+      if (paymentMethod.type === PaymentType.CASH && cashDrawer.value) {
+        cashDrawer.value.currentAmount += amount
+        cashDrawer.value.transactions.push({
+          id: transaction.id,
+          type: 'SALE',
+          amount,
+          description: `Sale - Order #${transaction.orderNumber}`,
+          reference: transaction.orderNumber,
+          timestamp: new Date().toISOString()
+        })
       }
 
-      throw new Error(response.data.error || 'Payment processing failed')
+      return transaction
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return null
@@ -254,19 +246,16 @@ export const usePaymentStore = defineStore('payment', () => {
         ...options
       }
 
-      const response = await axios.post('/api/payment/process-split', payload)
+      const data = await paymentApi.processSplitPayment(payload)
 
-      if (response.data.success) {
-        const transactions = response.data.data.transactions
+        const transactions = Array.isArray(data) ? data : (data.transactions || [])
 
         transactions.forEach((transaction: Transaction) => {
           recentTransactions.value.unshift(transaction)
         })
 
         return transactions
-      }
 
-      throw new Error(response.data.error || 'Split payment processing failed')
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return null
@@ -281,12 +270,11 @@ export const usePaymentStore = defineStore('payment', () => {
     reason: string
   ): Promise<boolean> => {
     try {
-      const response = await axios.post(`/api/payment/refund/${transactionId}`, {
+      const data = await paymentApi.refundPayment(transactionId,
         amount,
         reason
       })
 
-      if (response.data.success) {
         // Update transaction status
         const transactionIndex = recentTransactions.value.findIndex(t => t.id === transactionId)
         if (transactionIndex !== -1) {
@@ -299,9 +287,7 @@ export const usePaymentStore = defineStore('payment', () => {
         }
 
         return true
-      }
 
-      throw new Error(response.data.error || 'Refund failed')
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -310,16 +296,13 @@ export const usePaymentStore = defineStore('payment', () => {
 
   const openCashDrawer = async (startingAmount: number): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/payment/cash-drawer/open', {
+      const data = await paymentApi.openCashDrawer(
         startingAmount
       })
 
-      if (response.data.success) {
-        cashDrawer.value = response.data.data.cashDrawer
-        return true
-      }
+      cashDrawer.value = data.cashDrawer || data
+      return true
 
-      throw new Error(response.data.error || 'Failed to open cash drawer')
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -331,26 +314,23 @@ export const usePaymentStore = defineStore('payment', () => {
     notes?: string
   ): Promise<{ variance: number; report: any } | null> => {
     try {
-      const response = await axios.post('/api/payment/cash-drawer/close', {
+      const data = await paymentApi.closeCashDrawer({
         countedAmount,
         notes
       })
 
-      if (response.data.success) {
-        const result = response.data.data
+      const result = data
 
-        if (cashDrawer.value) {
-          cashDrawer.value.isOpen = false
-          cashDrawer.value.closedAt = new Date().toISOString()
-          cashDrawer.value.currentAmount = countedAmount
-          cashDrawer.value.variance = result.variance
-          cashDrawer.value.notes = notes
-        }
-
-        return result
+      if (cashDrawer.value) {
+        cashDrawer.value.isOpen = false
+        cashDrawer.value.closedAt = new Date().toISOString()
+        cashDrawer.value.currentAmount = countedAmount
+        cashDrawer.value.variance = result.variance
+        cashDrawer.value.notes = notes
       }
 
-      throw new Error(response.data.error || 'Failed to close cash drawer')
+      return result
+
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return null
@@ -364,15 +344,15 @@ export const usePaymentStore = defineStore('payment', () => {
     reference?: string
   ): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/payment/cash-drawer/transaction', {
+      const data = await paymentApi.addCashTransaction({
         type,
         amount,
         description,
         reference
       })
 
-      if (response.data.success && cashDrawer.value) {
-        const transaction = response.data.data.transaction
+      if (cashDrawer.value) {
+        const transaction = data.transaction || data
         cashDrawer.value.transactions.push(transaction)
 
         // Update current amount
@@ -381,11 +361,9 @@ export const usePaymentStore = defineStore('payment', () => {
         } else if (type === 'PAYOUT') {
           cashDrawer.value.currentAmount -= amount
         }
-
-        return true
       }
 
-      throw new Error(response.data.error || 'Failed to add cash transaction')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -394,13 +372,10 @@ export const usePaymentStore = defineStore('payment', () => {
 
   const printReceipt = async (transactionId: string): Promise<boolean> => {
     try {
-      const response = await axios.post(`/api/payment/receipt/${transactionId}`)
+      const data = await paymentApi.printReceipt(transactionId)
 
-      if (response.data.success) {
         return true
-      }
 
-      throw new Error(response.data.error || 'Failed to print receipt')
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -446,14 +421,9 @@ export const usePaymentStore = defineStore('payment', () => {
 
   const fetchCashDrawerStatus = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/payment/cash-drawer/status')
-
-      if (response.data.success) {
-        cashDrawer.value = response.data.data.cashDrawer
-        return true
-      }
-
-      return false
+      const data = await paymentApi.getCashDrawerStatus()
+      cashDrawer.value = data.cashDrawer || data
+      return true
     } catch (err: any) {
       console.error('Failed to fetch cash drawer status:', err)
       return false
@@ -462,14 +432,9 @@ export const usePaymentStore = defineStore('payment', () => {
 
   const fetchRecentTransactions = async (limit: number = 50): Promise<boolean> => {
     try {
-      const response = await axios.get(`/api/payment/transactions/recent?limit=${limit}`)
-
-      if (response.data.success) {
-        recentTransactions.value = response.data.data.transactions || []
-        return true
-      }
-
-      return false
+      const data = await paymentApi.getRecentTransactions(limit)
+      recentTransactions.value = Array.isArray(data) ? data : (data.transactions || [])
+      return true
     } catch (err: any) {
       console.error('Failed to fetch recent transactions:', err)
       return false

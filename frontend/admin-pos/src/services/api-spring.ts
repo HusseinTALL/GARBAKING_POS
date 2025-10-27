@@ -495,6 +495,67 @@ export const preferencesApi = {
   }
 }
 
+// Payment API (Payment Service - To be implemented)
+// NOTE: These endpoints are not yet implemented in Spring Boot backend
+// They need to be created in a new Payment Service microservice
+export const paymentApi = {
+  async getPaymentMethods() {
+    const response = await apiClient.get('/api/payment/methods')
+    return response.data
+  },
+
+  async processPayment(payload: any) {
+    const response = await apiClient.post('/api/payment/process', payload)
+    return response.data
+  },
+
+  async processSplitPayment(payload: any) {
+    const response = await apiClient.post('/api/payment/process-split', payload)
+    return response.data
+  },
+
+  async refundPayment(transactionId: string, amount: number, reason?: string) {
+    const response = await apiClient.post(`/api/payment/refund/${transactionId}`, {
+      amount,
+      reason
+    })
+    return response.data
+  },
+
+  async openCashDrawer(staffId: string, startingAmount: number) {
+    const response = await apiClient.post('/api/payment/cash-drawer/open', {
+      staffId,
+      startingAmount
+    })
+    return response.data
+  },
+
+  async closeCashDrawer(drawerData: any) {
+    const response = await apiClient.post('/api/payment/cash-drawer/close', drawerData)
+    return response.data
+  },
+
+  async addCashTransaction(transaction: any) {
+    const response = await apiClient.post('/api/payment/cash-drawer/transaction', transaction)
+    return response.data
+  },
+
+  async printReceipt(transactionId: string) {
+    const response = await apiClient.post(`/api/payment/receipt/${transactionId}`)
+    return response.data
+  },
+
+  async getCashDrawerStatus() {
+    const response = await apiClient.get('/api/payment/cash-drawer/status')
+    return response.data
+  },
+
+  async getRecentTransactions(limit = 50) {
+    const response = await apiClient.get(`/api/payment/transactions/recent?limit=${limit}`)
+    return response.data
+  }
+}
+
 // Export axios instance
 export { apiClient }
 
@@ -510,5 +571,6 @@ export default {
   preferences: preferencesApi,
   clockEntries: clockEntriesApi,
   auditLogs: auditLogsApi,
-  password: passwordApi
+  password: passwordApi,
+  payment: paymentApi
 }

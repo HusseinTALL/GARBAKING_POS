@@ -1,6 +1,10 @@
 /**
  * Cart/Order management store for GARBAKING POS
  * Handles cart state, order processing, and payment workflow with real-time synchronization
+ *
+ * NOTE: This is a client-side state management store with no direct API calls.
+ * Cart operations are processed when orders are created via the orders store.
+ * Loyalty integration uses loyaltyService (to be migrated when loyalty store is updated).
  */
 
 import { defineStore } from 'pinia'
