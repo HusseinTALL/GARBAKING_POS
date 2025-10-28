@@ -247,15 +247,13 @@ export const usePaymentStore = defineStore('payment', () => {
       }
 
       const data = await paymentApi.processSplitPayment(payload)
+      const transactions = Array.isArray(data) ? data : (data.transactions || [])
 
-        const transactions = Array.isArray(data) ? data : (data.transactions || [])
+      transactions.forEach((transaction: Transaction) => {
+        recentTransactions.value.unshift(transaction)
+      })
 
-        transactions.forEach((transaction: Transaction) => {
-          recentTransactions.value.unshift(transaction)
-        })
-
-        return transactions
-
+      return transactions
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return null
@@ -272,19 +270,18 @@ export const usePaymentStore = defineStore('payment', () => {
     try {
       const data = await paymentApi.refundPayment(transactionId, amount, reason)
 
-        // Update transaction status
-        const transactionIndex = recentTransactions.value.findIndex(t => t.id === transactionId)
-        if (transactionIndex !== -1) {
-          recentTransactions.value[transactionIndex].status =
-            amount >= recentTransactions.value[transactionIndex].amount
-              ? TransactionStatus.REFUNDED
-              : TransactionStatus.PARTIALLY_REFUNDED
-          recentTransactions.value[transactionIndex].refundedAt = new Date().toISOString()
-          recentTransactions.value[transactionIndex].refundReason = reason
-        }
+      // Update transaction status
+      const transactionIndex = recentTransactions.value.findIndex(t => t.id === transactionId)
+      if (transactionIndex !== -1) {
+        recentTransactions.value[transactionIndex].status =
+          amount >= recentTransactions.value[transactionIndex].amount
+            ? TransactionStatus.REFUNDED
+            : TransactionStatus.PARTIALLY_REFUNDED
+        recentTransactions.value[transactionIndex].refundedAt = new Date().toISOString()
+        recentTransactions.value[transactionIndex].refundReason = reason
+      }
 
-        return true
-
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -293,17 +290,10 @@ export const usePaymentStore = defineStore('payment', () => {
 
   const openCashDrawer = async (startingAmount: number): Promise<boolean> => {
     try {
-<<<<<<< HEAD
       const data = await paymentApi.openCashDrawer(startingAmount)
-=======
-      const data = await paymentApi.openCashDrawer(
-        startingAmount
-      )
->>>>>>> b68d8a2 (app start well inside docker)
 
       cashDrawer.value = data.cashDrawer || data
       return true
-
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -331,7 +321,6 @@ export const usePaymentStore = defineStore('payment', () => {
       }
 
       return result
-
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return null
@@ -375,8 +364,7 @@ export const usePaymentStore = defineStore('payment', () => {
     try {
       const data = await paymentApi.printReceipt(transactionId)
 
-        return true
-
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false

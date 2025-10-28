@@ -151,16 +151,11 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
       })
 
       const enrollment = data.enrollment || data
-<<<<<<< HEAD
-      customers.value.push(enrollment)
-      return enrollment
-=======
       if (enrollment) {
         customers.value.push(enrollment)
         return enrollment
       }
       throw new Error('Failed to enroll customer')
->>>>>>> b68d8a2 (app start well inside docker)
     } catch (err: any) {
       error.value = err.message
       return null

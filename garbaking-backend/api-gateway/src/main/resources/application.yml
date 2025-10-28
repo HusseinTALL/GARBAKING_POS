@@ -35,18 +35,8 @@ spring:
           filters:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
+      # CORS configuration is handled by CorsConfig.java
+      # globalcors removed to avoid conflict
 
 eureka:
   client:
