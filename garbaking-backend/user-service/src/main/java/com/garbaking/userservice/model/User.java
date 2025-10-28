@@ -59,9 +59,11 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private UserRole role = UserRole.CUSTOMER;
 
     @Column(name = "is_active")
+    @Builder.Default
     private Boolean active = true;
 
     @Column(name = "store_id")

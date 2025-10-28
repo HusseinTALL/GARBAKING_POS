@@ -10,7 +10,6 @@ import com.garbaking.userservice.repository.UserRepository;
 import com.garbaking.userservice.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +21,7 @@ import java.util.stream.Collectors;
  * User Service
  *
  * Business logic for user management, authentication, and JWT generation.
+ * NOTE: Running in standalone mode without Kafka event publishing
  */
 @Service
 @Slf4j
@@ -31,7 +31,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     /**
      * Register a new user
@@ -57,9 +56,6 @@ public class UserService {
         // Save user
         User savedUser = userRepository.save(user);
         log.info("User registered successfully with ID: {}", savedUser.getId());
-
-        // Publish user.created event to Kafka
-        publishUserEvent("user.created", savedUser);
 
         // Generate JWT token
         String token = jwtUtil.generateToken(savedUser);
@@ -185,9 +181,6 @@ public class UserService {
         User updatedUser = userRepository.save(user);
         log.info("User updated successfully: {}", updatedUser.getId());
 
-        // Publish user.updated event to Kafka
-        publishUserEvent("user.updated", updatedUser);
-
         return convertToDTO(updatedUser);
     }
 
@@ -205,9 +198,6 @@ public class UserService {
         userRepository.save(user);
 
         log.info("User deleted (deactivated) successfully: {}", id);
-
-        // Publish user.deleted event to Kafka
-        publishUserEvent("user.deleted", user);
     }
 
     /**
@@ -239,19 +229,5 @@ public class UserService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
-    }
-
-    /**
-     * Publish user events to Kafka
-     */
-    private void publishUserEvent(String topic, User user) {
-        try {
-            UserDTO userDTO = convertToDTO(user);
-            kafkaTemplate.send(topic, user.getId().toString(), userDTO);
-            log.info("Published event to topic {}: {}", topic, user.getId());
-        } catch (Exception e) {
-            log.error("Failed to publish event to topic {}: {}", topic, e.getMessage());
-            // Don't throw exception - event publishing shouldn't fail the main operation
-        }
     }
 }
