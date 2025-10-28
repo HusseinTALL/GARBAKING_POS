@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.*;
  * Authentication Controller
  *
  * REST endpoints for user authentication (login, register).
- * Routes are prefixed by API Gateway: /api/auth
+ * Routes accessible at: /api/auth (for consistency with frontend expectations)
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
 public class AuthController {
