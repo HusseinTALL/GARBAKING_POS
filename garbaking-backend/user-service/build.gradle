@@ -6,12 +6,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
-    // Spring Cloud
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    // Spring Cloud - COMMENTED OUT for standalone mode
+    // implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    // implementation 'org.springframework.cloud:spring-cloud-starter-config'
 
-    // Kafka
-    implementation 'org.springframework.kafka:spring-kafka'
+    // Kafka - COMMENTED OUT for standalone mode
+    // implementation 'org.springframework.kafka:spring-kafka'
 
     // Database
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -25,9 +25,9 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    // Distributed Tracing
-    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
-    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
+    // Distributed Tracing - COMMENTED OUT for standalone mode
+    // implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+    // implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
