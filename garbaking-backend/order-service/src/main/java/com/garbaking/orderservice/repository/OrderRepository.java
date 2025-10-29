@@ -120,4 +120,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     @Query("SELECT o FROM Order o WHERE o.paymentStatus = 'PENDING' AND o.status NOT IN ('CANCELLED', 'COMPLETED') ORDER BY o.createdAt DESC")
     List<Order> findPendingPaymentOrders();
+
+    /**
+     * Find orders created after a specific date/time
+     */
+    List<Order> findByCreatedAtAfter(LocalDateTime dateTime);
+
+    /**
+     * Find orders created between two dates
+     */
+    List<Order> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    /**
+     * Find orders by status (multiple statuses)
+     */
+    @Query("SELECT o FROM Order o WHERE o.status IN :statuses ORDER BY o.createdAt DESC")
+    List<Order> findByStatusIn(@Param("statuses") List<Order.OrderStatus> statuses);
 }

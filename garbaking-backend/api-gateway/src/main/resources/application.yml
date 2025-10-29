@@ -27,6 +27,14 @@ spring:
           filters:
             - RewritePath=/api/(?<segment>.*), /$\{segment}
 
+        # Analytics Routes (Order Service)
+        - id: analytics-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/analytics/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /$\{segment}
+
         # Inventory Service Routes
         - id: inventory-service
           uri: lb://inventory-service
