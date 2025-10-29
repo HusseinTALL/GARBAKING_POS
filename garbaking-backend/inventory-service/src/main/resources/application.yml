@@ -76,15 +76,20 @@ management:
       show-details: always
   tracing:
     sampling:
-      probability: 1.0
+      probability: 0.4
+    propagation:
+      type: B3,W3C
   zipkin:
     tracing:
       endpoint: http://localhost:9411/api/v2/spans
+  metrics:
+    export:
+      prometheus:
+        enabled: true
 
 # Logging
 logging:
-  pattern:
-    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  config: classpath:logback-structured.xml
   level:
     root: INFO
     com.garbaking: DEBUG
@@ -94,3 +99,13 @@ image:
   upload:
     directory: uploads/menu-items
     base-url: http://localhost:8083/images
+    cdn-base-url: https://cdn.local.garbaking/menu-items
+    signing-secret: change-me
+    signed-url-duration: PT15M
+
+garbaking:
+  observability:
+    environment: local
+    alerts:
+      low-stock-threshold: 8
+      evaluation-interval: PT3M

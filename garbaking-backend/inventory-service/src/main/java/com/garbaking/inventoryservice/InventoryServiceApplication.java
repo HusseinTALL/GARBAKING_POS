@@ -1,10 +1,13 @@
 package com.garbaking.inventoryservice;
 
+import com.garbaking.inventoryservice.config.ImageStorageProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Inventory Service Application
@@ -28,6 +31,8 @@ import org.springframework.kafka.annotation.EnableKafka;
 @EnableDiscoveryClient
 @EnableJpaAuditing
 @EnableKafka
+@EnableConfigurationProperties(ImageStorageProperties.class)
+@EnableScheduling
 public class InventoryServiceApplication {
 
     public static void main(String[] args) {

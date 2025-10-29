@@ -24,4 +24,6 @@ public class StockAdjustmentDTO {
     private Integer quantity;  // Positive to add, negative to subtract
 
     private String reason;  // Optional reason for adjustment
+
+    private String performedBy;
 }

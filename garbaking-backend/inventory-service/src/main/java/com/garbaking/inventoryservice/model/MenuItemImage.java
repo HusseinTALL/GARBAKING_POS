@@ -47,6 +47,9 @@ public class MenuItemImage {
     @Column(length = 500)
     private String thumbnailUrl;
 
+    @Column(length = 500)
+    private String storagePath;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean isPrimary = false;  // Primary image for display

@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,13 @@ public class OrderService {
     private final WebSocketService webSocketService;
 
     private static final AtomicLong orderCounter = new AtomicLong(0);
+    private static final Map<Order.OrderStatus, List<Order.OrderStatus>> ALLOWED_STATUS_TRANSITIONS = Map.ofEntries(
+            Map.entry(Order.OrderStatus.PENDING, List.of(Order.OrderStatus.CONFIRMED, Order.OrderStatus.CANCELLED)),
+            Map.entry(Order.OrderStatus.CONFIRMED, List.of(Order.OrderStatus.PREPARING, Order.OrderStatus.CANCELLED)),
+            Map.entry(Order.OrderStatus.PREPARING, List.of(Order.OrderStatus.READY, Order.OrderStatus.CANCELLED)),
+            Map.entry(Order.OrderStatus.READY, List.of(Order.OrderStatus.OUT_FOR_DELIVERY, Order.OrderStatus.COMPLETED, Order.OrderStatus.CANCELLED)),
+            Map.entry(Order.OrderStatus.OUT_FOR_DELIVERY, List.of(Order.OrderStatus.COMPLETED, Order.OrderStatus.CANCELLED))
+    );
 
     /**
      * Create a new order
@@ -191,8 +199,13 @@ public class OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
+        if (order.getStatus() == statusDTO.getStatus()) {
+            log.info("Order {} already has status {}, skipping update", id, statusDTO.getStatus());
+            return convertToDTO(order);
+        }
+
         // Validate status transition
-        validateStatusTransition(order, statusDTO.getStatus());
+        validateStatusTransition(order, statusDTO.getStatus(), statusDTO.getReason());
 
         Order.OrderStatus oldStatus = order.getStatus();
         order.setStatus(statusDTO.getStatus());
@@ -209,7 +222,7 @@ public class OrderService {
                 order.setCancelledAt(LocalDateTime.now());
                 order.setCancellationReason(statusDTO.getReason());
                 break;
-        }
+            }
 
         Order updatedOrder = orderRepository.save(order);
         log.info("Order status updated from {} to {}", oldStatus, statusDTO.getStatus());
@@ -339,7 +352,7 @@ public class OrderService {
     /**
      * Validate status transition
      */
-    private void validateStatusTransition(Order order, Order.OrderStatus newStatus) {
+    private void validateStatusTransition(Order order, Order.OrderStatus newStatus, String reason) {
         Order.OrderStatus currentStatus = order.getStatus();
 
         // Can't change from terminal states
@@ -349,7 +362,16 @@ public class OrderService {
             );
         }
 
-        // Specific validations can be added here
+        List<Order.OrderStatus> allowed = ALLOWED_STATUS_TRANSITIONS.getOrDefault(currentStatus, List.of());
+        if (!allowed.contains(newStatus)) {
+            throw new InvalidOrderStateException(
+                    String.format("Invalid transition from %s to %s", currentStatus, newStatus)
+            );
+        }
+
+        if (newStatus == Order.OrderStatus.CANCELLED && (reason == null || reason.isBlank())) {
+            throw new InvalidOrderStateException("Cancellation reason is required when cancelling an order");
+        }
     }
 
     /**
