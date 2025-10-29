@@ -31,6 +31,8 @@ public class MenuItemImageDTO {
     @Size(max = 500, message = "Thumbnail URL cannot exceed 500 characters")
     private String thumbnailUrl;
 
+    private String signedUrl;
+
     @Builder.Default
     private Boolean isPrimary = false;
 

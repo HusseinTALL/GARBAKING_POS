@@ -1,16 +1,25 @@
 package com.garbaking.inventoryservice.controller;
 
+import com.garbaking.inventoryservice.dto.FeatureMenuItemRequest;
+import com.garbaking.inventoryservice.dto.FeaturedItemOrderRequest;
 import com.garbaking.inventoryservice.dto.MenuItemDTO;
+import com.garbaking.inventoryservice.dto.MenuItemImageDTO;
+import com.garbaking.inventoryservice.dto.MenuItemImageUploadResponse;
 import com.garbaking.inventoryservice.dto.StockAdjustmentDTO;
+import com.garbaking.inventoryservice.dto.SupplierAssignmentRequest;
 import com.garbaking.inventoryservice.service.MenuItemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -149,6 +158,117 @@ public class MenuItemController {
                 adjustmentDTO.getMenuItemId(), adjustmentDTO.getQuantity());
         MenuItemDTO updatedMenuItem = menuItemService.adjustStock(adjustmentDTO);
         return ResponseEntity.ok(updatedMenuItem);
+    }
+
+    /**
+     * Upload menu item image
+     * POST /menu-items/{id}/images
+     */
+    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<MenuItemImageUploadResponse> uploadMenuItemImage(
+            @PathVariable Long id,
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "primary", required = false) Boolean primary,
+            @RequestParam(value = "displayOrder", required = false) Integer displayOrder,
+            @RequestParam(value = "altText", required = false) String altText
+    ) throws IOException {
+        log.info("POST /menu-items/{}/images - primary: {}", id, primary);
+        MenuItemImageUploadResponse response = menuItemService.uploadImage(id, file, primary, displayOrder, altText);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Update menu item image metadata
+     * PUT /menu-items/{id}/images/{imageId}
+     */
+    @PutMapping("/{id}/images/{imageId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<MenuItemImageDTO> updateImageMetadata(
+            @PathVariable Long id,
+            @PathVariable Long imageId,
+            @RequestParam(required = false) Boolean primary,
+            @RequestParam(required = false) Integer displayOrder,
+            @RequestParam(required = false) String altText
+    ) {
+        log.info("PUT /menu-items/{}/images/{}", id, imageId);
+        MenuItemImageDTO imageDTO = menuItemService.updateImageMetadata(id, imageId, primary, displayOrder, altText);
+        return ResponseEntity.ok(imageDTO);
+    }
+
+    /**
+     * Delete menu item image
+     * DELETE /menu-items/{id}/images/{imageId}
+     */
+    @DeleteMapping("/{id}/images/{imageId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<Void> deleteImage(
+            @PathVariable Long id,
+            @PathVariable Long imageId
+    ) {
+        log.info("DELETE /menu-items/{}/images/{}", id, imageId);
+        menuItemService.deleteImage(id, imageId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Generate signed URL for an image
+     * GET /menu-items/{id}/images/{imageId}/signed-url
+     */
+    @GetMapping("/{id}/images/{imageId}/signed-url")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<String> getSignedImageUrl(
+            @PathVariable Long id,
+            @PathVariable Long imageId,
+            @RequestParam(value = "durationSeconds", required = false) Long durationSeconds
+    ) {
+        Duration duration = durationSeconds != null ? Duration.ofSeconds(durationSeconds) : null;
+        String signedUrl = menuItemService.generateSignedImageUrl(id, imageId, duration);
+        return ResponseEntity.ok(signedUrl);
+    }
+
+    /**
+     * Assign suppliers to a menu item
+     * PUT /menu-items/{id}/suppliers
+     */
+    @PutMapping("/{id}/suppliers")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<MenuItemDTO> assignSuppliers(
+            @PathVariable Long id,
+            @Valid @RequestBody SupplierAssignmentRequest request
+    ) {
+        log.info("PUT /menu-items/{}/suppliers", id);
+        MenuItemDTO dto = menuItemService.assignSuppliers(id, request);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Update featured status
+     * POST /menu-items/{id}/feature
+     */
+    @PostMapping("/{id}/feature")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<MenuItemDTO> updateFeaturedStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody FeatureMenuItemRequest request
+    ) {
+        log.info("POST /menu-items/{}/feature", id);
+        MenuItemDTO dto = menuItemService.updateFeaturedStatus(id, request);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Reorder featured items
+     * PUT /menu-items/featured/order
+     */
+    @PutMapping("/featured/order")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public ResponseEntity<List<MenuItemDTO>> reorderFeaturedItems(
+            @Valid @RequestBody FeaturedItemOrderRequest request
+    ) {
+        log.info("PUT /menu-items/featured/order");
+        List<MenuItemDTO> menuItems = menuItemService.reorderFeaturedItems(request);
+        return ResponseEntity.ok(menuItems);
     }
 
     /**

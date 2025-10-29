@@ -1,23 +1,43 @@
 package com.garbaking.inventoryservice.service;
 
+import com.garbaking.inventoryservice.dto.FeatureMenuItemRequest;
+import com.garbaking.inventoryservice.dto.FeaturedItemOrderRequest;
+import com.garbaking.inventoryservice.dto.InventoryAuditDTO;
+import com.garbaking.inventoryservice.dto.InventoryAuditRequest;
 import com.garbaking.inventoryservice.dto.MenuItemDTO;
 import com.garbaking.inventoryservice.dto.MenuItemImageDTO;
+import com.garbaking.inventoryservice.dto.MenuItemImageUploadResponse;
 import com.garbaking.inventoryservice.dto.StockAdjustmentDTO;
+import com.garbaking.inventoryservice.dto.SupplierAssignmentRequest;
+import com.garbaking.inventoryservice.dto.SupplierSummaryDTO;
+import com.garbaking.inventoryservice.event.InventoryAuditEvent;
+import com.garbaking.inventoryservice.event.StockAdjustmentEvent;
+import com.garbaking.inventoryservice.exception.InvalidStockAdjustmentException;
 import com.garbaking.inventoryservice.exception.ResourceAlreadyExistsException;
 import com.garbaking.inventoryservice.exception.ResourceNotFoundException;
 import com.garbaking.inventoryservice.model.Category;
+import com.garbaking.inventoryservice.model.InventoryAuditSource;
 import com.garbaking.inventoryservice.model.MenuItem;
 import com.garbaking.inventoryservice.model.MenuItemImage;
+import com.garbaking.inventoryservice.model.Supplier;
 import com.garbaking.inventoryservice.repository.CategoryRepository;
 import com.garbaking.inventoryservice.repository.MenuItemImageRepository;
 import com.garbaking.inventoryservice.repository.MenuItemRepository;
+import com.garbaking.inventoryservice.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -33,25 +53,22 @@ public class MenuItemService {
     private final MenuItemRepository menuItemRepository;
     private final CategoryRepository categoryRepository;
     private final MenuItemImageRepository menuItemImageRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final SupplierRepository supplierRepository;
+    private final InventoryAuditService inventoryAuditService;
+    private final InventoryEventPublisher inventoryEventPublisher;
+    private final ImageStorageService imageStorageService;
 
-    /**
-     * Create a new menu item
-     */
     @Transactional
     public MenuItemDTO createMenuItem(MenuItemDTO menuItemDTO) {
         log.info("Creating new menu item: {}", menuItemDTO.getName());
 
-        // Check if SKU already exists
         if (menuItemDTO.getSku() != null && menuItemRepository.existsBySku(menuItemDTO.getSku())) {
             throw new ResourceAlreadyExistsException("Menu item with SKU '" + menuItemDTO.getSku() + "' already exists");
         }
 
-        // Verify category exists
         Category category = categoryRepository.findById(menuItemDTO.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + menuItemDTO.getCategoryId()));
 
-        // Create menu item entity
         MenuItem menuItem = MenuItem.builder()
                 .name(menuItemDTO.getName())
                 .description(menuItemDTO.getDescription())
@@ -72,115 +89,77 @@ public class MenuItemService {
                 .displayOrder(menuItemDTO.getDisplayOrder() != null ? menuItemDTO.getDisplayOrder() : 0)
                 .build();
 
-        // Save menu item
+        applySuppliers(menuItem, menuItemDTO.getSupplierIds());
+
         MenuItem savedMenuItem = menuItemRepository.save(menuItem);
         log.info("Menu item created successfully with ID: {}", savedMenuItem.getId());
 
-        // Publish menuitem.created event
-        publishMenuItemEvent("menuitem.created", savedMenuItem);
-
-        return convertToDTO(savedMenuItem);
+        MenuItemDTO dto = convertToDTO(savedMenuItem);
+        inventoryEventPublisher.publishMenuItemLifecycle("CREATED", dto);
+        return dto;
     }
 
-    /**
-     * Get menu item by ID
-     */
     @Transactional(readOnly = true)
     public MenuItemDTO getMenuItemById(Long id) {
-        log.info("Fetching menu item with ID: {}", id);
-        MenuItem menuItem = menuItemRepository.findByIdWithImages(id)
+        MenuItem menuItem = menuItemRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
         return convertToDTOWithImages(menuItem);
     }
 
-    /**
-     * Get menu item by SKU
-     */
     @Transactional(readOnly = true)
     public MenuItemDTO getMenuItemBySku(String sku) {
-        log.info("Fetching menu item with SKU: {}", sku);
         MenuItem menuItem = menuItemRepository.findBySku(sku)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with SKU: " + sku));
         return convertToDTO(menuItem);
     }
 
-    /**
-     * Get all menu items
-     */
     @Transactional(readOnly = true)
     public List<MenuItemDTO> getAllMenuItems() {
-        log.info("Fetching all menu items");
         return menuItemRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get active and available menu items
-     */
     @Transactional(readOnly = true)
     public List<MenuItemDTO> getAvailableMenuItems() {
-        log.info("Fetching available menu items");
         return menuItemRepository.findByIsActiveTrueAndIsAvailableTrueOrderByDisplayOrderAsc().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get menu items by category
-     */
     @Transactional(readOnly = true)
     public List<MenuItemDTO> getMenuItemsByCategory(Long categoryId) {
-        log.info("Fetching menu items for category: {}", categoryId);
         return menuItemRepository.findByCategoryIdAndIsActiveTrueAndIsAvailableTrueOrderByDisplayOrderAsc(categoryId).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get featured menu items
-     */
     @Transactional(readOnly = true)
     public List<MenuItemDTO> getFeaturedMenuItems() {
-        log.info("Fetching featured menu items");
         return menuItemRepository.findByIsFeaturedTrueAndIsActiveTrueOrderByDisplayOrderAsc().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get low stock items
-     */
     @Transactional(readOnly = true)
     public List<MenuItemDTO> getLowStockItems() {
-        log.info("Fetching low stock items");
         return menuItemRepository.findLowStockItems().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Search menu items by name
-     */
     @Transactional(readOnly = true)
     public List<MenuItemDTO> searchMenuItems(String name) {
-        log.info("Searching menu items with name: {}", name);
         return menuItemRepository.searchByName(name).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Update menu item
-     */
     @Transactional
     public MenuItemDTO updateMenuItem(Long id, MenuItemDTO menuItemDTO) {
-        log.info("Updating menu item with ID: {}", id);
-
         MenuItem menuItem = menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
 
-        // Check if new SKU already exists (excluding current item)
         if (menuItemDTO.getSku() != null && !menuItemDTO.getSku().equals(menuItem.getSku())) {
             if (menuItemRepository.existsBySku(menuItemDTO.getSku())) {
                 throw new ResourceAlreadyExistsException("Menu item with SKU '" + menuItemDTO.getSku() + "' already exists");
@@ -188,14 +167,12 @@ public class MenuItemService {
             menuItem.setSku(menuItemDTO.getSku());
         }
 
-        // Update category if changed
         if (menuItemDTO.getCategoryId() != null && !menuItemDTO.getCategoryId().equals(menuItem.getCategoryId())) {
             Category category = categoryRepository.findById(menuItemDTO.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + menuItemDTO.getCategoryId()));
             menuItem.setCategory(category);
         }
 
-        // Update fields
         if (menuItemDTO.getName() != null) menuItem.setName(menuItemDTO.getName());
         if (menuItemDTO.getDescription() != null) menuItem.setDescription(menuItemDTO.getDescription());
         if (menuItemDTO.getPrice() != null) menuItem.setPrice(menuItemDTO.getPrice());
@@ -211,81 +188,257 @@ public class MenuItemService {
         if (menuItemDTO.getIsFeatured() != null) menuItem.setIsFeatured(menuItemDTO.getIsFeatured());
         if (menuItemDTO.getDisplayOrder() != null) menuItem.setDisplayOrder(menuItemDTO.getDisplayOrder());
 
+        if (menuItemDTO.getSupplierIds() != null) {
+            applySuppliers(menuItem, menuItemDTO.getSupplierIds());
+        }
+
         MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
-        log.info("Menu item updated successfully: {}", updatedMenuItem.getId());
-
-        // Publish menuitem.updated event
-        publishMenuItemEvent("menuitem.updated", updatedMenuItem);
-
-        return convertToDTO(updatedMenuItem);
+        MenuItemDTO dto = convertToDTO(updatedMenuItem);
+        inventoryEventPublisher.publishMenuItemLifecycle("UPDATED", dto);
+        return dto;
     }
 
-    /**
-     * Adjust stock quantity
-     */
+    @Transactional
+    public MenuItemDTO assignSuppliers(Long menuItemId, SupplierAssignmentRequest request) {
+        MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
+        applySuppliers(menuItem, request.getSupplierIds());
+        MenuItem saved = menuItemRepository.save(menuItem);
+        MenuItemDTO dto = convertToDTO(saved);
+        inventoryEventPublisher.publishMenuItemLifecycle("SUPPLIERS_UPDATED", dto);
+        return dto;
+    }
+
+    @Transactional
+    public MenuItemDTO updateFeaturedStatus(Long menuItemId, FeatureMenuItemRequest request) {
+        MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
+        menuItem.setIsFeatured(Boolean.TRUE.equals(request.getFeatured()));
+        if (request.getDisplayOrder() != null) {
+            menuItem.setDisplayOrder(request.getDisplayOrder());
+        }
+        MenuItem saved = menuItemRepository.save(menuItem);
+        MenuItemDTO dto = convertToDTO(saved);
+        inventoryEventPublisher.publishMenuItemLifecycle("FEATURE_UPDATED", dto);
+        return dto;
+    }
+
+    @Transactional
+    public List<MenuItemDTO> reorderFeaturedItems(FeaturedItemOrderRequest request) {
+        for (FeaturedItemOrderRequest.ItemOrder itemOrder : request.getItems()) {
+            menuItemRepository.findById(itemOrder.getMenuItemId()).ifPresent(menuItem -> {
+                menuItem.setDisplayOrder(itemOrder.getDisplayOrder());
+                menuItemRepository.save(menuItem);
+            });
+        }
+        return getFeaturedMenuItems();
+    }
+
+    @Transactional
+    public MenuItemImageUploadResponse uploadImage(Long menuItemId,
+                                                   MultipartFile file,
+                                                   Boolean primary,
+                                                   Integer displayOrder,
+                                                   String altText) throws IOException {
+        MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
+
+        ImageStorageService.ImageUploadResult uploadResult = imageStorageService.store(menuItemId, file);
+
+        MenuItemImage image = MenuItemImage.builder()
+                .menuItem(menuItem)
+                .imageUrl(uploadResult.getCdnUrl())
+                .thumbnailUrl(uploadResult.getPublicUrl())
+                .storagePath(uploadResult.getStoragePath())
+                .isPrimary(Boolean.TRUE.equals(primary))
+                .displayOrder(displayOrder != null ? displayOrder : (int) (menuItemImageRepository.countByMenuItemId(menuItemId) + 1))
+                .altText(altText)
+                .build();
+
+        if (Boolean.TRUE.equals(primary)) {
+            menuItemImageRepository.findByMenuItemIdAndIsPrimaryTrue(menuItemId)
+                    .ifPresent(existing -> {
+                        existing.setIsPrimary(false);
+                        menuItemImageRepository.save(existing);
+                    });
+        }
+
+        MenuItemImage savedImage = menuItemImageRepository.save(image);
+        MenuItemImageDTO imageDTO = convertImageToDTO(savedImage);
+        String signedUrl = imageStorageService.generateSignedUrl(savedImage.getImageUrl(), null);
+        return MenuItemImageUploadResponse.builder()
+                .image(imageDTO)
+                .signedUrl(signedUrl)
+                .build();
+    }
+
+    @Transactional
+    public MenuItemImageDTO updateImageMetadata(Long menuItemId,
+                                                Long imageId,
+                                                Boolean primary,
+                                                Integer displayOrder,
+                                                String altText) {
+        MenuItemImage image = menuItemImageRepository.findById(imageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image not found with id: " + imageId));
+        if (!image.getMenuItemId().equals(menuItemId)) {
+            throw new ResourceNotFoundException("Image does not belong to menu item: " + menuItemId);
+        }
+        if (primary != null && primary) {
+            menuItemImageRepository.findByMenuItemIdAndIsPrimaryTrue(menuItemId)
+                    .filter(existing -> !existing.getId().equals(imageId))
+                    .ifPresent(existing -> {
+                        existing.setIsPrimary(false);
+                        menuItemImageRepository.save(existing);
+                    });
+            image.setIsPrimary(true);
+        } else if (primary != null) {
+            image.setIsPrimary(false);
+        }
+        if (displayOrder != null) image.setDisplayOrder(displayOrder);
+        if (altText != null) image.setAltText(altText);
+        MenuItemImage saved = menuItemImageRepository.save(image);
+        return convertImageToDTO(saved);
+    }
+
+    @Transactional
+    public void deleteImage(Long menuItemId, Long imageId) {
+        MenuItemImage image = menuItemImageRepository.findById(imageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image not found with id: " + imageId));
+        if (!image.getMenuItemId().equals(menuItemId)) {
+            throw new ResourceNotFoundException("Image does not belong to menu item: " + menuItemId);
+        }
+        menuItemImageRepository.delete(image);
+        imageStorageService.delete(image.getStoragePath());
+    }
+
+    @Transactional(readOnly = true)
+    public String generateSignedImageUrl(Long menuItemId, Long imageId, Duration duration) {
+        MenuItemImage image = menuItemImageRepository.findById(imageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image not found with id: " + imageId));
+        if (!image.getMenuItemId().equals(menuItemId)) {
+            throw new ResourceNotFoundException("Image does not belong to menu item: " + menuItemId);
+        }
+        return imageStorageService.generateSignedUrl(image.getImageUrl(), duration);
+    }
+
+    @Transactional
+    public InventoryAuditDTO performInventoryAudit(InventoryAuditRequest request) {
+        MenuItem menuItem = menuItemRepository.findById(request.getMenuItemId())
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + request.getMenuItemId()));
+        if (request.getCountedQuantity() < 0) {
+            throw new InvalidStockAdjustmentException("Counted quantity cannot be negative");
+        }
+        int previousQuantity = menuItem.getStockQuantity();
+        int change = request.getCountedQuantity() - previousQuantity;
+        menuItem.setStockQuantity(request.getCountedQuantity());
+        menuItem.setIsAvailable(request.getCountedQuantity() > 0);
+        MenuItem saved = menuItemRepository.save(menuItem);
+
+        InventoryAuditDTO audit = inventoryAuditService.recordStockAdjustment(saved, change, previousQuantity,
+                request.getReason(), InventoryAuditSource.MANUAL_COUNT, request.getPerformedBy());
+
+        publishStockEvents(saved, audit, change, request.getReason(), request.getPerformedBy(), InventoryAuditSource.MANUAL_COUNT);
+        return audit;
+    }
+
     @Transactional
     public MenuItemDTO adjustStock(StockAdjustmentDTO adjustmentDTO) {
-        log.info("Adjusting stock for menu item: {} by {}", adjustmentDTO.getMenuItemId(), adjustmentDTO.getQuantity());
-
         MenuItem menuItem = menuItemRepository.findById(adjustmentDTO.getMenuItemId())
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + adjustmentDTO.getMenuItemId()));
 
-        // Adjust stock
-        menuItem.adjustStock(adjustmentDTO.getQuantity());
-
-        // Update availability based on stock
-        if (menuItem.getStockQuantity() == 0) {
-            menuItem.setIsAvailable(false);
+        if (adjustmentDTO.getQuantity() == 0) {
+            throw new InvalidStockAdjustmentException("Quantity must be non-zero");
+        }
+        if (adjustmentDTO.getQuantity() < 0 && !StringUtils.hasText(adjustmentDTO.getReason())) {
+            throw new InvalidStockAdjustmentException("Reason is required when reducing stock");
         }
 
-        MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
-        log.info("Stock adjusted successfully. New quantity: {}", updatedMenuItem.getStockQuantity());
+        int previousQuantity = menuItem.getStockQuantity();
+        int newQuantity = previousQuantity + adjustmentDTO.getQuantity();
+        if (newQuantity < 0) {
+            throw new InvalidStockAdjustmentException("Insufficient stock for requested adjustment");
+        }
 
-        // Publish stock.adjusted event
-        publishStockAdjustmentEvent(updatedMenuItem, adjustmentDTO);
+        menuItem.setStockQuantity(newQuantity);
+        menuItem.setIsAvailable(newQuantity > 0);
+
+        MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
+        InventoryAuditDTO audit = inventoryAuditService.recordStockAdjustment(updatedMenuItem,
+                adjustmentDTO.getQuantity(), previousQuantity, adjustmentDTO.getReason(),
+                InventoryAuditSource.INVENTORY_SERVICE, adjustmentDTO.getPerformedBy());
+
+        publishStockEvents(updatedMenuItem, audit, adjustmentDTO.getQuantity(), adjustmentDTO.getReason(),
+                adjustmentDTO.getPerformedBy(), InventoryAuditSource.INVENTORY_SERVICE);
 
         return convertToDTO(updatedMenuItem);
     }
 
-    /**
-     * Delete menu item (soft delete)
-     */
     @Transactional
     public void deleteMenuItem(Long id) {
-        log.info("Deleting menu item with ID: {}", id);
-
         MenuItem menuItem = menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
-
-        // Soft delete by deactivating
         menuItem.setIsActive(false);
         menuItem.setIsAvailable(false);
         menuItemRepository.save(menuItem);
-
-        log.info("Menu item deleted (deactivated) successfully: {}", id);
-
-        // Publish menuitem.deleted event
-        publishMenuItemEvent("menuitem.deleted", menuItem);
+        inventoryEventPublisher.publishMenuItemLifecycle("DELETED", convertToDTO(menuItem));
     }
 
-    /**
-     * Hard delete menu item (admin only)
-     */
     @Transactional
     public void hardDeleteMenuItem(Long id) {
-        log.info("Hard deleting menu item with ID: {}", id);
-
         if (!menuItemRepository.existsById(id)) {
             throw new ResourceNotFoundException("Menu item not found with id: " + id);
         }
-
         menuItemRepository.deleteById(id);
-        log.info("Menu item hard deleted successfully: {}", id);
+        inventoryEventPublisher.publishMenuItemLifecycle("HARD_DELETED", MenuItemDTO.builder().id(id).build());
     }
 
-    /**
-     * Convert MenuItem entity to MenuItemDTO
-     */
+    private void publishStockEvents(MenuItem menuItem,
+                                    InventoryAuditDTO audit,
+                                    int change,
+                                    String reason,
+                                    String performedBy,
+                                    InventoryAuditSource source) {
+        StockAdjustmentEvent stockEvent = StockAdjustmentEvent.builder()
+                .auditId(audit.getId())
+                .menuItemId(menuItem.getId())
+                .menuItemName(menuItem.getName())
+                .changeQuantity(change)
+                .previousQuantity(audit.getPreviousQuantity())
+                .newQuantity(audit.getNewQuantity())
+                .reason(reason)
+                .performedBy(performedBy)
+                .source(source)
+                .occurredAt(Instant.now())
+                .build();
+        inventoryEventPublisher.publishStockAdjustment(stockEvent);
+
+        InventoryAuditEvent auditEvent = InventoryAuditEvent.builder()
+                .auditId(audit.getId())
+                .menuItemId(menuItem.getId())
+                .menuItemName(menuItem.getName())
+                .changeQuantity(change)
+                .previousQuantity(audit.getPreviousQuantity())
+                .newQuantity(audit.getNewQuantity())
+                .reason(reason)
+                .source(source)
+                .performedBy(performedBy)
+                .occurredAt(Instant.now())
+                .build();
+        inventoryEventPublisher.publishInventoryAudit(auditEvent);
+    }
+
+    private void applySuppliers(MenuItem menuItem, List<Long> supplierIds) {
+        if (supplierIds == null) {
+            return;
+        }
+        Set<Supplier> suppliers = supplierIds.isEmpty()
+                ? Collections.emptySet()
+                : new HashSet<>(supplierRepository.findAllById(supplierIds));
+        menuItem.getSuppliers().forEach(supplier -> supplier.getMenuItems().remove(menuItem));
+        menuItem.getSuppliers().clear();
+        suppliers.forEach(menuItem::addSupplier);
+    }
+
     private MenuItemDTO convertToDTO(MenuItem menuItem) {
         return MenuItemDTO.builder()
                 .id(menuItem.getId())
@@ -309,14 +462,13 @@ public class MenuItemService {
                 .displayOrder(menuItem.getDisplayOrder())
                 .isLowStock(menuItem.isLowStock())
                 .isInStock(menuItem.isInStock())
+                .supplierIds(menuItem.getSuppliers().stream().map(Supplier::getId).collect(Collectors.toList()))
+                .suppliers(menuItem.getSuppliers().stream().map(this::convertSupplierToSummary).collect(Collectors.toList()))
                 .createdAt(menuItem.getCreatedAt())
                 .updatedAt(menuItem.getUpdatedAt())
                 .build();
     }
 
-    /**
-     * Convert MenuItem entity to MenuItemDTO with images
-     */
     private MenuItemDTO convertToDTOWithImages(MenuItem menuItem) {
         MenuItemDTO dto = convertToDTO(menuItem);
         dto.setImages(menuItem.getImages().stream()
@@ -325,15 +477,14 @@ public class MenuItemService {
         return dto;
     }
 
-    /**
-     * Convert MenuItemImage entity to MenuItemImageDTO
-     */
     private MenuItemImageDTO convertImageToDTO(MenuItemImage image) {
+        String signedUrl = imageStorageService.generateSignedUrl(image.getImageUrl(), null);
         return MenuItemImageDTO.builder()
                 .id(image.getId())
                 .menuItemId(image.getMenuItemId())
                 .imageUrl(image.getImageUrl())
                 .thumbnailUrl(image.getThumbnailUrl())
+                .signedUrl(signedUrl)
                 .isPrimary(image.getIsPrimary())
                 .displayOrder(image.getDisplayOrder())
                 .altText(image.getAltText())
@@ -341,29 +492,12 @@ public class MenuItemService {
                 .build();
     }
 
-    /**
-     * Publish menu item events to Kafka
-     */
-    private void publishMenuItemEvent(String topic, MenuItem menuItem) {
-        try {
-            MenuItemDTO menuItemDTO = convertToDTO(menuItem);
-            kafkaTemplate.send(topic, menuItem.getId().toString(), menuItemDTO);
-            log.info("Published event to topic {}: {}", topic, menuItem.getId());
-        } catch (Exception e) {
-            log.error("Failed to publish event to topic {}: {}", topic, e.getMessage());
-            // Don't throw exception - event publishing shouldn't fail the main operation
-        }
-    }
-
-    /**
-     * Publish stock adjustment events to Kafka
-     */
-    private void publishStockAdjustmentEvent(MenuItem menuItem, StockAdjustmentDTO adjustmentDTO) {
-        try {
-            kafkaTemplate.send("stock.adjusted", menuItem.getId().toString(), adjustmentDTO);
-            log.info("Published stock adjustment event for menu item: {}", menuItem.getId());
-        } catch (Exception e) {
-            log.error("Failed to publish stock adjustment event: {}", e.getMessage());
-        }
+    private SupplierSummaryDTO convertSupplierToSummary(Supplier supplier) {
+        return SupplierSummaryDTO.builder()
+                .id(supplier.getId())
+                .name(supplier.getName())
+                .preferred(supplier.getPreferred())
+                .leadTimeDays(supplier.getLeadTimeDays())
+                .build();
     }
 }

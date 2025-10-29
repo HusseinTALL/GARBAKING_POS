@@ -132,8 +132,26 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     /**
+     * Find orders created between two dates with items eagerly loaded
+     */
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items WHERE o.createdAt BETWEEN :start AND :end ORDER BY o.createdAt DESC")
+    List<Order> findByCreatedAtBetweenWithItems(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
      * Find orders by status (multiple statuses)
      */
     @Query("SELECT o FROM Order o WHERE o.status IN :statuses ORDER BY o.createdAt DESC")
     List<Order> findByStatusIn(@Param("statuses") List<Order.OrderStatus> statuses);
+
+    /**
+     * Count orders by status collection.
+     */
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status IN :statuses")
+    long countByStatusIn(@Param("statuses") List<Order.OrderStatus> statuses);
+
+    /**
+     * Find orders created after a specific date with items eagerly loaded
+     */
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items WHERE o.createdAt >= :start ORDER BY o.createdAt DESC")
+    List<Order> findByCreatedAtAfterWithItems(@Param("start") LocalDateTime start);
 }

@@ -13,6 +13,9 @@ import java.util.List;
 
 /**
  * MenuItem Data Transfer Object
+ */
+/**
+ * MenuItem Data Transfer Object
  *
  * Used for menu item creation, updates, and responses.
  */
@@ -48,6 +51,12 @@ public class MenuItemDTO {
 
     @Builder.Default
     private List<MenuItemImageDTO> images = new ArrayList<>();
+
+    @Builder.Default
+    private List<Long> supplierIds = new ArrayList<>();
+
+    @Builder.Default
+    private List<SupplierSummaryDTO> suppliers = new ArrayList<>();
 
     @Builder.Default
     private Boolean isAvailable = true;
