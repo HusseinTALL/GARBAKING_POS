@@ -1,6 +1,7 @@
 package com.garbaking.orderservice.service;
 
 import com.garbaking.orderservice.dto.OrderDTO;
+import com.garbaking.orderservice.websocket.RawOrderWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class WebSocketService {
 
     private final SimpMessagingTemplate messagingTemplate;
+    private final RawOrderWebSocketHandler rawOrderWebSocketHandler;
 
     /**
      * Broadcast order created event to all subscribers
@@ -25,6 +27,7 @@ public class WebSocketService {
     public void broadcastOrderCreated(OrderDTO order) {
         log.info("Broadcasting order created: {}", order.getOrderNumber());
         messagingTemplate.convertAndSend("/topic/orders/created", order);
+        rawOrderWebSocketHandler.broadcast(order);
     }
 
     /**
@@ -33,6 +36,7 @@ public class WebSocketService {
     public void broadcastOrderUpdated(OrderDTO order) {
         log.info("Broadcasting order updated: {}", order.getOrderNumber());
         messagingTemplate.convertAndSend("/topic/orders/updated", order);
+        rawOrderWebSocketHandler.broadcast(order);
     }
 
     /**
@@ -41,6 +45,7 @@ public class WebSocketService {
     public void broadcastOrderStatusChanged(OrderDTO order) {
         log.info("Broadcasting order status changed: {} -> {}", order.getOrderNumber(), order.getStatus());
         messagingTemplate.convertAndSend("/topic/orders/status", order);
+        rawOrderWebSocketHandler.broadcast(order);
     }
 
     /**
@@ -49,6 +54,7 @@ public class WebSocketService {
     public void broadcastOrderCancelled(OrderDTO order) {
         log.info("Broadcasting order cancelled: {}", order.getOrderNumber());
         messagingTemplate.convertAndSend("/topic/orders/cancelled", order);
+        rawOrderWebSocketHandler.broadcast(order);
     }
 
     /**
@@ -69,5 +75,6 @@ public class WebSocketService {
     public void broadcastActiveOrdersUpdate(Object activeOrders) {
         log.info("Broadcasting active orders update");
         messagingTemplate.convertAndSend("/topic/orders/active", activeOrders);
+        rawOrderWebSocketHandler.broadcast(activeOrders);
     }
 }

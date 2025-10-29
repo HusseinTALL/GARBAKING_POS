@@ -13,7 +13,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * MenuItem Entity
@@ -65,6 +67,13 @@ public class MenuItem {
     @OneToMany(mappedBy = "menuItem", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<MenuItemImage> images = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(name = "menu_item_suppliers",
+            joinColumns = @JoinColumn(name = "menu_item_id"),
+            inverseJoinColumns = @JoinColumn(name = "supplier_id"))
+    @Builder.Default
+    private Set<Supplier> suppliers = new HashSet<>();
 
     @Column(nullable = false)
     @Builder.Default
@@ -122,6 +131,16 @@ public class MenuItem {
     public void removeImage(MenuItemImage image) {
         images.remove(image);
         image.setMenuItem(null);
+    }
+
+    public void addSupplier(Supplier supplier) {
+        suppliers.add(supplier);
+        supplier.getMenuItems().add(this);
+    }
+
+    public void removeSupplier(Supplier supplier) {
+        suppliers.remove(supplier);
+        supplier.getMenuItems().remove(this);
     }
 
     // Check if item is in stock

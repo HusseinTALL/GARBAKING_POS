@@ -79,8 +79,8 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
     /**
      * Find menu item with images by ID
      */
-    @Query("SELECT m FROM MenuItem m LEFT JOIN FETCH m.images WHERE m.id = :id")
-    Optional<MenuItem> findByIdWithImages(@Param("id") Long id);
+    @Query("SELECT m FROM MenuItem m LEFT JOIN FETCH m.images LEFT JOIN FETCH m.suppliers WHERE m.id = :id")
+    Optional<MenuItem> findByIdWithDetails(@Param("id") Long id);
 
     /**
      * Count menu items by category

@@ -1,0 +1,15 @@
+<configuration scan="true">
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"application":"${spring.application.name:-unknown}"}</customFields>
+        </encoder>
+    </appender>
+
+    <logger name="garbaking-alerts" level="WARN" additivity="false">
+        <appender-ref ref="JSON_CONSOLE"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="JSON_CONSOLE"/>
+    </root>
+</configuration>
