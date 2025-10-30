@@ -79,11 +79,11 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/local': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:8080',
         changeOrigin: true
       },
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:8080',
         changeOrigin: true
       }
     }

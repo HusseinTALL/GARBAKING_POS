@@ -1,132 +1,161 @@
 #!/bin/bash
 
 ###############################################################################
-# Garbaking POS - Backend Startup Script
-# Ensures the backend starts reliably and handles common errors
+# Garbaking POS - Spring Boot Backend Startup Script
+# Starts the microservice backend stack without the frontend apps
 ###############################################################################
 
-set -e  # Exit on error
+set -e
 
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-# Project paths
+# Paths
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-BACKEND_DIR="$SCRIPT_DIR/backend"
-ENV_FILE="$BACKEND_DIR/.env"
+BACKEND_DIR="$SCRIPT_DIR/garbaking-backend"
+LOGS_DIR="$SCRIPT_DIR/logs"
 
-echo -e "${BLUE}╔════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║   🥐 Garbaking POS Backend Startup            ║${NC}"
-echo -e "${BLUE}╚════════════════════════════════════════════════╝${NC}"
-echo
+# Ports used by backend services
+BACKEND_PORTS=(8762 8761 8081 8082 8083 8080)
 
-# Function to print status
-print_status() {
-    echo -e "${GREEN}✓${NC} $1"
-}
+echo -e "${CYAN}"
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║                                                            ║"
+echo "║     🥐  GARBAKING POS - SPRING BOOT BACKEND STARTUP 🥐     ║"
+echo "║                                                            ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
 
-print_error() {
-    echo -e "${RED}✗${NC} $1"
-}
+print_status() { echo -e "${GREEN}✓${NC} $1"; }
+print_info()   { echo -e "${BLUE}ℹ${NC} $1"; }
+print_warn()   { echo -e "${YELLOW}⚠${NC} $1"; }
+print_error()  { echo -e "${RED}✗${NC} $1"; }
 
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
-print_info() {
-    echo -e "${BLUE}ℹ${NC} $1"
-}
-
-# Check if backend directory exists
 if [ ! -d "$BACKEND_DIR" ]; then
-    print_error "Backend directory not found: $BACKEND_DIR"
+    print_error "Spring Boot backend directory not found at $BACKEND_DIR"
     exit 1
 fi
 
-cd "$BACKEND_DIR"
-print_status "Changed to backend directory"
+mkdir -p "$LOGS_DIR"
 
-# Check if .env file exists
-if [ ! -f "$ENV_FILE" ]; then
-    print_warning ".env file not found. Creating from .env.example..."
-    if [ -f "$BACKEND_DIR/.env.example" ]; then
-        cp "$BACKEND_DIR/.env.example" "$ENV_FILE"
-        print_status ".env file created"
-    else
-        print_error ".env.example not found!"
-        exit 1
+declare -a PIDS=()
+
+cleanup() {
+    echo
+    print_warn "Stopping backend services..."
+    for pid in "${PIDS[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+        fi
+    done
+    for port in "${BACKEND_PORTS[@]}"; do
+        lsof -ti:"$port" | xargs kill -9 2>/dev/null || true
+    done
+    print_status "Backend services stopped"
+    exit 0
+}
+
+trap cleanup SIGINT SIGTERM
+
+print_info "Checking for existing processes..."
+for port in "${BACKEND_PORTS[@]}"; do
+    if lsof -Pi :"$port" -sTCP:LISTEN -t >/dev/null 2>&1; then
+        print_warn "Port $port in use. Terminating process..."
+        lsof -ti:"$port" | xargs kill -9 2>/dev/null || true
+        sleep 1
     fi
-fi
+done
+print_status "All backend ports are free"
 
-# Check if node_modules exists
-if [ ! -d "$BACKEND_DIR/node_modules" ]; then
-    print_warning "node_modules not found. Installing dependencies..."
-    npm install
-    print_status "Dependencies installed"
+print_info "Ensuring Docker infrastructure (MySQL, Kafka) is running..."
+cd "$BACKEND_DIR"
+if ! docker ps | grep -q "garbaking-mysql"; then
+    print_warn "MySQL container not running. Starting docker-compose services..."
+    docker-compose up -d mysql zookeeper kafka
+    print_info "Waiting for MySQL to initialize..."
+    sleep 15
 else
-    print_status "Dependencies already installed"
+    print_status "MySQL container is already running"
 fi
 
-# Check if database file exists
-DB_PATH="$BACKEND_DIR/prisma/dev.db"
-if [ ! -f "$DB_PATH" ]; then
-    print_warning "Database not found. Running Prisma setup..."
-    npx prisma generate
-    npx prisma db push --accept-data-loss
-    print_status "Database initialized"
+if ! docker ps | grep -q "garbaking-kafka"; then
+    print_warn "Kafka container not running. Starting..."
+    docker-compose up -d zookeeper kafka
+    print_info "Waiting for Kafka to be ready..."
+    sleep 10
 else
-    print_status "Database exists"
+    print_status "Kafka container is already running"
 fi
 
-# Create uploads directory if it doesn't exist
-mkdir -p "$BACKEND_DIR/public/uploads/menu"
-mkdir -p "$BACKEND_DIR/public/uploads/categories"
-print_status "Upload directories ready"
-
-# Kill any existing backend process on port 3001
-print_info "Checking for existing backend process on port 3001..."
-if lsof -Pi :3001 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
-    print_warning "Port 3001 is in use. Killing existing process..."
-    kill -9 $(lsof -t -i:3001) 2>/dev/null || true
-    sleep 2
-    print_status "Existing process terminated"
-else
-    print_status "Port 3001 is available"
-fi
-
-# Start the backend
 echo
-print_info "Starting backend server..."
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+print_info "Building backend microservices (gradlew build -x test)..."
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+./gradlew build -x test
+print_status "Spring Boot services compiled successfully"
+
+start_service() {
+    local name=$1
+    local module_dir=$2
+    local jar_name=$3
+    local port=$4
+    local extra_args=$5
+
+    echo
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    print_info "Starting $name (port $port)..."
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+    cd "$BACKEND_DIR/$module_dir"
+    if [ ! -f "build/libs/$jar_name" ]; then
+        print_error "Jar build/libs/$jar_name not found for $name"
+        cleanup
+    fi
+    java -jar "build/libs/$jar_name" $extra_args > "$LOGS_DIR/$module_dir.log" 2>&1 &
+    local pid=$!
+    PIDS+=("$pid")
+    sleep 8
+
+    if kill -0 "$pid" 2>/dev/null; then
+        print_status "$name started (PID: $pid)"
+    else
+        print_error "$name failed to start. See $LOGS_DIR/$module_dir.log"
+        tail -20 "$LOGS_DIR/$module_dir.log"
+        cleanup
+    fi
+}
+
+start_service "Config Server" "config-server" "config-server-1.0.0.jar" 8762 "--spring.cloud.config.enabled=false"
+start_service "Discovery Server (Eureka)" "discovery-server" "discovery-server-1.0.0.jar" 8761 "--spring.cloud.config.enabled=false"
+start_service "User Service" "user-service" "user-service-1.0.0.jar" 8081 "--spring.cloud.config.enabled=false"
+start_service "Order Service" "order-service" "order-service-1.0.0.jar" 8082 "--spring.cloud.config.enabled=false"
+start_service "Inventory Service" "inventory-service" "inventory-service-1.0.0.jar" 8083 "--spring.cloud.config.enabled=false"
+
+print_info "Waiting for services to register with Eureka..."
+sleep 10
+
+start_service "API Gateway" "api-gateway" "api-gateway-1.0.0.jar" 8080 "--spring.cloud.config.enabled=false"
+
 echo
-
-# Use npm run dev for development (with auto-reload)
-npm run dev &
-BACKEND_PID=$!
-
-# Wait a bit and check if it started successfully
-sleep 5
-
-if kill -0 $BACKEND_PID 2>/dev/null; then
-    echo
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    print_status "Backend started successfully!"
-    echo
-    print_info "Backend PID: $BACKEND_PID"
-    print_info "Backend URL: http://localhost:3001"
-    print_info "Health Check: http://localhost:3001/health"
-    print_info "API Endpoint: http://localhost:3001/api"
-    echo
-    print_info "Press Ctrl+C to stop the backend"
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-
-    # Wait for the process
-    wait $BACKEND_PID
-else
-    print_error "Failed to start backend!"
-    exit 1
-fi
+echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║       🎉  SPRING BOOT BACKEND IS RUNNING! 🎉     ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}"
+echo
+echo -e "${CYAN}Service URLs:${NC}"
+echo "  Config Server:      http://localhost:8762"
+echo "  Discovery (Eureka): http://localhost:8761"
+echo "  API Gateway:        http://localhost:8080"
+echo "  User Service:       http://localhost:8081"
+echo "  Order Service:      http://localhost:8082"
+echo "  Inventory Service:  http://localhost:8083"
+echo
+echo -e "${CYAN}Logs directory:${NC} $LOGS_DIR"
+echo -e "${CYAN}Stop script:${NC} Ctrl+C"
+echo
+wait
+cleanup

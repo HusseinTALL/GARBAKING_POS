@@ -7,6 +7,17 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
+const DEFAULT_GATEWAY_URL = 'http://localhost:8080'
+const configuredGatewayUrl =
+  import.meta.env.VITE_API_GATEWAY_URL ||
+  import.meta.env.VITE_API_URL ||
+  DEFAULT_GATEWAY_URL
+
+const normalizeBase = (url: string): string =>
+  url.endsWith('/') ? url.slice(0, -1) : url
+
+const API_BASE_URL = `${normalizeBase(configuredGatewayUrl)}/api`
+
 export interface ApiResponse<T = any> {
   success: boolean
   data: T
@@ -32,7 +43,7 @@ export class ApiService {
   private baseURL: string
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+    this.baseURL = API_BASE_URL
 
     this.axiosInstance = axios.create({
       baseURL: this.baseURL,

@@ -59,7 +59,7 @@ npm install
 # Start development server
 npm run dev
 
-# App will be available at http://localhost:3001
+# App will be available at http://localhost:8080
 ```
 
 ### Build for Production

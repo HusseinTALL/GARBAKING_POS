@@ -3,7 +3,6 @@ package com.garbaking.inventoryservice.config;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.validation.annotation.Validated;
 
 import java.nio.file.Path;
@@ -44,7 +43,6 @@ public class ImageStorageProperties {
     /**
      * Default validity window for signed URLs.
      */
-    @DefaultValue("PT15M")
     private Duration signedUrlDuration = Duration.ofMinutes(15);
 
     /**

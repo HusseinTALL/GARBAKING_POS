@@ -1,7 +1,7 @@
 package com.garbaking.common.observability;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.MeterRegistryCustomizer;
+import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

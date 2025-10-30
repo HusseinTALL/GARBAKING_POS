@@ -8,13 +8,20 @@ import { useToast } from 'vue-toastification'
 import { useNetworkStore } from '@/stores/network'
 
 // API Configuration
-// Use relative URLs to leverage Vite proxy in development
-// Vite proxy forwards /api/* requests to backend (localhost:3001)
-const API_BASE_URL = ''
-const LOCAL_API_URL = ''
+const DEFAULT_GATEWAY_URL = 'http://localhost:8080'
+const normalizeBase = (url: string) => (url ? url.replace(/\/$/, '') : '')
+const LOCAL_API_URL = normalizeBase(
+  import.meta.env.VITE_API_GATEWAY_URL ||
+    import.meta.env.VITE_API_URL ||
+    DEFAULT_GATEWAY_URL
+)
+const CLOUD_API_URL = normalizeBase(
+  import.meta.env.VITE_API_CLOUD_URL || LOCAL_API_URL
+)
 
 // Create axios instance
 const apiClient = axios.create({
+  baseURL: LOCAL_API_URL || undefined,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -51,7 +58,7 @@ export interface ApiResponse<T = any> {
 
 // Helper function to determine API endpoint
 const getApiUrl = (endpoint: string, useLocal = true): string => {
-  const baseUrl = useLocal ? LOCAL_API_URL : API_BASE_URL
+  const baseUrl = useLocal ? LOCAL_API_URL : CLOUD_API_URL
   return `${baseUrl}${endpoint}`
 }
 

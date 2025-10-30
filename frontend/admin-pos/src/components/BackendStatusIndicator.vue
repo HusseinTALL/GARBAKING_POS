@@ -98,6 +98,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { WifiOff, Wifi, RefreshCw, Clock } from 'lucide-vue-next'
 import { healthCheckService, type HealthStatus } from '@/services/healthCheckService'
 
+const DEFAULT_GATEWAY_URL = 'http://localhost:8080'
+const configuredGatewayUrl =
+  import.meta.env.VITE_API_GATEWAY_URL ||
+  import.meta.env.VITE_API_URL ||
+  DEFAULT_GATEWAY_URL
+const healthEndpoint = `${configuredGatewayUrl.replace(/\/$/, '')}/actuator/health`
+
 const status = ref<HealthStatus>({
   isHealthy: true,
   lastCheck: new Date(),
@@ -169,7 +176,7 @@ const startBackend = () => {
 }
 
 const openTroubleshooting = () => {
-  window.open('http://localhost:3001/health', '_blank')
+  window.open(healthEndpoint, '_blank')
 }
 </script>
 
