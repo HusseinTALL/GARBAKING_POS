@@ -265,13 +265,7 @@ export const useCartStore = defineStore('cart', () => {
     loyaltyError.value = null
 
     try {
-      const response = await loyaltyService.getCustomerLoyalty(customer.id)
-      if (response.success) {
-        customerLoyaltyProfile.value = response.data
-      } else {
-        loyaltyError.value = response.message || 'Failed to load customer loyalty profile'
-        customerLoyaltyProfile.value = null
-      }
+      customerLoyaltyProfile.value = await loyaltyService.getCustomerLoyalty(customer.id)
     } catch (error) {
       loyaltyError.value = error instanceof Error ? error.message : 'Failed to load loyalty data'
       customerLoyaltyProfile.value = null
@@ -293,27 +287,27 @@ export const useCartStore = defineStore('cart', () => {
     }
 
     try {
-      const response = await loyaltyService.redeemPoints(selectedCustomer.value.id, redemptionRequest)
-      if (response.success) {
-        const discount: AppliedDiscount = {
-          id: response.data.redemption.id,
-          type: 'LOYALTY_REDEMPTION',
-          description: redemptionRequest.description,
-          amount: response.data.redemption.discountValue,
-          pointsUsed: redemptionRequest.pointsToRedeem
-        }
+      const { redemption, discountValue } = await loyaltyService.redeemPoints(
+        selectedCustomer.value.id,
+        redemptionRequest
+      )
 
-        appliedDiscounts.value.push(discount)
-
-        // Update customer loyalty profile
-        if (customerLoyaltyProfile.value) {
-          customerLoyaltyProfile.value.customer.loyaltyPoints -= redemptionRequest.pointsToRedeem
-        }
-
-        return response.data
-      } else {
-        throw new Error(response.message || 'Failed to apply loyalty discount')
+      const discount: AppliedDiscount = {
+        id: redemption.id,
+        type: 'LOYALTY_REDEMPTION',
+        description: redemptionRequest.description,
+        amount: discountValue,
+        pointsUsed: redemptionRequest.pointsToRedeem
       }
+
+      appliedDiscounts.value.push(discount)
+
+      // Update customer loyalty profile
+      if (customerLoyaltyProfile.value) {
+        customerLoyaltyProfile.value.customer.loyaltyPoints -= redemptionRequest.pointsToRedeem
+      }
+
+      return { redemption, discountValue }
     } catch (error) {
       throw error instanceof Error ? error : new Error('Failed to apply loyalty discount')
     }

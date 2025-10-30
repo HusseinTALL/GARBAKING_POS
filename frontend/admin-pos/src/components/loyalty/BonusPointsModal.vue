@@ -346,15 +346,11 @@ const handleSubmit = async () => {
       expiresAt: form.value.expiresAt || undefined
     }
 
-    const response = await loyaltyService.awardPoints(selectedCustomer.value!.id, awardRequest)
+    await loyaltyService.awardPoints(selectedCustomer.value!.id, awardRequest)
 
-    if (response.success) {
-      emit('awarded', selectedCustomer.value!.id, form.value.points)
-      emit('close')
-      resetForm()
-    } else {
-      error.value = response.message || 'Failed to award bonus points'
-    }
+    emit('awarded', selectedCustomer.value!.id, form.value.points)
+    emit('close')
+    resetForm()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to award bonus points'
   } finally {

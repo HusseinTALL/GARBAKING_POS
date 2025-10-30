@@ -5,8 +5,16 @@
  */
 
 import axios from 'axios'
-import type { AxiosResponse, AxiosError, AxiosInstance } from 'axios'
+import type {
+  AxiosResponse,
+  AxiosError,
+  AxiosInstance,
+  AxiosProgressEvent,
+  AxiosRequestConfig
+} from 'axios'
 import { useToast } from 'vue-toastification'
+import type { KitchenOrder } from '@/stores/kitchen'
+import type { PaymentMethod } from '@/stores/payment'
 
 // API Configuration - Spring Boot API Gateway
 const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8080'
@@ -18,6 +26,90 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   }
+})
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const normalizeString = (value: unknown, fallback = ''): string => {
+  if (typeof value === 'string') {
+    return value
+  }
+  if (typeof value === 'number') {
+    return value.toString()
+  }
+  return fallback
+}
+
+export const mapOrderDtoToKitchenOrder = (order: any): KitchenOrder => {
+  const status = normalizeString(order?.status, 'CONFIRMED').toUpperCase() as KitchenOrder['status']
+  const priority = normalizeString(order?.priority, 'NORMAL').toUpperCase() as KitchenOrder['priority']
+
+  const orderItems = Array.isArray(order?.orderItems) ? order.orderItems : []
+
+  return {
+    id: normalizeString(order?.id ?? order?.orderId),
+    orderNumber: normalizeString(order?.orderNumber ?? `ORD-${order?.id ?? ''}`),
+    customerName: order?.customerName ?? undefined,
+    tableNumber: normalizeString(order?.tableNumber ?? '').trim() !== ''
+      ? normalizeString(order?.tableNumber)
+      : undefined,
+    orderType: normalizeString(order?.orderType ?? 'DINE_IN'),
+    status,
+    priority,
+    total: toNumber(order?.total ?? order?.totalAmount, 0),
+    createdAt: order?.createdAt ?? new Date().toISOString(),
+    estimatedTime: order?.estimatedTime ?? order?.prepTime ?? undefined,
+    actualTime: order?.actualTime ?? undefined,
+    kitchenNotes: order?.kitchenNotes ?? order?.notes ?? undefined,
+    orderItems: orderItems.map((item: any) => {
+      const itemStatus = normalizeString(item?.status ?? 'PENDING').toUpperCase() as KitchenOrder['orderItems'][number]['status']
+      const menuItem = item?.menuItem ?? {}
+
+      return {
+        id: normalizeString(item?.id ?? `${order?.id ?? 'order'}-${item?.menuItemId ?? 'item'}`),
+        quantity: toNumber(item?.quantity, 0),
+        menuItem: {
+          id: normalizeString(menuItem?.id ?? item?.menuItemId ?? item?.id),
+          name: normalizeString(menuItem?.name ?? item?.name ?? 'Unknown Item'),
+          price: toNumber(menuItem?.price ?? item?.unitPrice ?? item?.price, 0),
+          prepTime: menuItem?.prepTime ?? item?.prepTime ?? undefined,
+          station: menuItem?.station ?? item?.station ?? undefined,
+        },
+        totalPrice: toNumber(item?.totalPrice ?? (item?.unitPrice ?? item?.price) * toNumber(item?.quantity, 1), 0),
+        notes: item?.notes ?? item?.kitchenNotes ?? undefined,
+        status: itemStatus,
+        kitchenNotes: item?.kitchenNotes ?? undefined,
+        prepStartTime: item?.prepStartTime ?? item?.startedAt ?? undefined,
+        prepCompleteTime: item?.prepCompleteTime ?? item?.completedAt ?? undefined,
+        assignedStation: item?.assignedStation ?? menuItem?.station ?? undefined,
+      }
+    }),
+    isHeld: Boolean(order?.isHeld ?? false),
+    heldReason: order?.heldReason ?? undefined,
+    heldAt: order?.heldAt ?? undefined,
+  }
+}
+
+export const mapPaymentMethodDto = (method: any): PaymentMethod => ({
+  id: normalizeString(method?.id ?? method?.paymentMethodId ?? method?.code),
+  name: normalizeString(method?.name ?? method?.code ?? 'Unknown'),
+  type: normalizeString(method?.type ?? method?.paymentType ?? 'CASH').toUpperCase() as PaymentMethod['type'],
+  displayName: normalizeString(method?.displayName ?? method?.name ?? method?.code ?? 'Payment Method'),
+  icon: Array.isArray(method?.icon)
+    ? method.icon
+    : method?.icon
+      ? [normalizeString(method.icon)]
+      : [],
+  color: normalizeString(method?.color ?? '#0ea5e9'),
+  enabled: Boolean(method?.enabled ?? method?.active ?? true),
+  requiresAuth: Boolean(method?.requiresAuth ?? false),
+  processingFee: method?.processingFee ?? method?.fee ?? undefined,
+  minAmount: method?.minAmount ?? undefined,
+  maxAmount: method?.maxAmount ?? undefined,
+  config: method?.config ?? method?.metadata ?? {},
 })
 
 // Request interceptor to add auth token
@@ -282,9 +374,16 @@ export const menuItemsApi = {
 
 // Orders API (Order Service)
 export const ordersApi = {
-  async getAll() {
-    const response = await apiClient.get('/api/orders')
-    return response.data || []
+  async getAll(params?: Record<string, any>) {
+    const response = await apiClient.get('/api/orders', { params })
+    const data = response.data
+    if (Array.isArray(data)) {
+      return data
+    }
+    if (Array.isArray(data?.orders)) {
+      return data.orders
+    }
+    return data ? [data].flat() : []
   },
 
   async getById(id: number) {
@@ -322,7 +421,7 @@ export const ordersApi = {
     return response.data
   },
 
-  async updateStatus(orderId: number, status: string, reason?: string) {
+  async updateStatus(orderId: string | number, status: string, reason?: string) {
     const response = await apiClient.put(`/api/orders/${orderId}/status`, {
       status,
       reason
@@ -330,19 +429,19 @@ export const ordersApi = {
     return response.data
   },
 
-  async updatePayment(orderId: number, paymentData: any) {
+  async updatePayment(orderId: string | number, paymentData: any) {
     const response = await apiClient.put(`/api/orders/${orderId}/payment`, paymentData)
     return response.data
   },
 
-  async cancel(orderId: number, reason?: string) {
+  async cancel(orderId: string | number, reason?: string) {
     const response = await apiClient.post(`/api/orders/${orderId}/cancel`, null, {
       params: { reason: reason || 'Cancelled by staff' }
     })
     return response.data
   },
 
-  async delete(id: number) {
+  async delete(id: string | number) {
     await apiClient.delete(`/api/orders/${id}`)
   }
 }
@@ -656,8 +755,18 @@ export const loyaltyApi = {
     return response.data
   },
 
-  async enrollCustomer(payload: any) {
-    const response = await apiClient.post('/api/loyalty/enroll', payload)
+  async deleteProgram(programId: string) {
+    const response = await apiClient.delete(`/api/loyalty/programs/${programId}`)
+    return response.data
+  },
+
+  async getProgramTiers(programId: string) {
+    const response = await apiClient.get(`/api/loyalty/programs/${programId}/tiers`)
+    return response.data
+  },
+
+  async enrollCustomer(customerId: string, payload: any) {
+    const response = await apiClient.post(`/api/loyalty/customer/${customerId}/join`, payload)
     return response.data
   },
 
@@ -671,13 +780,33 @@ export const loyaltyApi = {
     return response.data
   },
 
-  async awardPoints(payload: any) {
-    const response = await apiClient.post('/api/loyalty/points/award', payload)
+  async getCustomerRewards(customerId: string, params?: any) {
+    const response = await apiClient.get(`/api/loyalty/customer/${customerId}/rewards`, { params })
     return response.data
   },
 
-  async redeemPoints(payload: any) {
-    const response = await apiClient.post('/api/loyalty/points/redeem', payload)
+  async getCustomerRedemptions(customerId: string, params?: any) {
+    const response = await apiClient.get(`/api/loyalty/customer/${customerId}/redemptions`, { params })
+    return response.data
+  },
+
+  async awardPoints(customerId: string, payload: any) {
+    const response = await apiClient.post(`/api/loyalty/customer/${customerId}/award`, payload)
+    return response.data
+  },
+
+  async awardPointsForOrder(orderId: string) {
+    const response = await apiClient.post(`/api/loyalty/order/${orderId}/award-points`)
+    return response.data
+  },
+
+  async redeemPoints(customerId: string, payload: any) {
+    const response = await apiClient.post(`/api/loyalty/customer/${customerId}/redeem`, payload)
+    return response.data
+  },
+
+  async applyRedemption(orderId: string, payload: any) {
+    const response = await apiClient.post(`/api/loyalty/order/${orderId}/apply-redemption`, payload)
     return response.data
   },
 
@@ -688,6 +817,26 @@ export const loyaltyApi = {
 
   async getPointsHistory(customerId: string) {
     const response = await apiClient.get(`/api/loyalty/points/history/${customerId}`)
+    return response.data
+  },
+
+  async getAllRewards(params?: any) {
+    const response = await apiClient.get('/api/loyalty/rewards', { params })
+    return response.data
+  },
+
+  async reverseReward(rewardId: string) {
+    const response = await apiClient.post(`/api/loyalty/rewards/${rewardId}/reverse`)
+    return response.data
+  },
+
+  async getAllRedemptions(params?: any) {
+    const response = await apiClient.get('/api/loyalty/redemptions', { params })
+    return response.data
+  },
+
+  async updateRedemptionStatus(redemptionId: string, status: string) {
+    const response = await apiClient.patch(`/api/loyalty/redemptions/${redemptionId}`, { status })
     return response.data
   },
 
@@ -721,13 +870,28 @@ export const loyaltyApi = {
     return response.data
   },
 
-  async getCampaigns() {
-    const response = await apiClient.get('/api/loyalty/campaigns')
+  async getCampaigns(params?: any) {
+    const response = await apiClient.get('/api/loyalty/campaigns', { params })
     return response.data
   },
 
-  async getAnalytics(params?: any) {
-    const response = await apiClient.get('/api/loyalty/analytics', { params })
+  async getAllCampaigns(params?: any) {
+    const response = await apiClient.get('/api/loyalty/campaigns/all', { params })
+    return response.data
+  },
+
+  async getAnalyticsOverview(params?: any) {
+    const response = await apiClient.get('/api/loyalty/analytics/overview', { params })
+    return response.data
+  },
+
+  async getCustomerAnalytics(params?: any) {
+    const response = await apiClient.get('/api/loyalty/analytics/customers', { params })
+    return response.data
+  },
+
+  async getRedemptionAnalytics(params?: any) {
+    const response = await apiClient.get('/api/loyalty/analytics/redemptions', { params })
     return response.data
   },
 
@@ -867,7 +1031,12 @@ export const printersApi = {
 export const paymentApi = {
   async getPaymentMethods() {
     const response = await apiClient.get('/api/payment/methods')
-    return response.data
+    const methods = Array.isArray(response.data)
+      ? response.data
+      : Array.isArray(response.data?.methods)
+        ? response.data.methods
+        : []
+    return methods.map(mapPaymentMethodDto)
   },
 
   async processPayment(payload: any) {
@@ -922,6 +1091,26 @@ export const paymentApi = {
   }
 }
 
+export const uploadApi = {
+  async uploadImage(formData: FormData, options?: { onUploadProgress?: (event: AxiosProgressEvent) => void }) {
+    const config: AxiosRequestConfig<FormData> = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: options?.onUploadProgress,
+    }
+    const response = await apiClient.post('/api/upload/image', formData, config)
+    return response.data
+  },
+
+  async deleteImage(url: string) {
+    const response = await apiClient.delete('/api/upload/image', {
+      data: { url },
+    })
+    return response.data
+  }
+}
+
 // Export axios instance
 export { apiClient }
 
@@ -943,5 +1132,6 @@ export default {
   floorPlans: floorPlansApi,
   receipts: receiptsApi,
   printers: printersApi,
-  payment: paymentApi
+  payment: paymentApi,
+  upload: uploadApi
 }

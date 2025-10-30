@@ -232,15 +232,11 @@ const loadPrograms = async () => {
   error.value = ''
 
   try {
-    const response = await loyaltyService.getAllPrograms()
-    if (response.success) {
-      programs.value = response.data.filter(p => p.isActive)
-      // Auto-select first program if only one
-      if (programs.value.length === 1) {
-        selectedProgramId.value = programs.value[0].id
-      }
-    } else {
-      error.value = response.message || 'Failed to load programs'
+    const programsList = await loyaltyService.getAllPrograms()
+    programs.value = programsList.filter(p => p.isActive)
+    // Auto-select first program if only one
+    if (programs.value.length === 1) {
+      selectedProgramId.value = programs.value[0].id
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load programs'
@@ -262,13 +258,9 @@ const handleEnroll = async () => {
   isSubmitting.value = true
 
   try {
-    const response = await loyaltyService.enrollCustomer(props.customer.id, selectedProgramId.value)
-    if (response.success) {
-      emit('enrolled', selectedProgramId.value)
-      emit('close')
-    } else {
-      error.value = response.message || 'Failed to enroll customer'
-    }
+    await loyaltyService.enrollCustomer(props.customer.id, selectedProgramId.value)
+    emit('enrolled', selectedProgramId.value)
+    emit('close')
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to enroll customer'
   } finally {

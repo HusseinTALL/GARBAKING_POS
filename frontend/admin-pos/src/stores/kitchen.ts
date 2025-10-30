@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiService } from '@/services/api'
+import { ordersApi, mapOrderDtoToKitchenOrder } from '@/services/api-spring'
 
 // Types
 export interface KitchenStation {
@@ -189,12 +189,12 @@ export const useKitchenStore = defineStore('kitchen', () => {
       loading.value = true
       error.value = null
 
-      const response = await apiService.orders.getAll({
+      const rawOrders = await ordersApi.getAll({
         status: 'CONFIRMED,PREPARING,READY',
         include: 'orderItems.menuItem'
       })
 
-      orders.value = (response.data.orders || []).map(mapOrderToKitchenOrder)
+      orders.value = rawOrders.map(mapOrderToKitchenOrder)
       updateStationCounts()
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch orders'
@@ -206,7 +206,7 @@ export const useKitchenStore = defineStore('kitchen', () => {
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
-      const response = await apiService.orders.updateStatus(orderId, status)
+      await ordersApi.updateStatus(orderId, status)
 
       const orderIndex = orders.value.findIndex(o => o.id === orderId)
       if (orderIndex > -1) {
@@ -219,7 +219,7 @@ export const useKitchenStore = defineStore('kitchen', () => {
       }
 
       updateStationCounts()
-      return response.data
+      return true
     } catch (err: any) {
       error.value = err.message || 'Failed to update order status'
       throw err
@@ -389,31 +389,16 @@ export const useKitchenStore = defineStore('kitchen', () => {
   }
 
   const mapOrderToKitchenOrder = (order: any): KitchenOrder => {
+    const mapped = mapOrderDtoToKitchenOrder(order)
     return {
-      id: order.id,
-      orderNumber: order.orderNumber,
-      customerName: order.customerName,
-      tableNumber: order.tableNumber,
-      orderType: order.orderType,
-      status: order.status,
-      priority: order.priority || 'NORMAL',
-      total: order.total,
-      createdAt: order.createdAt,
-      estimatedTime: order.estimatedTime,
-      kitchenNotes: order.kitchenNotes,
-      orderItems: (order.orderItems || []).map((item: any) => ({
-        id: item.id,
-        quantity: item.quantity,
-        menuItem: item.menuItem,
-        totalPrice: item.totalPrice,
-        notes: item.notes || item.kitchenNotes,
-        status: item.status || 'PENDING',
-        kitchenNotes: item.kitchenNotes,
-        prepStartTime: item.prepStartTime,
-        prepCompleteTime: item.prepCompleteTime,
-        assignedStation: assignStationByMenuItem(item.menuItem)
+      ...mapped,
+      orderItems: mapped.orderItems.map(item => ({
+        ...item,
+        assignedStation: item.assignedStation || assignStationByMenuItem(item.menuItem)
       })),
-      isHeld: false
+      isHeld: mapped.isHeld ?? false,
+      heldReason: mapped.heldReason,
+      heldAt: mapped.heldAt
     }
   }
 
