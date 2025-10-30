@@ -3,7 +3,8 @@
  * Provides progress tracking and error handling
  */
 
-import { apiService } from './api'
+import { uploadApi } from './api-spring'
+import type { AxiosProgressEvent } from 'axios'
 
 export interface UploadProgress {
   loaded: number
@@ -11,21 +12,16 @@ export interface UploadProgress {
   percentage: number
 }
 
-export interface UploadResult {
-  success: boolean
-  data?: {
-    url: string
-    thumbnailUrl?: string
-    width: number
-    height: number
-    format: string
-    size: number
-    originalSize: number
-    savedBytes: number
-    savedPercentage: number
-  }
-  error?: string
-  message?: string
+export interface UploadedImage {
+  url: string
+  thumbnailUrl?: string
+  width?: number
+  height?: number
+  format?: string
+  size?: number
+  originalSize?: number
+  savedBytes?: number
+  savedPercentage?: number
 }
 
 class UploadService {
@@ -36,15 +32,12 @@ class UploadService {
     file: File,
     uploadType: 'menu' | 'categories' | 'users' = 'menu',
     onProgress?: (progress: UploadProgress) => void
-  ): Promise<UploadResult> {
+  ): Promise<UploadedImage> {
     try {
       // Validate file
       const validation = this.validateImageFile(file)
       if (!validation.valid) {
-        return {
-          success: false,
-          error: validation.error
-        }
+        throw new Error(validation.error || 'Invalid file')
       }
 
       // Create FormData
@@ -52,45 +45,52 @@ class UploadService {
       formData.append('image', file)
       formData.append('uploadType', uploadType)
 
-      // Upload with progress tracking
-      const response = await apiService.uploadWithProgress(
-        '/api/upload/image',
-        formData,
-        (progressEvent) => {
-          if (onProgress && progressEvent.total) {
-            const percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-            onProgress({
-              loaded: progressEvent.loaded,
-              total: progressEvent.total,
-              percentage
-            })
-          }
+      const handleProgress = (event: AxiosProgressEvent) => {
+        if (onProgress && event.total) {
+          const percentage = Math.round((event.loaded * 100) / event.total)
+          onProgress({
+            loaded: event.loaded ?? 0,
+            total: event.total,
+            percentage
+          })
         }
-      )
+      }
 
-      return response as UploadResult
+      // Upload with progress tracking
+      const data = await uploadApi.uploadImage(formData, {
+        onUploadProgress: handleProgress
+      })
+
+      if (!data || !data.url) {
+        throw new Error('Upload service returned an invalid response')
+      }
+
+      return {
+        url: data.url,
+        thumbnailUrl: data.thumbnailUrl,
+        width: data.width,
+        height: data.height,
+        format: data.format,
+        size: data.size,
+        originalSize: data.originalSize,
+        savedBytes: data.savedBytes,
+        savedPercentage: data.savedPercentage
+      }
     } catch (error: any) {
       console.error('Upload error:', error)
-      return {
-        success: false,
-        error: error.message || 'Upload failed'
-      }
+      throw new Error(error?.message || 'Upload failed')
     }
   }
 
   /**
    * Delete an uploaded image
    */
-  async deleteImage(url: string): Promise<{ success: boolean; error?: string }> {
+  async deleteImage(url: string): Promise<void> {
     try {
-      const response = await apiService.delete('/api/upload/image', { url })
-      return response as { success: boolean }
+      await uploadApi.deleteImage(url)
     } catch (error: any) {
       console.error('Delete error:', error)
-      return {
-        success: false,
-        error: error.message || 'Delete failed'
-      }
+      throw new Error(error?.message || 'Delete failed')
     }
   }
 

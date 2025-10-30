@@ -301,23 +301,29 @@ const loadRewards = async () => {
   error.value = ''
 
   try {
-    const response = await loyaltyService.getCustomerRewards(
+    const { rewards: rewardList, pagination } = await loyaltyService.getCustomerRewards(
       props.customer.id,
       limit,
       rewardsOffset.value
     )
 
-    if (response.success) {
-      if (rewardsOffset.value === 0) {
-        rewards.value = response.data.rewards
-      } else {
-        rewards.value.push(...response.data.rewards)
-      }
-      rewardsHasMore.value = response.data.pagination.hasMore
-      rewardsOffset.value += limit
+    if (rewardsOffset.value === 0) {
+      rewards.value = rewardList
     } else {
-      error.value = response.message || 'Failed to load rewards'
+      rewards.value.push(...rewardList)
     }
+
+    const total = pagination?.total ?? null
+    const hasExplicitMore = pagination?.hasMore ?? null
+    if (hasExplicitMore !== null) {
+      rewardsHasMore.value = Boolean(hasExplicitMore)
+    } else if (typeof total === 'number') {
+      rewardsHasMore.value = rewardsOffset.value + rewardList.length < total
+    } else {
+      rewardsHasMore.value = rewardList.length === limit
+    }
+
+    rewardsOffset.value += rewardList.length
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load rewards'
   } finally {
@@ -332,23 +338,29 @@ const loadRedemptions = async () => {
   error.value = ''
 
   try {
-    const response = await loyaltyService.getCustomerRedemptions(
+    const { redemptions: redemptionList, pagination } = await loyaltyService.getCustomerRedemptions(
       props.customer.id,
       limit,
       redemptionsOffset.value
     )
 
-    if (response.success) {
-      if (redemptionsOffset.value === 0) {
-        redemptions.value = response.data.redemptions
-      } else {
-        redemptions.value.push(...response.data.redemptions)
-      }
-      redemptionsHasMore.value = response.data.pagination.hasMore
-      redemptionsOffset.value += limit
+    if (redemptionsOffset.value === 0) {
+      redemptions.value = redemptionList
     } else {
-      error.value = response.message || 'Failed to load redemptions'
+      redemptions.value.push(...redemptionList)
     }
+
+    const total = pagination?.total ?? null
+    const hasExplicitMore = pagination?.hasMore ?? null
+    if (hasExplicitMore !== null) {
+      redemptionsHasMore.value = Boolean(hasExplicitMore)
+    } else if (typeof total === 'number') {
+      redemptionsHasMore.value = redemptionsOffset.value + redemptionList.length < total
+    } else {
+      redemptionsHasMore.value = redemptionList.length === limit
+    }
+
+    redemptionsOffset.value += redemptionList.length
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load redemptions'
   } finally {

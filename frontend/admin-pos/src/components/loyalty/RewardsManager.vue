@@ -240,16 +240,12 @@ const stats = ref({
 const loadRewards = async () => {
   loadingRewards.value = true
   try {
-    const response = await loyaltyService.getAllRewards({
+    const { rewards: rewardList } = await loyaltyService.getAllRewards({
       type: selectedRewardType.value || undefined,
       limit: 50
     })
 
-    if (response.success) {
-      rewards.value = response.data.rewards
-    } else {
-      console.error('Failed to load rewards:', response.message)
-    }
+    rewards.value = rewardList
   } catch (error) {
     console.error('Error loading rewards:', error)
   } finally {
@@ -305,13 +301,9 @@ const reverseReward = async (rewardId: string) => {
   }
 
   try {
-    const response = await loyaltyService.reverseReward(rewardId)
-    if (response.success) {
-      await loadRewards()
-      alert('Reward reversed successfully')
-    } else {
-      alert(response.message || 'Failed to reverse reward')
-    }
+    await loyaltyService.reverseReward(rewardId)
+    await loadRewards()
+    alert('Reward reversed successfully')
   } catch (error) {
     alert('Failed to reverse reward')
   }

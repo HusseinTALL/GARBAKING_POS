@@ -251,12 +251,7 @@ const monthlyRedemptionValue = ref(8947)
 // Methods
 const loadPrograms = async () => {
   try {
-    const response = await loyaltyService.getAllPrograms()
-    if (response.success) {
-      programs.value = response.data
-    } else {
-      console.error('Failed to load programs:', response.message)
-    }
+    programs.value = await loyaltyService.getAllPrograms()
   } catch (error) {
     console.error('Error loading programs:', error)
   }
@@ -275,15 +270,10 @@ const viewProgramDetails = (program: LoyaltyProgram) => {
 const toggleProgramStatus = async (program: LoyaltyProgram) => {
   try {
     const newStatus = !program.isActive
-    const response = await loyaltyService.updateProgram(program.id, {
+    const updatedProgram = await loyaltyService.updateProgram(program.id, {
       isActive: newStatus
     })
-
-    if (response.success) {
-      program.isActive = newStatus
-    } else {
-      alert(response.message || 'Failed to update program status')
-    }
+    program.isActive = updatedProgram.isActive
   } catch (error) {
     alert('Failed to update program status')
   }

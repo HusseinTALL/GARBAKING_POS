@@ -3,9 +3,7 @@
  * Handles all loyalty-related API calls with proper error handling and TypeScript support
  */
 
-import { apiService } from './api'
-import type { ApiService } from './api'
-import type { ApiResponse } from './api'
+import { loyaltyApi } from './api-spring'
 
 // Types for loyalty program entities
 export interface LoyaltyCustomer {
@@ -132,230 +130,220 @@ export interface RedemptionRequest {
   expiresAt?: string
 }
 
+const unwrapData = <T = any>(response: any): T => (response?.data ?? response) as T
+
+const arrayFrom = <T>(response: any, key: string): T[] => {
+  const data = unwrapData(response)
+  if (Array.isArray(data)) {
+    return data as T[]
+  }
+  if (Array.isArray(data?.[key])) {
+    return data[key] as T[]
+  }
+  if (Array.isArray(data?.result)) {
+    return data.result as T[]
+  }
+  return []
+}
+
+const paginationFrom = (response: any, fallback: any = {}) => {
+  const data = unwrapData(response)
+  return data?.pagination ?? data?.meta ?? fallback
+}
+
+const valueFrom = <T>(response: any, key?: string): T => {
+  const data = unwrapData(response)
+  if (key) {
+    if (data?.[key] !== undefined) {
+      return data[key] as T
+    }
+    if (data?.profile?.[key] !== undefined) {
+      return data.profile[key] as T
+    }
+    if (data?.result?.[key] !== undefined) {
+      return data.result[key] as T
+    }
+  }
+  return (data?.profile ?? data) as T
+}
+
 class LoyaltyService {
-  private api: ApiService
+  async getCustomerLoyalty(customerId: string): Promise<CustomerLoyaltyProfile> {
+    const response = await loyaltyApi.getCustomerDetails(customerId)
+    const base = unwrapData(response)
+    const profile = base?.profile ?? base
+    const customer = (profile?.customer ?? base?.customer ?? profile) as LoyaltyCustomer
 
-  constructor() {
-    this.api = apiService
+    return {
+      customer,
+      tierProgress: (profile?.tierProgress ?? base?.tierProgress) as CustomerLoyaltyProfile['tierProgress'],
+      recentRewards: arrayFrom<LoyaltyReward>(profile, 'recentRewards'),
+      activeRedemptions: arrayFrom<LoyaltyRedemption>(profile, 'activeRedemptions')
+    }
   }
 
-  // Customer Loyalty Operations
-
-  /**
-   * Get customer loyalty profile
-   */
-  async getCustomerLoyalty(customerId: string): Promise<ApiResponse<CustomerLoyaltyProfile>> {
-    return this.api.get(`/loyalty/customer/${customerId}`)
+  async enrollCustomer(customerId: string, programId?: string) {
+    const response = await loyaltyApi.enrollCustomer(customerId, { programId })
+    return valueFrom(response, 'enrollment')
   }
 
-  /**
-   * Enroll customer in loyalty program
-   */
-  async enrollCustomer(customerId: string, programId?: string): Promise<ApiResponse<any>> {
-    return this.api.post(`/loyalty/customer/${customerId}/join`, { programId })
-  }
-
-  /**
-   * Get customer rewards history
-   */
   async getCustomerRewards(
     customerId: string,
     limit = 50,
     offset = 0
-  ): Promise<ApiResponse<{ rewards: LoyaltyReward[], pagination: any }>> {
-    return this.api.get(`/loyalty/customer/${customerId}/rewards`, {
-      params: { limit, offset }
-    })
+  ): Promise<{ rewards: LoyaltyReward[]; pagination: any }> {
+    const response = await loyaltyApi.getCustomerRewards(customerId, { limit, offset })
+    const rewards = arrayFrom<LoyaltyReward>(response, 'rewards')
+    const pagination = paginationFrom(response, { limit, offset, total: rewards.length })
+    return { rewards, pagination }
   }
 
-  /**
-   * Get customer redemption history
-   */
   async getCustomerRedemptions(
     customerId: string,
     limit = 50,
     offset = 0
-  ): Promise<ApiResponse<{ redemptions: LoyaltyRedemption[], pagination: any }>> {
-    return this.api.get(`/loyalty/customer/${customerId}/redemptions`, {
-      params: { limit, offset }
-    })
+  ): Promise<{ redemptions: LoyaltyRedemption[]; pagination: any }> {
+    const response = await loyaltyApi.getCustomerRedemptions(customerId, { limit, offset })
+    const redemptions = arrayFrom<LoyaltyRedemption>(response, 'redemptions')
+    const pagination = paginationFrom(response, { limit, offset, total: redemptions.length })
+    return { redemptions, pagination }
   }
 
-  /**
-   * Redeem loyalty points
-   */
   async redeemPoints(
     customerId: string,
     redemption: RedemptionRequest
-  ): Promise<ApiResponse<{ redemption: LoyaltyRedemption, discountValue: number }>> {
-    return this.api.post(`/loyalty/customer/${customerId}/redeem`, redemption)
+  ): Promise<{ redemption: LoyaltyRedemption; discountValue: number }> {
+    const response = await loyaltyApi.redeemPoints(customerId, redemption)
+    const data = unwrapData(response)
+    const redemptionData = (data?.redemption ?? data) as LoyaltyRedemption
+    const discountValue = data?.discountValue ?? redemptionData?.discountValue ?? 0
+    return { redemption: redemptionData, discountValue }
   }
 
-  // Order Integration
-
-  /**
-   * Award loyalty points for an order
-   */
-  async awardPointsForOrder(orderId: string): Promise<ApiResponse<any>> {
-    return this.api.post(`/loyalty/order/${orderId}/award-points`)
+  async awardPointsForOrder(orderId: string) {
+    return unwrapData(await loyaltyApi.awardPointsForOrder(orderId))
   }
 
-  /**
-   * Apply loyalty redemption to an order
-   */
-  async applyRedemptionToOrder(
-    orderId: string,
-    redemptionId: string,
-    customerId: string
-  ): Promise<ApiResponse<any>> {
-    return this.api.post(`/loyalty/order/${orderId}/apply-redemption`, {
-      redemptionId,
-      customerId
-    })
+  async applyRedemptionToOrder(orderId: string, redemptionId: string, customerId: string) {
+    return unwrapData(
+      await loyaltyApi.applyRedemption(orderId, {
+        redemptionId,
+        customerId
+      })
+    )
   }
 
-  // Program Management (Admin)
-
-  /**
-   * Get all loyalty programs
-   */
-  async getAllPrograms(): Promise<ApiResponse<LoyaltyProgram[]>> {
-    return this.api.get('/loyalty/programs')
+  async awardPoints(customerId: string, payload: any) {
+    return unwrapData(await loyaltyApi.awardPoints(customerId, payload))
   }
 
-  /**
-   * Create new loyalty program
-   */
-  async createProgram(program: Partial<LoyaltyProgram>): Promise<ApiResponse<LoyaltyProgram>> {
-    return this.api.post('/loyalty/programs', program)
+  async getAllPrograms(): Promise<LoyaltyProgram[]> {
+    return arrayFrom<LoyaltyProgram>(await loyaltyApi.getPrograms(), 'programs')
   }
 
-  /**
-   * Update loyalty program
-   */
-  async updateProgram(
-    programId: string,
-    program: Partial<LoyaltyProgram>
-  ): Promise<ApiResponse<LoyaltyProgram>> {
-    return this.api.put(`/loyalty/programs/${programId}`, program)
+  async createProgram(program: Partial<LoyaltyProgram>): Promise<LoyaltyProgram> {
+    return valueFrom<LoyaltyProgram>(await loyaltyApi.createProgram(program), 'program')
   }
 
-  /**
-   * Delete loyalty program
-   */
-  async deleteProgram(programId: string): Promise<ApiResponse<void>> {
-    return this.api.delete(`/loyalty/programs/${programId}`)
+  async updateProgram(programId: string, program: Partial<LoyaltyProgram>): Promise<LoyaltyProgram> {
+    return valueFrom<LoyaltyProgram>(await loyaltyApi.updateProgram(programId, program), 'program')
   }
 
-  // Tier Management
-
-  /**
-   * Get program tiers
-   */
-  async getProgramTiers(programId: string): Promise<ApiResponse<LoyaltyTier[]>> {
-    return this.api.get(`/loyalty/programs/${programId}/tiers`)
+  async deleteProgram(programId: string): Promise<void> {
+    await loyaltyApi.deleteProgram(programId)
   }
 
-  /**
-   * Create new loyalty tier
-   */
-  async createTier(programId: string, tier: Partial<LoyaltyTier>): Promise<ApiResponse<LoyaltyTier>> {
-    return this.api.post(`/loyalty/programs/${programId}/tiers`, tier)
+  async getProgramTiers(programId: string): Promise<LoyaltyTier[]> {
+    return arrayFrom<LoyaltyTier>(await loyaltyApi.getProgramTiers(programId), 'tiers')
   }
 
-  /**
-   * Update loyalty tier
-   */
-  async updateTier(tierId: string, tier: Partial<LoyaltyTier>): Promise<ApiResponse<LoyaltyTier>> {
-    return this.api.put(`/loyalty/tiers/${tierId}`, tier)
+  async createTier(programId: string, tier: Partial<LoyaltyTier>): Promise<LoyaltyTier> {
+    return valueFrom<LoyaltyTier>(await loyaltyApi.createTier(programId, tier), 'tier')
   }
 
-  /**
-   * Delete loyalty tier
-   */
-  async deleteTier(tierId: string): Promise<ApiResponse<void>> {
-    return this.api.delete(`/loyalty/tiers/${tierId}`)
+  async updateTier(tierId: string, tier: Partial<LoyaltyTier>): Promise<LoyaltyTier> {
+    return valueFrom<LoyaltyTier>(await loyaltyApi.updateTier(tierId, tier), 'tier')
   }
 
-  // Campaign Management
-
-  /**
-   * Get active loyalty campaigns
-   */
-  async getActiveCampaigns(): Promise<ApiResponse<LoyaltyCampaign[]>> {
-    return this.api.get('/loyalty/campaigns')
+  async deleteTier(tierId: string): Promise<void> {
+    await loyaltyApi.deleteTier(tierId)
   }
 
-  /**
-   * Get all loyalty campaigns (admin)
-   */
-  async getAllCampaigns(): Promise<ApiResponse<LoyaltyCampaign[]>> {
-    return this.api.get('/loyalty/campaigns/all')
+  async getActiveCampaigns(): Promise<LoyaltyCampaign[]> {
+    return arrayFrom<LoyaltyCampaign>(await loyaltyApi.getCampaigns(), 'campaigns')
   }
 
-  /**
-   * Create new loyalty campaign
-   */
-  async createCampaign(campaign: Partial<LoyaltyCampaign>): Promise<ApiResponse<LoyaltyCampaign>> {
-    return this.api.post('/loyalty/campaigns', campaign)
+  async getAllCampaigns(): Promise<LoyaltyCampaign[]> {
+    return arrayFrom<LoyaltyCampaign>(await loyaltyApi.getAllCampaigns(), 'campaigns')
   }
 
-  /**
-   * Update loyalty campaign
-   */
-  async updateCampaign(
-    campaignId: string,
-    campaign: Partial<LoyaltyCampaign>
-  ): Promise<ApiResponse<LoyaltyCampaign>> {
-    return this.api.put(`/loyalty/campaigns/${campaignId}`, campaign)
+  async createCampaign(campaign: Partial<LoyaltyCampaign>): Promise<LoyaltyCampaign> {
+    return valueFrom<LoyaltyCampaign>(await loyaltyApi.createCampaign(campaign), 'campaign')
   }
 
-  /**
-   * Delete loyalty campaign
-   */
-  async deleteCampaign(campaignId: string): Promise<ApiResponse<void>> {
-    return this.api.delete(`/loyalty/campaigns/${campaignId}`)
+  async updateCampaign(campaignId: string, campaign: Partial<LoyaltyCampaign>): Promise<LoyaltyCampaign> {
+    return valueFrom<LoyaltyCampaign>(await loyaltyApi.updateCampaign(campaignId, campaign), 'campaign')
   }
 
-  // Analytics and Reporting
+  async deleteCampaign(campaignId: string): Promise<void> {
+    await loyaltyApi.deleteCampaign(campaignId)
+  }
 
-  /**
-   * Get loyalty program analytics overview
-   */
   async getLoyaltyAnalytics(
     startDate?: string,
     endDate?: string,
     programId?: string
-  ): Promise<ApiResponse<LoyaltyAnalytics>> {
-    return this.api.get('/loyalty/analytics/overview', {
-      params: { startDate, endDate, programId }
-    })
+  ): Promise<LoyaltyAnalytics> {
+    return valueFrom<LoyaltyAnalytics>(
+      await loyaltyApi.getAnalyticsOverview({ startDate, endDate, programId }),
+      'analytics'
+    )
   }
 
-  /**
-   * Get customer loyalty analytics
-   */
   async getCustomerAnalytics(
     startDate?: string,
     endDate?: string,
     tierId?: string
-  ): Promise<ApiResponse<any>> {
-    return this.api.get('/loyalty/analytics/customers', {
-      params: { startDate, endDate, tierId }
-    })
+  ): Promise<any> {
+    return valueFrom(await loyaltyApi.getCustomerAnalytics({ startDate, endDate, tierId }), 'analytics')
   }
 
-  /**
-   * Get redemption analytics
-   */
   async getRedemptionAnalytics(
     startDate?: string,
     endDate?: string,
     programId?: string
-  ): Promise<ApiResponse<any>> {
-    return this.api.get('/loyalty/analytics/redemptions', {
-      params: { startDate, endDate, programId }
+  ): Promise<any> {
+    return valueFrom(await loyaltyApi.getRedemptionAnalytics({ startDate, endDate, programId }), 'analytics')
+  }
+
+  async getAllRewards(params?: { type?: string; limit?: number; offset?: number }): Promise<{ rewards: LoyaltyReward[]; pagination: any }> {
+    const response = await loyaltyApi.getAllRewards(params)
+    const rewards = arrayFrom<LoyaltyReward>(response, 'rewards')
+    const pagination = paginationFrom(response, {
+      limit: params?.limit ?? rewards.length,
+      offset: params?.offset ?? 0,
+      total: rewards.length
     })
+    return { rewards, pagination }
+  }
+
+  async reverseReward(rewardId: string) {
+    return unwrapData(await loyaltyApi.reverseReward(rewardId))
+  }
+
+  async getAllRedemptions(params?: { status?: string; limit?: number; offset?: number }): Promise<{ redemptions: LoyaltyRedemption[]; pagination: any }> {
+    const response = await loyaltyApi.getAllRedemptions(params)
+    const redemptions = arrayFrom<LoyaltyRedemption>(response, 'redemptions')
+    const pagination = paginationFrom(response, {
+      limit: params?.limit ?? redemptions.length,
+      offset: params?.offset ?? 0,
+      total: redemptions.length
+    })
+    return { redemptions, pagination }
+  }
+
+  async updateRedemptionStatus(redemptionId: string, status: string): Promise<LoyaltyRedemption> {
+    return valueFrom<LoyaltyRedemption>(await loyaltyApi.updateRedemptionStatus(redemptionId, status), 'redemption')
   }
 }
 
