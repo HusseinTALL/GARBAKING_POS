@@ -5,6 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { parseIsoDateTime } from '@/utils/datetime'
 import { ordersApi, mapOrderDtoToKitchenOrder } from '@/services/api-spring'
 
 // Types
@@ -140,7 +141,9 @@ export const useKitchenStore = defineStore('kitchen', () => {
       }
 
       // Age (oldest first)
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      const aTime = parseIsoDateTime(a.createdAt)?.getTime() || 0
+      const bTime = parseIsoDateTime(b.createdAt)?.getTime() || 0
+      return aTime - bTime
     })
   })
 
@@ -166,7 +169,8 @@ export const useKitchenStore = defineStore('kitchen', () => {
       const avgTime = preparingItems.length > 0
         ? preparingItems.reduce((sum, item) => {
             if (item.prepStartTime) {
-              const elapsed = Date.now() - new Date(item.prepStartTime).getTime()
+              const startTime = parseIsoDateTime(item.prepStartTime)?.getTime() || Date.now()
+              const elapsed = Date.now() - startTime
               return sum + (elapsed / 1000 / 60) // minutes
             }
             return sum
@@ -288,8 +292,8 @@ export const useKitchenStore = defineStore('kitchen', () => {
           const tracking = prepTracking.value.find(t => t.itemId === itemId)
           if (tracking) {
             tracking.completedAt = item.prepCompleteTime
-            const startTime = new Date(tracking.startedAt).getTime()
-            const endTime = new Date(item.prepCompleteTime).getTime()
+            const startTime = parseIsoDateTime(tracking.startedAt)?.getTime() || 0
+            const endTime = parseIsoDateTime(item.prepCompleteTime)?.getTime() || 0
             tracking.actualTime = Math.round((endTime - startTime) / 1000 / 60) // minutes
           }
 

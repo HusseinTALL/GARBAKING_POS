@@ -5,144 +5,23 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { analyticsApi } from '@/services/api-spring'
-
-// Types
-export interface SalesData {
-  period: string
-  totalSales: number
-  totalOrders: number
-  averageOrderValue: number
-  totalItems: number
-  totalCustomers: number
-  revenue: {
-    gross: number
-    net: number
-    tax: number
-    discounts: number
-    refunds: number
-  }
-  breakdown: {
-    cash: number
-    card: number
-    mobileMoney: number
-    credit: number
-  }
-}
-
-export interface ProductAnalytics {
-  productId: string
-  productName: string
-  category: string
-  quantitySold: number
-  revenue: number
-  profit: number
-  profitMargin: number
-  averagePrice: number
-  timesOrdered: number
-  percentageOfTotal: number
-  trend: 'up' | 'down' | 'stable'
-  trendPercentage: number
-}
-
-export interface CategoryAnalytics {
-  categoryId: string
-  categoryName: string
-  quantitySold: number
-  revenue: number
-  profit: number
-  orderCount: number
-  percentageOfTotal: number
-  topProducts: ProductAnalytics[]
-  trend: 'up' | 'down' | 'stable'
-  trendPercentage: number
-}
-
-export interface StaffPerformance {
-  staffId: string
-  staffName: string
-  role: string
-  totalSales: number
-  totalOrders: number
-  averageOrderValue: number
-  hoursWorked: number
-  salesPerHour: number
-  customerRating?: number
-  efficiency: number
-  trend: 'up' | 'down' | 'stable'
-}
-
-export interface CustomerAnalytics {
-  totalCustomers: number
-  newCustomers: number
-  returningCustomers: number
-  averageOrdersPerCustomer: number
-  customerLifetimeValue: number
-  retentionRate: number
-  demographics: {
-    ageGroups: Record<string, number>
-    genderDistribution: Record<string, number>
-    locationDistribution: Record<string, number>
-  }
-}
-
-export interface TimeAnalytics {
-  hour: number
-  period: string
-  orders: number
-  revenue: number
-  averageOrderValue: number
-  popularItems: string[]
-  staffCount: number
-  efficiency: number
-}
-
-export interface ComparisonData {
-  current: SalesData
-  previous: SalesData
-  change: {
-    sales: number
-    orders: number
-    aov: number
-    customers: number
-  }
-  growth: {
-    daily: number
-    weekly: number
-    monthly: number
-    yearly: number
-  }
-}
-
-export interface InventoryAnalytics {
-  totalProducts: number
-  lowStockItems: number
-  outOfStockItems: number
-  fastMovingItems: ProductAnalytics[]
-  slowMovingItems: ProductAnalytics[]
-  stockValue: number
-  turnoverRate: number
-  reorderSuggestions: {
-    productId: string
-    productName: string
-    currentStock: number
-    suggestedOrder: number
-    priority: 'high' | 'medium' | 'low'
-  }[]
-}
-
-export interface ReportConfig {
-  id: string
-  name: string
-  type: ReportType
-  schedule: ReportSchedule
-  format: 'PDF' | 'Excel' | 'CSV'
-  recipients: string[]
-  filters: Record<string, any>
-  isActive: boolean
-  lastGenerated?: string
-  nextScheduled?: string
-}
+import {
+  analyticsApi,
+  type CategoryAnalyticsDto,
+  type ComparisonDataDto,
+  type CustomerAnalyticsDto,
+  type CustomerInsightsResponseDto,
+  type DashboardAnalyticsDto,
+  type InventoryAnalyticsDto,
+  type MenuPerformanceResponseDto,
+  type PaymentMethodAnalyticsDto,
+  type PeakHoursResponseDto,
+  type ProductAnalyticsDto,
+  type ReportConfigDto,
+  type SalesDataDto,
+  type StaffPerformanceDto,
+  type TimeAnalyticsDto
+} from '@/services/api-spring'
 
 export enum ReportType {
   DAILY_SALES = 'DAILY_SALES',
@@ -165,15 +44,15 @@ export enum ReportSchedule {
 
 export const useAnalyticsStore = defineStore('analytics', () => {
   // State
-  const salesData = ref<SalesData | null>(null)
-  const productAnalytics = ref<ProductAnalytics[]>([])
-  const categoryAnalytics = ref<CategoryAnalytics[]>([])
-  const staffPerformance = ref<StaffPerformance[]>([])
-  const customerAnalytics = ref<CustomerAnalytics | null>(null)
-  const timeAnalytics = ref<TimeAnalytics[]>([])
-  const comparisonData = ref<ComparisonData | null>(null)
-  const inventoryAnalytics = ref<InventoryAnalytics | null>(null)
-  const reportConfigs = ref<ReportConfig[]>([])
+  const salesData = ref<SalesDataDto | null>(null)
+  const productAnalytics = ref<ProductAnalyticsDto[]>([])
+  const categoryAnalytics = ref<CategoryAnalyticsDto[]>([])
+  const staffPerformance = ref<StaffPerformanceDto[]>([])
+  const customerAnalytics = ref<CustomerAnalyticsDto | null>(null)
+  const timeAnalytics = ref<TimeAnalyticsDto[]>([])
+  const comparisonData = ref<ComparisonDataDto | null>(null)
+  const inventoryAnalytics = ref<InventoryAnalyticsDto | null>(null)
+  const reportConfigs = ref<ReportConfigDto[]>([])
 
   const selectedPeriod = ref<'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom'>('today')
   const customDateRange = ref({ start: '', end: '' })
@@ -220,38 +99,57 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     if (!comparisonData.value) return null
 
     const { current, previous } = comparisonData.value
-    const salesChange = ((current.totalSales - previous.totalSales) / previous.totalSales) * 100
+    const previousSales = previous.totalSales || 0
+    if (!previousSales) {
+      return {
+        direction: current.totalSales > 0 ? 'up' : 'stable',
+        percentage: current.totalSales > 0 ? 100 : 0,
+        value: current.totalSales - previousSales
+      }
+    }
+
+    const salesChange = ((current.totalSales - previousSales) / previousSales) * 100
 
     return {
       direction: salesChange > 0 ? 'up' : salesChange < 0 ? 'down' : 'stable',
       percentage: Math.abs(salesChange),
-      value: current.totalSales - previous.totalSales
+      value: current.totalSales - previousSales
     }
   })
 
   const kpiMetrics = computed(() => {
     if (!salesData.value) return null
 
+    const revenue = salesData.value.revenue
+    const gross = revenue.gross || 0
+    const net = revenue.net || 0
+    const totalCustomers = customerAnalytics.value?.totalCustomers || 0
+
     return {
       totalRevenue: salesData.value.totalSales,
       totalOrders: salesData.value.totalOrders,
       averageOrderValue: salesData.value.averageOrderValue,
-      conversionRate: customerAnalytics.value
-        ? (salesData.value.totalOrders / customerAnalytics.value.totalCustomers) * 100
-        : 0,
-      profitMargin: salesData.value.revenue.net / salesData.value.revenue.gross * 100,
+      conversionRate:
+        totalCustomers > 0 ? (salesData.value.uniqueCustomers / totalCustomers) * 100 : 0,
+      profitMargin: gross > 0 ? (net / gross) * 100 : 0,
       customerSatisfaction: staffPerformance.value.length > 0
-        ? staffPerformance.value.reduce((sum, staff) => sum + (staff.customerRating || 0), 0) / staffPerformance.value.length
+        ? staffPerformance.value.reduce((sum, staff) => sum + (staff.customerRating || 0), 0) /
+          staffPerformance.value.length
         : 0
     }
   })
 
   // Dashboard-specific state
-  const dashboardData = ref<any>(null)
-  const menuPerformance = ref<any[]>([])
-  const peakHoursData = ref<any>(null)
-  const paymentMethodsData = ref<any>(null)
-  const customerInsightsData = ref<any>(null)
+  const dashboardData = ref<DashboardAnalyticsDto | null>(null)
+  const menuPerformanceSummary = ref<MenuPerformanceResponseDto | null>(null)
+  const peakHoursSummary = ref<PeakHoursResponseDto | null>(null)
+  const paymentMethodsData = ref<PaymentMethodAnalyticsDto | null>(null)
+  const customerInsightsData = ref<CustomerInsightsResponseDto | null>(null)
+
+  const menuPerformanceItems = computed(() => menuPerformanceSummary.value?.menuItems ?? [])
+  const peakHoursData = computed<TimeAnalyticsDto[]>(
+    () => peakHoursSummary.value?.peakHours ?? []
+  )
 
   // Actions
   const fetchDashboardData = async (): Promise<boolean> => {
@@ -297,7 +195,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchMenuPerformance = async (days: number = 30): Promise<boolean> => {
     try {
       const data = await analyticsApi.getMenuPerformance(days)
-      menuPerformance.value = data.menuItems || data || []
+      menuPerformanceSummary.value = data
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -308,7 +206,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchPeakHours = async (days: number = 7): Promise<boolean> => {
     try {
       const data = await analyticsApi.getPeakHours(days)
-      peakHoursData.value = data
+      peakHoursSummary.value = data
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -341,7 +239,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchProductAnalytics = async (period: string): Promise<boolean> => {
     try {
       const data = await analyticsApi.getProductAnalytics(period)
-      productAnalytics.value = data.products || data || []
+      productAnalytics.value = data.products || []
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -352,7 +250,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchCategoryAnalytics = async (period: string): Promise<boolean> => {
     try {
       const data = await analyticsApi.getCategoryAnalytics(period)
-      categoryAnalytics.value = data.categories || data || []
+      categoryAnalytics.value = data.categories || []
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -363,7 +261,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchStaffPerformance = async (period: string): Promise<boolean> => {
     try {
       const data = await analyticsApi.getStaffPerformance(period)
-      staffPerformance.value = data.staff || data || []
+      staffPerformance.value = data.staff || []
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -374,7 +272,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchCustomerAnalytics = async (period: string): Promise<boolean> => {
     try {
       const data = await analyticsApi.getCustomerAnalytics(period)
-      customerAnalytics.value = data.customers || data
+      customerAnalytics.value = data.customers
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -385,7 +283,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchTimeAnalytics = async (period: string): Promise<boolean> => {
     try {
       const data = await analyticsApi.getTimeAnalytics(period)
-      timeAnalytics.value = data.timeData || data || []
+      timeAnalytics.value = data.timeData || []
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -396,7 +294,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchComparisonData = async (period: string): Promise<boolean> => {
     try {
       const data = await analyticsApi.getComparisonData(period)
-      comparisonData.value = data.comparison || data
+      comparisonData.value = data.comparison
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -407,7 +305,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchInventoryAnalytics = async (): Promise<boolean> => {
     try {
       const data = await analyticsApi.getInventoryAnalytics()
-      inventoryAnalytics.value = data.inventory || data
+      inventoryAnalytics.value = data.inventory
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -418,18 +316,19 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const generateReport = async (reportType: ReportType, config: any): Promise<string | null> => {
     try {
       const data = await analyticsApi.generateReport(reportType, config)
-      return data.reportUrl || data
+      return data.reportUrl || null
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return null
     }
   }
 
-  const scheduleReport = async (config: Omit<ReportConfig, 'id'>): Promise<boolean> => {
+  const scheduleReport = async (config: Omit<ReportConfigDto, 'id'>): Promise<boolean> => {
     try {
       const data = await analyticsApi.scheduleReport(config)
-      const newReport = data.report || data
-      reportConfigs.value.push(newReport)
+      if (data.report) {
+        reportConfigs.value.push(data.report)
+      }
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -440,7 +339,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const fetchReportConfigs = async (): Promise<boolean> => {
     try {
       const data = await analyticsApi.getReportConfigs()
-      reportConfigs.value = data.configs || data || []
+      reportConfigs.value = data.configs || []
       return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
@@ -501,10 +400,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   }
 
   // New comparison methods for YoY and MoM
-  const fetchYearOverYearComparison = async (): Promise<any | null> => {
+  const fetchYearOverYearComparison = async (): Promise<ComparisonDataDto | null> => {
     try {
       const data = await analyticsApi.getYearOverYearComparison()
-      return data
+      return data.comparison
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       console.error('YoY comparison error:', err)
@@ -512,10 +411,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
-  const fetchMonthOverMonthComparison = async (): Promise<any | null> => {
+  const fetchMonthOverMonthComparison = async (): Promise<ComparisonDataDto | null> => {
     try {
       const data = await analyticsApi.getMonthOverMonthComparison()
-      return data
+      return data.comparison
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       console.error('MoM comparison error:', err)
@@ -528,7 +427,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     endDate1: string,
     startDate2: string,
     endDate2: string
-  ): Promise<any | null> => {
+  ): Promise<ComparisonDataDto | null> => {
     try {
       const data = await analyticsApi.getCustomComparison({
         startDate1,
@@ -536,7 +435,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         startDate2,
         endDate2
       })
-      return data
+      return data.comparison
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       console.error('Custom comparison error:', err)
@@ -653,10 +552,13 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
     // Dashboard-specific state
     dashboardData,
-    menuPerformance,
-    peakHoursData,
+    menuPerformanceSummary,
     paymentMethodsData,
     customerInsightsData,
+
+    // Derived collections
+    menuPerformanceItems,
+    peakHoursData,
 
     // Computed
     topSellingProducts,

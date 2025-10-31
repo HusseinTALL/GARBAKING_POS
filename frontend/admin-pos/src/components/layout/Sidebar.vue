@@ -51,10 +51,15 @@ import { useAuthStore } from '@/stores/auth'
 import {
   LayoutDashboard,
   ShoppingCart,
-  UtensilsCrossed,
   ChefHat,
-  Users,
+  LayoutGrid,
+  UtensilsCrossed,
+  CookingPot,
+  Gift,
   BarChart3,
+  CreditCard,
+  Receipt,
+  Users,
   Settings,
   Bell,
   LogOut
@@ -82,19 +87,44 @@ const navItems = [
     icon: ChefHat
   },
   {
+    path: '/tables',
+    label: 'Tables',
+    icon: LayoutGrid
+  },
+  {
     path: '/menu',
     label: 'Menu',
     icon: UtensilsCrossed
   },
   {
-    path: '/users',
-    label: 'Users',
-    icon: Users
+    path: '/kitchen',
+    label: 'Kitchen Display',
+    icon: CookingPot
+  },
+  {
+    path: '/loyalty',
+    label: 'Loyalty Program',
+    icon: Gift
   },
   {
     path: '/analytics',
     label: 'Analytics',
     icon: BarChart3
+  },
+  {
+    path: '/payment',
+    label: 'Payments',
+    icon: CreditCard
+  },
+  {
+    path: '/receipts',
+    label: 'Receipts',
+    icon: Receipt
+  },
+  {
+    path: '/users',
+    label: 'Users',
+    icon: Users
   }
 ]
 

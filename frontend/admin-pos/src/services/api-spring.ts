@@ -450,6 +450,239 @@ export const ordersApi = {
 // Analytics API (Analytics Service - To be implemented)
 // NOTE: These endpoints are not yet fully implemented in Spring Boot backend
 // Some endpoints may aggregate data from existing services
+export interface SalesDataDto {
+  totalSales: number
+  totalOrders: number
+  averageOrderValue: number
+  uniqueCustomers: number
+  revenue: {
+    gross: number
+    net: number
+    tax: number
+    discounts: number
+    refunds: number
+  }
+  breakdown: {
+    cash: number
+    card: number
+    mobileMoney: number
+    credit: number
+  }
+}
+
+export interface ProductAnalyticsDto {
+  productId: string
+  productName: string
+  category: string
+  quantitySold: number
+  revenue: number
+  profit: number
+  profitMargin: number
+  averagePrice: number
+  timesOrdered: number
+  percentageOfTotal: number
+  trend: string
+  trendPercentage: number
+}
+
+export interface CategoryAnalyticsDto {
+  categoryId: string
+  categoryName: string
+  quantitySold: number
+  revenue: number
+  profit: number
+  orderCount: number
+  percentageOfTotal: number
+  topProducts: ProductAnalyticsDto[]
+  trend: string
+  trendPercentage: number
+}
+
+export interface StaffPerformanceDto {
+  staffId: string
+  staffName: string
+  role: string
+  totalSales: number
+  totalOrders: number
+  averageOrderValue: number
+  hoursWorked: number
+  salesPerHour: number
+  customerRating?: number
+  efficiency: number
+  trend: string
+}
+
+export interface CustomerAnalyticsDto {
+  totalCustomers: number
+  newCustomers: number
+  returningCustomers: number
+  averageOrdersPerCustomer: number
+  customerLifetimeValue: number
+  retentionRate: number
+  demographics: {
+    ageGroups: Record<string, number>
+    genderDistribution: Record<string, number>
+    locationDistribution: Record<string, number>
+  }
+}
+
+export interface TimeAnalyticsDto {
+  hour: number
+  period: string
+  orders: number
+  revenue: number
+  averageOrderValue: number
+  popularItems: string[]
+  staffCount: number
+  efficiency: number
+}
+
+export interface ComparisonDataDto {
+  current: SalesDataDto
+  previous: SalesDataDto
+  change: {
+    sales: number
+    orders: number
+    aov: number
+    customers: number
+  }
+  growth: {
+    daily: number
+    weekly: number
+    monthly: number
+    yearly: number
+  }
+}
+
+export interface InventoryAnalyticsDto {
+  totalProducts: number
+  lowStockItems: number
+  outOfStockItems: number
+  fastMovingItems: ProductAnalyticsDto[]
+  slowMovingItems: ProductAnalyticsDto[]
+  stockValue: number
+  turnoverRate: number
+  reorderSuggestions: {
+    productId: string
+    productName: string
+    currentStock: number
+    suggestedOrder: number
+    priority: string
+  }[]
+}
+
+export interface DashboardComparisonDto {
+  revenueChange: number
+  ordersChange: number
+}
+
+export interface DashboardPeriodMetricsDto {
+  orders: number
+  revenue: number
+  averageOrderValue: number
+  comparison: DashboardComparisonDto
+}
+
+export interface ActiveOrdersSummaryDto {
+  activeOrders: number
+  pendingOrders: number
+  preparingOrders: number
+  readyOrders: number
+}
+
+export interface DashboardAnalyticsDto {
+  today: DashboardPeriodMetricsDto
+  yesterday: DashboardPeriodMetricsDto
+  orders: ActiveOrdersSummaryDto
+  topMenuItems: ProductAnalyticsDto[]
+}
+
+export interface MenuPerformanceResponseDto {
+  period: string
+  menuItems: ProductAnalyticsDto[]
+  totalOrders: number
+}
+
+export interface PeakHoursResponseDto {
+  period: string
+  peakHours: TimeAnalyticsDto[]
+}
+
+export interface PaymentMethodAnalyticsDto {
+  period: string
+  counts: Record<string, number>
+  revenue: Record<string, number>
+}
+
+export interface CustomerInsightsResponseDto {
+  period: string
+  totalOrders: number
+  averageOrderValue: number
+  ordersByType: Record<string, number>
+  ordersByStatus: Record<string, number>
+  peakHours: { hour: number; label: string; orders: number }[] | any
+  newCustomers: number
+  returningCustomers: number
+}
+
+export interface ProductAnalyticsResponseDto {
+  period: string
+  products: ProductAnalyticsDto[]
+}
+
+export interface CategoryAnalyticsResponseDto {
+  period: string
+  categories: CategoryAnalyticsDto[]
+}
+
+export interface StaffPerformanceResponseDto {
+  staff: StaffPerformanceDto[]
+}
+
+export interface CustomerAnalyticsResponseDto {
+  customers: CustomerAnalyticsDto
+}
+
+export interface TimeAnalyticsResponseDto {
+  period: string
+  timeData: TimeAnalyticsDto[]
+}
+
+export interface ComparisonResponseDto {
+  comparison: ComparisonDataDto
+}
+
+export interface InventoryAnalyticsResponseDto {
+  inventory: InventoryAnalyticsDto
+}
+
+export interface GeneratedReportResponseDto {
+  reportUrl: string
+  type: string
+  generatedAt: string
+}
+
+export interface ReportConfigDto {
+  id: string
+  name: string
+  type: string
+  schedule: string
+  format: string
+  recipients: string[]
+  filters: Record<string, unknown>
+  isActive: boolean
+  lastGenerated: string | null
+  nextScheduled: string | null
+}
+
+export interface ScheduledReportResponseDto {
+  report: ReportConfigDto
+}
+
+export interface ReportConfigListResponseDto {
+  configs: ReportConfigDto[]
+}
+
 export const analyticsApi = {
   async getDashboardStats() {
     // This can be implemented later with a dedicated analytics service
@@ -486,92 +719,92 @@ export const analyticsApi = {
     }
   },
 
-  async getDashboardData() {
+  async getDashboardData(): Promise<DashboardAnalyticsDto> {
     const response = await apiClient.get('/api/analytics/dashboard')
     return response.data
   },
 
-  async getSalesData(params?: { startDate?: string; endDate?: string }) {
+  async getSalesData(params?: { startDate?: string; endDate?: string }): Promise<SalesDataDto> {
     const response = await apiClient.get('/api/analytics/sales', { params })
     return response.data
   },
 
-  async getMenuPerformance(days: number = 30) {
+  async getMenuPerformance(days: number = 30): Promise<MenuPerformanceResponseDto> {
     const response = await apiClient.get('/api/analytics/menu-performance', {
       params: { days }
     })
     return response.data
   },
 
-  async getPeakHours(days: number = 7) {
+  async getPeakHours(days: number = 7): Promise<PeakHoursResponseDto> {
     const response = await apiClient.get('/api/analytics/peak-hours', {
       params: { days }
     })
     return response.data
   },
 
-  async getPaymentMethods(days: number = 30) {
+  async getPaymentMethods(days: number = 30): Promise<PaymentMethodAnalyticsDto> {
     const response = await apiClient.get('/api/analytics/payment-methods', {
       params: { days }
     })
     return response.data
   },
 
-  async getCustomerInsights(days: number = 30) {
+  async getCustomerInsights(days: number = 30): Promise<CustomerInsightsResponseDto> {
     const response = await apiClient.get('/api/analytics/customer-insights', {
       params: { days }
     })
     return response.data
   },
 
-  async getProductAnalytics(period: string) {
+  async getProductAnalytics(period: string): Promise<ProductAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/products', {
       params: { period }
     })
     return response.data
   },
 
-  async getCategoryAnalytics(period: string) {
+  async getCategoryAnalytics(period: string): Promise<CategoryAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/categories', {
       params: { period }
     })
     return response.data
   },
 
-  async getStaffPerformance(period: string) {
+  async getStaffPerformance(period: string): Promise<StaffPerformanceResponseDto> {
     const response = await apiClient.get('/api/analytics/staff', {
       params: { period }
     })
     return response.data
   },
 
-  async getCustomerAnalytics(period: string) {
+  async getCustomerAnalytics(period: string): Promise<CustomerAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/customers', {
       params: { period }
     })
     return response.data
   },
 
-  async getTimeAnalytics(period: string) {
+  async getTimeAnalytics(period: string): Promise<TimeAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/time', {
       params: { period }
     })
     return response.data
   },
 
-  async getComparisonData(period: string) {
+  async getComparisonData(period: string): Promise<ComparisonResponseDto> {
     const response = await apiClient.get('/api/analytics/comparison', {
       params: { period }
     })
     return response.data
   },
 
-  async getInventoryAnalytics() {
+  async getInventoryAnalytics(): Promise<InventoryAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/inventory')
     return response.data
   },
 
-  async generateReport(reportType: string, config: any) {
+  async generateReport(reportType: string, config: any): Promise<GeneratedReportResponseDto> {
     const response = await apiClient.post('/api/analytics/reports/generate', {
       type: reportType,
       config
@@ -579,12 +812,12 @@ export const analyticsApi = {
     return response.data
   },
 
-  async scheduleReport(config: any) {
+  async scheduleReport(config: any): Promise<ScheduledReportResponseDto> {
     const response = await apiClient.post('/api/analytics/reports/schedule', config)
     return response.data
   },
 
-  async getReportConfigs() {
+  async getReportConfigs(): Promise<ReportConfigListResponseDto> {
     const response = await apiClient.get('/api/analytics/reports/configs')
     return response.data
   },
@@ -904,61 +1137,87 @@ export const loyaltyApi = {
   }
 }
 
-// Tables API (Table Service - To be implemented)
-// NOTE: These endpoints are not yet implemented in Spring Boot backend
+export interface DiningTableDto {
+  id: number
+  label: string
+  capacity: number
+  status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'DIRTY'
+}
+
+export interface FloorSectionDto {
+  id: number
+  name: string
+  tables: DiningTableDto[]
+}
+
+export interface ReservationDto {
+  id: number
+  tableId: number
+  customerName: string
+  contact: string
+  startTime: string
+  endTime: string
+  partySize: number
+  status: 'REQUESTED' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED'
+}
+
+export interface ReservationRequestDto {
+  tableId: number
+  customerName: string
+  contact: string
+  startTime: string
+  endTime: string
+  partySize: number
+}
+
+export interface ReservationStatusUpdateDto {
+  status: 'REQUESTED' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED'
+}
+
+export interface TableStatusUpdateDto {
+  status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'DIRTY'
+}
+
 export const tablesApi = {
-  async getAll() {
-    const response = await apiClient.get('/api/tables')
+  async getLayout(): Promise<FloorSectionDto[]> {
+    const response = await apiClient.get('/api/tables/layout')
     return response.data
   },
 
-  async updateStatus(tableId: string, payload: { status: string; notes?: string }) {
-    const response = await apiClient.patch(`/api/tables/${tableId}/status`, payload)
+  async updateStatus(tableId: number, payload: TableStatusUpdateDto): Promise<DiningTableDto> {
+    const response = await apiClient.put(`/api/tables/${tableId}/status`, payload)
     return response.data
   },
 
-  async assignOrder(tableId: string, orderId: string) {
-    const response = await apiClient.post(`/api/tables/${tableId}/assign-order`, { orderId })
+  async createReservation(reservation: ReservationRequestDto): Promise<ReservationDto> {
+    const response = await apiClient.post('/api/tables/reservations', reservation)
     return response.data
   },
 
-  async clearTable(tableId: string) {
-    const response = await apiClient.post(`/api/tables/${tableId}/clear`)
+  async listReservations(): Promise<ReservationDto[]> {
+    const response = await apiClient.get('/api/tables/reservations')
     return response.data
   },
 
-  async createReservation(tableId: string, reservation: any) {
-    const response = await apiClient.post(`/api/tables/${tableId}/reservations`, reservation)
+  async updateReservationStatus(
+    reservationId: number,
+    payload: ReservationStatusUpdateDto
+  ): Promise<ReservationDto> {
+    const response = await apiClient.put(`/api/tables/reservations/${reservationId}/status`, payload)
     return response.data
   },
 
-  async updateReservation(tableId: string, reservationId: string, updates: any) {
-    const response = await apiClient.patch(`/api/tables/${tableId}/reservations/${reservationId}`, updates)
-    return response.data
-  },
-
-  async seatReservation(tableId: string, reservationId: string) {
-    const response = await apiClient.post(`/api/tables/${tableId}/reservations/${reservationId}/seat`)
-    return response.data
-  },
-
-  async updatePosition(tableId: string, position: { x: number; y: number }) {
-    const response = await apiClient.patch(`/api/tables/${tableId}/position`, { position })
-    return response.data
-  },
-
-  async bulkUpdateStatus(tableIds: string[], status: string) {
-    const response = await apiClient.patch('/api/tables/bulk-status', { tableIds, status })
-    return response.data
+  async getActiveReservation(tableId: number, at: string): Promise<ReservationDto | null> {
+    const response = await apiClient.get('/api/tables/reservations/active', {
+      params: { tableId, at }
+    })
+    return response.data ?? null
   }
 }
 
-// Floor Plans API (Table Service - To be implemented)
-// NOTE: These endpoints are not yet implemented in Spring Boot backend
 export const floorPlansApi = {
-  async getActive() {
-    const response = await apiClient.get('/api/floor-plans/active')
-    return response.data
+  async getLayout(): Promise<FloorSectionDto[]> {
+    return tablesApi.getLayout()
   }
 }
 
@@ -1092,7 +1351,38 @@ export const paymentApi = {
 }
 
 export const uploadApi = {
-  async uploadImage(formData: FormData, options?: { onUploadProgress?: (event: AxiosProgressEvent) => void }) {
+  async uploadMenuItemImage(
+    menuItemId: string | number,
+    formData: FormData,
+    options?: { onUploadProgress?: (event: AxiosProgressEvent) => void }
+  ) {
+    const config: AxiosRequestConfig<FormData> = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: options?.onUploadProgress,
+    }
+    const response = await apiClient.post(`/api/menu-items/${menuItemId}/images`, formData, config)
+    return response.data
+  },
+
+  async fetchMenuItemImages(menuItemId: string | number) {
+    const response = await apiClient.get(`/api/menu-items/${menuItemId}`)
+    const data = response.data
+    if (Array.isArray(data)) {
+      return data
+    }
+    return Array.isArray(data?.images) ? data.images : []
+  },
+
+  async deleteMenuItemImage(menuItemId: string | number, imageId: string | number) {
+    await apiClient.delete(`/api/menu-items/${menuItemId}/images/${imageId}`)
+  },
+
+  async uploadLegacyImage(
+    formData: FormData,
+    options?: { onUploadProgress?: (event: AxiosProgressEvent) => void }
+  ) {
     const config: AxiosRequestConfig<FormData> = {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -1103,7 +1393,7 @@ export const uploadApi = {
     return response.data
   },
 
-  async deleteImage(url: string) {
+  async deleteLegacyImage(url: string) {
     const response = await apiClient.delete('/api/upload/image', {
       data: { url },
     })

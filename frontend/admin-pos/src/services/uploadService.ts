@@ -12,6 +12,18 @@ export interface UploadProgress {
   percentage: number
 }
 
+export interface MenuItemImageMetadata {
+  id: number
+  menuItemId: number
+  imageUrl: string
+  thumbnailUrl?: string
+  signedUrl?: string
+  isPrimary?: boolean
+  displayOrder?: number
+  altText?: string
+  createdAt?: string
+}
+
 export interface UploadedImage {
   url: string
   thumbnailUrl?: string
@@ -22,28 +34,39 @@ export interface UploadedImage {
   originalSize?: number
   savedBytes?: number
   savedPercentage?: number
+  signedUrl?: string
+  image?: MenuItemImageMetadata
+  images?: MenuItemImageMetadata[]
+}
+
+interface UploadImageOptions {
+  menuItemId?: string | number
+  uploadType?: 'menu' | 'categories' | 'users'
+  primary?: boolean
+  displayOrder?: number
+  altText?: string
+  onProgress?: (progress: UploadProgress) => void
 }
 
 class UploadService {
   /**
    * Upload an image file
    */
-  async uploadImage(
-    file: File,
-    uploadType: 'menu' | 'categories' | 'users' = 'menu',
-    onProgress?: (progress: UploadProgress) => void
-  ): Promise<UploadedImage> {
+  async uploadImage(file: File, options: UploadImageOptions = {}): Promise<UploadedImage> {
+    const {
+      menuItemId,
+      uploadType = 'menu',
+      primary,
+      displayOrder,
+      altText,
+      onProgress,
+    } = options
+
     try {
-      // Validate file
       const validation = this.validateImageFile(file)
       if (!validation.valid) {
         throw new Error(validation.error || 'Invalid file')
       }
-
-      // Create FormData
-      const formData = new FormData()
-      formData.append('image', file)
-      formData.append('uploadType', uploadType)
 
       const handleProgress = (event: AxiosProgressEvent) => {
         if (onProgress && event.total) {
@@ -56,8 +79,63 @@ class UploadService {
         }
       }
 
-      // Upload with progress tracking
-      const data = await uploadApi.uploadImage(formData, {
+      if (menuItemId !== undefined && menuItemId !== null && `${menuItemId}`.trim() !== '') {
+        const formData = new FormData()
+        formData.append('file', file)
+        if (typeof primary === 'boolean') {
+          formData.append('primary', String(primary))
+        }
+        if (typeof displayOrder === 'number') {
+          formData.append('displayOrder', String(displayOrder))
+        }
+        if (typeof altText === 'string' && altText.trim().length > 0) {
+          formData.append('altText', altText.trim())
+        }
+
+        const uploadResponse = await uploadApi.uploadMenuItemImage(menuItemId, formData, {
+          onUploadProgress: handleProgress
+        })
+
+        let images: MenuItemImageMetadata[] = []
+        try {
+          const fetchedImages = await uploadApi.fetchMenuItemImages(menuItemId)
+          if (Array.isArray(fetchedImages)) {
+            images = fetchedImages as MenuItemImageMetadata[]
+          }
+        } catch (metadataError) {
+          console.error('Failed to refresh menu item images after upload:', metadataError)
+        }
+
+        const newImage: MenuItemImageMetadata | undefined = uploadResponse?.image
+        const primaryImage = images.find(image => image.isPrimary) || newImage
+        const signedUrl = uploadResponse?.signedUrl || primaryImage?.signedUrl
+        const url = signedUrl || primaryImage?.imageUrl || newImage?.imageUrl
+
+        if (!url) {
+          throw new Error('Upload service returned an invalid response')
+        }
+
+        return {
+          url,
+          thumbnailUrl: primaryImage?.thumbnailUrl ?? newImage?.thumbnailUrl,
+          format: file.type,
+          size: file.size,
+          originalSize: file.size,
+          savedBytes: undefined,
+          savedPercentage: undefined,
+          signedUrl,
+          image: newImage,
+          images
+        }
+      }
+
+      const formData = new FormData()
+      formData.append('image', file)
+      if (uploadType) {
+        formData.append('uploadType', uploadType)
+      }
+
+      const data = await uploadApi.uploadLegacyImage(formData, {
         onUploadProgress: handleProgress
       })
 
@@ -78,19 +156,50 @@ class UploadService {
       }
     } catch (error: any) {
       console.error('Upload error:', error)
-      throw new Error(error?.message || 'Upload failed')
+      throw new Error(this.getErrorMessage(error, 'Upload failed'))
     }
   }
 
   /**
    * Delete an uploaded image
    */
-  async deleteImage(url: string): Promise<void> {
+  async deleteImage(
+    params: { menuItemId: string | number; imageId: string | number } | { url: string }
+  ): Promise<MenuItemImageMetadata[] | void> {
     try {
-      await uploadApi.deleteImage(url)
+      if ('menuItemId' in params && 'imageId' in params) {
+        await uploadApi.deleteMenuItemImage(params.menuItemId, params.imageId)
+        try {
+          const images = await uploadApi.fetchMenuItemImages(params.menuItemId)
+          if (Array.isArray(images)) {
+            return images as MenuItemImageMetadata[]
+          }
+          return []
+        } catch (metadataError) {
+          console.error('Failed to refresh menu item images after delete:', metadataError)
+          return []
+        }
+      }
+
+      if ('url' in params) {
+        await uploadApi.deleteLegacyImage(params.url)
+      }
     } catch (error: any) {
       console.error('Delete error:', error)
-      throw new Error(error?.message || 'Delete failed')
+      throw new Error(this.getErrorMessage(error, 'Delete failed'))
+    }
+  }
+
+  async getMenuItemImages(menuItemId: string | number): Promise<MenuItemImageMetadata[]> {
+    try {
+      const images = await uploadApi.fetchMenuItemImages(menuItemId)
+      if (Array.isArray(images)) {
+        return images as MenuItemImageMetadata[]
+      }
+      return []
+    } catch (error: any) {
+      console.error('Get menu item images error:', error)
+      throw new Error(this.getErrorMessage(error, 'Failed to load menu item images'))
     }
   }
 
@@ -98,16 +207,14 @@ class UploadService {
    * Validate image file before upload
    */
   private validateImageFile(file: File): { valid: boolean; error?: string } {
-    // Check file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
     if (!allowedTypes.includes(file.type)) {
       return {
         valid: false,
-        error: `Invalid file type. Allowed types: JPEG, PNG, WebP, GIF`
+        error: 'Invalid file type. Allowed types: JPEG, PNG, WebP, GIF'
       }
     }
 
-    // Check file size (5MB max)
     const maxSize = 5 * 1024 * 1024
     if (file.size > maxSize) {
       return {
@@ -116,7 +223,6 @@ class UploadService {
       }
     }
 
-    // Check file name
     if (!file.name || file.name.length > 255) {
       return {
         valid: false,
@@ -164,6 +270,48 @@ class UploadService {
     const i = Math.floor(Math.log(bytes) / Math.log(k))
 
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+  }
+
+  private getErrorMessage(error: any, fallback: string): string {
+    const response = error?.response?.data
+
+    if (response?.message) {
+      return response.message
+    }
+
+    if (response?.error) {
+      return response.error
+    }
+
+    if (Array.isArray(response?.errors)) {
+      const extracted = response.errors
+        .map((err: any) => {
+          if (typeof err === 'string') return err
+          if (err?.message) return err.message
+          if (err?.defaultMessage) return err.defaultMessage
+          if (err?.detail) return err.detail
+          return null
+        })
+        .filter((value): value is string => Boolean(value))
+      if (extracted.length) {
+        return extracted.join(', ')
+      }
+    }
+
+    if (Array.isArray(response?.violations)) {
+      const extracted = response.violations
+        .map((violation: any) => violation?.message || violation?.detail)
+        .filter((value: any): value is string => Boolean(value))
+      if (extracted.length) {
+        return extracted.join(', ')
+      }
+    }
+
+    if (response?.details) {
+      return response.details
+    }
+
+    return error?.message || fallback
   }
 }
 

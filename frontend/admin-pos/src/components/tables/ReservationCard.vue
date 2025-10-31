@@ -1,11 +1,5 @@
-<!--
-  Reservation Card - Display upcoming table reservations
-  Shows reservation details with quick action buttons
--->
-
 <template>
   <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-    <!-- Reservation Header -->
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center space-x-2">
         <div class="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
@@ -13,7 +7,7 @@
         </div>
         <div>
           <h4 class="font-medium text-gray-900">{{ reservation.customerName }}</h4>
-          <p class="text-sm text-gray-500">Table {{ reservation.tableNumber }}</p>
+          <p class="text-sm text-gray-500">Table {{ reservation.tableLabel }}</p>
         </div>
       </div>
       <div :class="getStatusBadgeClass(reservation.status)" class="px-2 py-1 rounded-full text-xs font-medium">
@@ -21,97 +15,44 @@
       </div>
     </div>
 
-    <!-- Reservation Details -->
-    <div class="space-y-2 mb-4">
-      <div class="flex items-center space-x-2 text-sm text-gray-600">
-        <Calendar class="w-4 h-4" />
-        <span>{{ formatDate(reservation.reservationTime) }}</span>
-      </div>
-      <div class="flex items-center space-x-2 text-sm text-gray-600">
-        <Clock class="w-4 h-4" />
-        <span>{{ formatTime(reservation.reservationTime) }}</span>
-        <span class="text-gray-400">•</span>
-        <span>{{ reservation.duration }} hours</span>
-      </div>
-      <div class="flex items-center space-x-2 text-sm text-gray-600">
-        <Users class="w-4 h-4" />
-        <span>{{ reservation.partySize }} guests</span>
-      </div>
-      <div v-if="reservation.customerPhone" class="flex items-center space-x-2 text-sm text-gray-600">
-        <Phone class="w-4 h-4" />
-        <span>{{ reservation.customerPhone }}</span>
-      </div>
-    </div>
-
-    <!-- Special Requests -->
-    <div v-if="reservation.specialRequests && reservation.specialRequests.length > 0" class="mb-4">
-      <div class="flex flex-wrap gap-1">
-        <span
-          v-for="request in reservation.specialRequests.slice(0, 2)"
-          :key="request"
-          class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
-        >
-          {{ request }}
-        </span>
-        <span
-          v-if="reservation.specialRequests.length > 2"
-          class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
-        >
-          +{{ reservation.specialRequests.length - 2 }} more
-        </span>
-      </div>
-    </div>
-
-    <!-- Notes -->
-    <div v-if="reservation.notes" class="mb-4">
-      <p class="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg">
-        {{ reservation.notes }}
-      </p>
-    </div>
-
-    <!-- Time Until Reservation -->
-    <div class="mb-4">
+    <div class="space-y-2 mb-4 text-sm text-gray-600">
       <div class="flex items-center space-x-2">
-        <div :class="getTimeStatusClass(timeUntil)" class="w-2 h-2 rounded-full"></div>
-        <span :class="getTimeStatusTextClass(timeUntil)" class="text-sm font-medium">
-          {{ getTimeUntilText(timeUntil) }}
-        </span>
+        <Calendar class="w-4 h-4" />
+        <span>{{ formatDate(reservation.startTime) }}</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <Clock class="w-4 h-4" />
+        <span>{{ formatTimeRange(reservation.startTime, reservation.endTime) }}</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <Users class="w-4 h-4" />
+        <span>{{ reservation.partySize }} personnes</span>
+      </div>
+      <div class="flex items-center space-x-2" v-if="reservation.contact">
+        <Phone class="w-4 h-4" />
+        <span>{{ reservation.contact }}</span>
       </div>
     </div>
 
-    <!-- Action Buttons -->
+    <div class="flex items-center justify-between text-xs text-gray-500 mb-4">
+      <span>{{ reservation.sectionName }}</span>
+      <span>{{ timeUntilText }}</span>
+    </div>
+
     <div class="flex space-x-2">
       <button
-        v-if="reservation.status === 'CONFIRMED' && isNearTime"
-        @click="$emit('seat', reservation.tableId, reservation.id)"
+        v-if="reservation.status === ReservationStatus.CONFIRMED"
+        @click="$emit('seat', reservation.id)"
         class="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
       >
-        <UserCheck class="w-4 h-4 mr-1 inline" />
-        Seat Now
+        Installer
       </button>
-
       <button
-        v-if="reservation.status === 'CONFIRMED'"
-        @click="$emit('edit', reservation)"
-        class="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-      >
-        <Edit class="w-4 h-4" />
-      </button>
-
-      <button
-        v-if="reservation.status === 'CONFIRMED'"
-        @click="handleCancel"
+        v-if="reservation.status === ReservationStatus.CONFIRMED"
+        @click="$emit('cancel', reservation.id)"
         class="px-3 py-2 bg-red-100 text-red-600 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
       >
-        <X class="w-4 h-4" />
-      </button>
-
-      <button
-        @click="callCustomer"
-        class="px-3 py-2 bg-blue-100 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
-        title="Call customer"
-      >
-        <Phone class="w-4 h-4" />
+        Annuler
       </button>
     </div>
   </div>
@@ -123,156 +64,83 @@ import {
   Users,
   Calendar,
   Clock,
-  Phone,
-  UserCheck,
-  Edit,
-  X
+  Phone
 } from 'lucide-vue-next'
+import { ReservationStatus, type Reservation } from '@/stores/tables'
 
-interface Reservation {
-  id: string
-  tableId: string
-  tableNumber: string
-  customerName: string
-  customerPhone?: string
-  partySize: number
-  reservationTime: string
-  duration: number
-  status: string
-  specialRequests?: string[]
-  notes?: string
+interface ReservationCardData extends Reservation {
+  tableLabel: string
+  sectionName?: string
 }
 
 interface Props {
-  reservation: Reservation
+  reservation: ReservationCardData
 }
 
 interface Emits {
-  (e: 'seat', tableId: string, reservationId: string): void
-  (e: 'edit', reservation: Reservation): void
-  (e: 'cancel', tableId: string, reservationId: string): void
+  (e: 'seat', reservationId: number): void
+  (e: 'cancel', reservationId: number): void
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+defineEmits<Emits>()
 
-// Computed
-const timeUntil = computed(() => {
-  const now = new Date().getTime()
-  const reservationTime = new Date(props.reservation.reservationTime).getTime()
-  return reservationTime - now
+const now = computed(() => new Date())
+
+const timeUntilText = computed(() => {
+  const start = new Date(props.reservation.startTime)
+  const diff = start.getTime() - now.value.getTime()
+
+  if (diff <= 0) {
+    return 'En cours'
+  }
+
+  const minutes = Math.round(diff / 60000)
+  if (minutes < 60) {
+    return `Dans ${minutes} min`
+  }
+
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  return remainingMinutes === 0
+    ? `Dans ${hours} h`
+    : `Dans ${hours} h ${remainingMinutes} min`
 })
 
-const isNearTime = computed(() => {
-  return timeUntil.value <= 30 * 60 * 1000 && timeUntil.value > 0 // Within 30 minutes
-})
-
-// Methods
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-
-  if (date.toDateString() === today.toDateString()) {
-    return 'Today'
-  } else if (date.toDateString() === tomorrow.toDateString()) {
-    return 'Tomorrow'
-  } else {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
-}
-
-const formatTime = (dateString: string): string => {
-  return new Date(dateString).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
+  return date.toLocaleDateString('fr-FR', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
   })
 }
 
-const getStatusLabel = (status: string): string => {
-  const labels = {
-    'CONFIRMED': 'Confirmed',
-    'SEATED': 'Seated',
-    'CANCELLED': 'Cancelled',
-    'NO_SHOW': 'No Show'
+const formatTimeRange = (start: string, end: string): string => {
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  return `${startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+}
+
+const getStatusLabel = (status: ReservationStatus): string => {
+  const labels: Record<ReservationStatus, string> = {
+    [ReservationStatus.REQUESTED]: 'Demandée',
+    [ReservationStatus.CONFIRMED]: 'Confirmée',
+    [ReservationStatus.CHECKED_IN]: 'Installée',
+    [ReservationStatus.COMPLETED]: 'Terminée',
+    [ReservationStatus.CANCELLED]: 'Annulée'
   }
   return labels[status] || status
 }
 
-const getStatusBadgeClass = (status: string): string => {
-  const classes = {
-    'CONFIRMED': 'bg-blue-100 text-blue-800',
-    'SEATED': 'bg-green-100 text-green-800',
-    'CANCELLED': 'bg-red-100 text-red-800',
-    'NO_SHOW': 'bg-gray-100 text-gray-800'
+const getStatusBadgeClass = (status: ReservationStatus): string => {
+  const classes: Record<ReservationStatus, string> = {
+    [ReservationStatus.REQUESTED]: 'bg-gray-100 text-gray-700',
+    [ReservationStatus.CONFIRMED]: 'bg-blue-100 text-blue-700',
+    [ReservationStatus.CHECKED_IN]: 'bg-green-100 text-green-700',
+    [ReservationStatus.COMPLETED]: 'bg-purple-100 text-purple-700',
+    [ReservationStatus.CANCELLED]: 'bg-red-100 text-red-700'
   }
-  return classes[status] || 'bg-gray-100 text-gray-800'
-}
-
-const getTimeStatusClass = (timeUntil: number): string => {
-  if (timeUntil <= 0) return 'bg-red-500' // Past due
-  if (timeUntil <= 15 * 60 * 1000) return 'bg-red-500' // Within 15 minutes
-  if (timeUntil <= 30 * 60 * 1000) return 'bg-yellow-500' // Within 30 minutes
-  if (timeUntil <= 60 * 60 * 1000) return 'bg-blue-500' // Within 1 hour
-  return 'bg-gray-400' // More than 1 hour
-}
-
-const getTimeStatusTextClass = (timeUntil: number): string => {
-  if (timeUntil <= 0) return 'text-red-600' // Past due
-  if (timeUntil <= 15 * 60 * 1000) return 'text-red-600' // Within 15 minutes
-  if (timeUntil <= 30 * 60 * 1000) return 'text-yellow-600' // Within 30 minutes
-  if (timeUntil <= 60 * 60 * 1000) return 'text-blue-600' // Within 1 hour
-  return 'text-gray-600' // More than 1 hour
-}
-
-const getTimeUntilText = (timeUntil: number): string => {
-  if (timeUntil <= 0) {
-    const overdue = Math.abs(timeUntil)
-    const minutes = Math.floor(overdue / (1000 * 60))
-    if (minutes < 60) {
-      return `${minutes}m overdue`
-    } else {
-      const hours = Math.floor(minutes / 60)
-      const remainingMinutes = minutes % 60
-      return `${hours}h ${remainingMinutes}m overdue`
-    }
-  }
-
-  const minutes = Math.floor(timeUntil / (1000 * 60))
-  if (minutes < 60) {
-    return `in ${minutes}m`
-  } else {
-    const hours = Math.floor(minutes / 60)
-    const remainingMinutes = minutes % 60
-    if (remainingMinutes === 0) {
-      return `in ${hours}h`
-    } else {
-      return `in ${hours}h ${remainingMinutes}m`
-    }
-  }
-}
-
-const handleCancel = () => {
-  if (confirm(`Are you sure you want to cancel the reservation for ${props.reservation.customerName}?`)) {
-    emit('cancel', props.reservation.tableId, props.reservation.id)
-  }
-}
-
-const callCustomer = () => {
-  if (props.reservation.customerPhone) {
-    window.open(`tel:${props.reservation.customerPhone}`)
-  } else {
-    alert('No phone number available for this customer')
-  }
+  return classes[status] || 'bg-gray-100 text-gray-700'
 }
 </script>
-
-<style scoped>
-/* Add any specific styling if needed */
-</style>

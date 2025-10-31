@@ -316,7 +316,7 @@ const handleSubmit = async () => {
     let uploadedImageUrl = form.value.imageUrl
     if (selectedFile.value) {
       toast.info('Uploading image...')
-      const uploadedImage = await uploadService.uploadImage(selectedFile.value, 'categories')
+      const uploadedImage = await uploadService.uploadImage(selectedFile.value, { uploadType: 'categories' })
 
       uploadedImageUrl = uploadedImage.url
       const savedPercentage = typeof uploadedImage.savedPercentage === 'number'

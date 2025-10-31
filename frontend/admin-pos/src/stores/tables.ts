@@ -1,399 +1,274 @@
-/**
- * Table management store for restaurant floor plan and table operations
- * Handles table status, assignments, and real-time updates
- */
-
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { tablesApi, floorPlansApi } from '@/services/api-spring'
-
-// Types
-export interface Table {
-  id: string
-  number: string
-  name?: string
-  capacity: number
-  status: TableStatus
-  currentOrder?: {
-    id: string
-    orderNumber: string
-    customerName?: string
-    startTime: string
-    items: number
-    total: number
-  }
-  assignedStaff?: {
-    id: string
-    name: string
-  }
-  section: string
-  position: {
-    x: number
-    y: number
-  }
-  shape: 'round' | 'square' | 'rectangular'
-  size: {
-    width: number
-    height: number
-  }
-  notes?: string
-  reservations: Reservation[]
-  lastCleaned?: string
-  isActive: boolean
-  createdAt: string
-}
+import { computed, ref } from 'vue'
+import { parseIsoDateTime } from '@/utils/datetime'
+import {
+  tablesApi,
+  type DiningTableDto,
+  type FloorSectionDto,
+  type ReservationDto,
+  type ReservationRequestDto
+} from '@/services/api-spring'
 
 export enum TableStatus {
   AVAILABLE = 'AVAILABLE',
   OCCUPIED = 'OCCUPIED',
   RESERVED = 'RESERVED',
-  NEEDS_CLEANING = 'NEEDS_CLEANING',
-  OUT_OF_ORDER = 'OUT_OF_ORDER'
+  DIRTY = 'DIRTY'
+}
+
+export enum ReservationStatus {
+  REQUESTED = 'REQUESTED',
+  CONFIRMED = 'CONFIRMED',
+  CHECKED_IN = 'CHECKED_IN',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+export interface Table {
+  id: number
+  label: string
+  capacity: number
+  status: TableStatus
+  sectionId: number
+  sectionName: string
 }
 
 export interface Reservation {
-  id: string
+  id: number
+  tableId: number
   customerName: string
-  customerPhone?: string
+  contact: string
+  startTime: string
+  endTime: string
   partySize: number
-  reservationTime: string
-  duration: number
-  status: 'CONFIRMED' | 'SEATED' | 'CANCELLED' | 'NO_SHOW'
-  notes?: string
-  specialRequests?: string[]
-  createdAt: string
+  status: ReservationStatus
 }
 
-export interface FloorPlan {
-  id: string
-  name: string
-  isActive: boolean
-  sections: Section[]
-  lastModified: string
-}
+export type CreateReservationPayload = ReservationRequestDto
 
-export interface Section {
-  id: string
-  name: string
-  color: string
-  bounds: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
-}
+const toTable = (section: FloorSectionDto, table: DiningTableDto): Table => ({
+  id: table.id,
+  label: table.label,
+  capacity: table.capacity,
+  status: table.status as TableStatus,
+  sectionId: section.id,
+  sectionName: section.name
+})
+
+const toReservation = (reservation: ReservationDto): Reservation => ({
+  id: reservation.id,
+  tableId: reservation.tableId,
+  customerName: reservation.customerName,
+  contact: reservation.contact,
+  startTime: reservation.startTime,
+  endTime: reservation.endTime,
+  partySize: reservation.partySize,
+  status: reservation.status as ReservationStatus
+})
 
 export const useTablesStore = defineStore('tables', () => {
-  // State
+  const sections = ref<FloorSectionDto[]>([])
   const tables = ref<Table[]>([])
-  const floorPlan = ref<FloorPlan | null>(null)
-  const selectedTable = ref<Table | null>(null)
+  const reservations = ref<Reservation[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const lastUpdate = ref<Date | null>(null)
 
-  // Computed
-  const tablesByStatus = computed(() => {
-    const grouped: Record<TableStatus, Table[]> = {
-      [TableStatus.AVAILABLE]: [],
-      [TableStatus.OCCUPIED]: [],
-      [TableStatus.RESERVED]: [],
-      [TableStatus.NEEDS_CLEANING]: [],
-      [TableStatus.OUT_OF_ORDER]: []
-    }
-
-    tables.value.forEach(table => {
-      if (grouped[table.status]) {
-        grouped[table.status].push(table)
-      }
-    })
-
-    return grouped
-  })
-
-  const tableStats = computed(() => ({
-    total: tables.value.filter(t => t.isActive).length,
-    available: tablesByStatus.value[TableStatus.AVAILABLE].length,
-    occupied: tablesByStatus.value[TableStatus.OCCUPIED].length,
-    reserved: tablesByStatus.value[TableStatus.RESERVED].length,
-    needsCleaning: tablesByStatus.value[TableStatus.NEEDS_CLEANING].length,
-    outOfOrder: tablesByStatus.value[TableStatus.OUT_OF_ORDER].length,
-    occupancyRate: tables.value.filter(t => t.isActive).length > 0
-      ? Math.round((tablesByStatus.value[TableStatus.OCCUPIED].length / tables.value.filter(t => t.isActive).length) * 100)
-      : 0
+  const tablesByStatus = computed(() => ({
+    [TableStatus.AVAILABLE]: tables.value.filter(table => table.status === TableStatus.AVAILABLE),
+    [TableStatus.OCCUPIED]: tables.value.filter(table => table.status === TableStatus.OCCUPIED),
+    [TableStatus.RESERVED]: tables.value.filter(table => table.status === TableStatus.RESERVED),
+    [TableStatus.DIRTY]: tables.value.filter(table => table.status === TableStatus.DIRTY)
   }))
 
-  const sectionsWithTables = computed(() => {
-    if (!floorPlan.value) return []
+  const tableStats = computed(() => {
+    const total = tables.value.length
+    const available = tablesByStatus.value[TableStatus.AVAILABLE].length
+    const occupied = tablesByStatus.value[TableStatus.OCCUPIED].length
+    const reserved = tablesByStatus.value[TableStatus.RESERVED].length
+    const dirty = tablesByStatus.value[TableStatus.DIRTY].length
 
-    return floorPlan.value.sections.map(section => ({
-      ...section,
-      tables: tables.value.filter(table => table.section === section.id)
-    }))
+    return {
+      total,
+      available,
+      occupied,
+      reserved,
+      dirty,
+      occupancyRate: total > 0 ? Math.round((occupied / total) * 100) : 0
+    }
   })
 
   const upcomingReservations = computed(() => {
     const now = new Date()
-    const next4Hours = new Date(now.getTime() + 4 * 60 * 60 * 1000)
+    const nextFourHours = new Date(now.getTime() + 4 * 60 * 60 * 1000)
 
-    return tables.value
-      .flatMap(table =>
-        table.reservations.map(reservation => ({
-          ...reservation,
-          tableNumber: table.number,
-          tableId: table.id
-        }))
-      )
-      .filter(reservation => {
-        const reservationTime = new Date(reservation.reservationTime)
-        return reservation.status === 'CONFIRMED' &&
-               reservationTime >= now &&
-               reservationTime <= next4Hours
+    return reservations.value
+      .map(reservation => ({
+        reservation,
+        start: parseIsoDateTime(reservation.startTime)
+      }))
+      .filter(item => {
+        const { reservation, start } = item
+        return (
+          reservation.status === ReservationStatus.CONFIRMED &&
+          start !== null &&
+          start >= now &&
+          start <= nextFourHours
+        )
       })
-      .sort((a, b) => new Date(a.reservationTime).getTime() - new Date(b.reservationTime).getTime())
+      .sort((a, b) => (a.start?.getTime() || 0) - (b.start?.getTime() || 0))
+      .map(item => item.reservation)
   })
 
-  // Actions
+  const hydrateTables = (layout: FloorSectionDto[]) => {
+    sections.value = layout
+    tables.value = layout.flatMap(section => section.tables.map(table => toTable(section, table)))
+  }
+
+  const hydrateReservations = (data: ReservationDto[]) => {
+    reservations.value = data
+      .map(reservation => toReservation(reservation))
+      .sort((a, b) => {
+        const startA = parseIsoDateTime(a.startTime)?.getTime() || 0
+        const startB = parseIsoDateTime(b.startTime)?.getTime() || 0
+        return startA - startB
+      })
+  }
+
   const fetchTables = async (): Promise<boolean> => {
     isLoading.value = true
     error.value = null
 
     try {
-      const data = await tablesApi.getAll()
-      tables.value = data.tables || data || []
+      const layout = await tablesApi.getLayout()
+      hydrateTables(layout)
+
+      const reservationData = await tablesApi.listReservations()
+      hydrateReservations(reservationData)
+
       lastUpdate.value = new Date()
       return true
     } catch (err: any) {
-      error.value = err.response?.data?.error || err.message || 'Failed to fetch tables'
-      console.error('Error fetching tables:', err)
+      error.value = err.response?.data?.message || err.message || 'Failed to fetch tables'
+      console.error('Error fetching table layout:', err)
       return false
     } finally {
       isLoading.value = false
     }
   }
 
-  const fetchFloorPlan = async (): Promise<boolean> => {
+  const fetchReservations = async (): Promise<boolean> => {
     try {
-      const data = await floorPlansApi.getActive()
-      floorPlan.value = data.floorPlan || data
+      const reservationData = await tablesApi.listReservations()
+      hydrateReservations(reservationData)
       return true
     } catch (err: any) {
-      console.error('Error fetching floor plan:', err)
+      error.value = err.response?.data?.message || err.message || 'Failed to fetch reservations'
+      console.error('Error fetching reservations:', err)
       return false
     }
   }
 
-  const updateTableStatus = async (tableId: string, status: TableStatus, notes?: string): Promise<boolean> => {
+  const updateTableStatus = async (tableId: number, status: TableStatus): Promise<boolean> => {
     try {
-      await tablesApi.updateStatus(tableId, { status, notes })
-
-      const tableIndex = tables.value.findIndex(t => t.id === tableId)
-      if (tableIndex !== -1) {
-        tables.value[tableIndex].status = status
-        if (notes !== undefined) {
-          tables.value[tableIndex].notes = notes
-        }
-
-        // Special handling for status changes
-        if (status === TableStatus.NEEDS_CLEANING) {
-          tables.value[tableIndex].currentOrder = undefined
-        } else if (status === TableStatus.AVAILABLE) {
-          tables.value[tableIndex].lastCleaned = new Date().toISOString()
-          tables.value[tableIndex].notes = undefined
+      const updated = await tablesApi.updateStatus(tableId, { status })
+      const index = tables.value.findIndex(table => table.id === tableId)
+      if (index !== -1) {
+        tables.value[index] = {
+          ...tables.value[index],
+          status: updated.status as TableStatus
         }
       }
-
       return true
     } catch (err: any) {
-      error.value = err.response?.data?.error || err.message
+      error.value = err.response?.data?.message || err.message || 'Failed to update table status'
+      console.error('Error updating table status:', err)
       return false
     }
   }
 
-  const assignOrderToTable = async (tableId: string, orderId: string): Promise<boolean> => {
+  const createReservation = async (payload: ReservationRequestDto): Promise<boolean> => {
     try {
-      const data = await tablesApi.assignOrder(tableId, orderId)
+      const created = await tablesApi.createReservation(payload)
+      const reservation = toReservation(created)
+      reservations.value = [...reservations.value, reservation].sort((a, b) => {
+        const startA = parseIsoDateTime(a.startTime)?.getTime() || 0
+        const startB = parseIsoDateTime(b.startTime)?.getTime() || 0
+        return startA - startB
+      })
 
-      const tableIndex = tables.value.findIndex(t => t.id === tableId)
+      const tableIndex = tables.value.findIndex(table => table.id === reservation.tableId)
       if (tableIndex !== -1) {
-        tables.value[tableIndex].status = TableStatus.OCCUPIED
-        tables.value[tableIndex].currentOrder = data.orderSummary || data
-      }
-
-      return true
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message
-      return false
-    }
-  }
-
-  const clearTable = async (tableId: string): Promise<boolean> => {
-    try {
-      await tablesApi.clearTable(tableId)
-
-      const tableIndex = tables.value.findIndex(t => t.id === tableId)
-      if (tableIndex !== -1) {
-        tables.value[tableIndex].status = TableStatus.NEEDS_CLEANING
-        tables.value[tableIndex].currentOrder = undefined
-      }
-
-      return true
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message
-      return false
-    }
-  }
-
-  const createReservation = async (tableId: string, reservation: Omit<Reservation, 'id' | 'createdAt' | 'status'>): Promise<boolean> => {
-    try {
-      const data = await tablesApi.createReservation(tableId, reservation)
-
-      const tableIndex = tables.value.findIndex(t => t.id === tableId)
-      if (tableIndex !== -1) {
-        tables.value[tableIndex].reservations.push(data.reservation || data)
-
-        // Check if reservation is soon and update table status
-        const reservationTime = new Date(reservation.reservationTime)
-        const now = new Date()
-        const timeDiff = reservationTime.getTime() - now.getTime()
-
-        if (timeDiff <= 30 * 60 * 1000 && tables.value[tableIndex].status === TableStatus.AVAILABLE) {
-          tables.value[tableIndex].status = TableStatus.RESERVED
+        tables.value[tableIndex] = {
+          ...tables.value[tableIndex],
+          status: TableStatus.RESERVED
         }
       }
-
       return true
     } catch (err: any) {
-      error.value = err.response?.data?.error || err.message
+      error.value = err.response?.data?.message || err.message || 'Failed to create reservation'
+      console.error('Error creating reservation:', err)
       return false
     }
   }
 
-  const updateReservation = async (tableId: string, reservationId: string, updates: Partial<Reservation>): Promise<boolean> => {
+  const updateReservationStatus = async (
+    reservationId: number,
+    status: ReservationStatus
+  ): Promise<boolean> => {
     try {
-      await tablesApi.updateReservation(tableId, reservationId, updates)
-
-      const tableIndex = tables.value.findIndex(t => t.id === tableId)
-      if (tableIndex !== -1) {
-        const reservationIndex = tables.value[tableIndex].reservations.findIndex(r => r.id === reservationId)
-        if (reservationIndex !== -1) {
-          tables.value[tableIndex].reservations[reservationIndex] = {
-            ...tables.value[tableIndex].reservations[reservationIndex],
-            ...updates
-          }
-        }
+      const updated = await tablesApi.updateReservationStatus(reservationId, { status })
+      const reservation = toReservation(updated)
+      const index = reservations.value.findIndex(item => item.id === reservationId)
+      if (index !== -1) {
+        reservations.value[index] = reservation
+      } else {
+        reservations.value.push(reservation)
       }
+      reservations.value.sort((a, b) => {
+        const startA = parseIsoDateTime(a.startTime)?.getTime() || 0
+        const startB = parseIsoDateTime(b.startTime)?.getTime() || 0
+        return startA - startB
+      })
 
-      return true
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message
-      return false
-    }
-  }
-
-  const seatReservation = async (tableId: string, reservationId: string): Promise<boolean> => {
-    try {
-      await tablesApi.seatReservation(tableId, reservationId)
-
-      const tableIndex = tables.value.findIndex(t => t.id === tableId)
-      if (tableIndex !== -1) {
-        tables.value[tableIndex].status = TableStatus.OCCUPIED
-
-        const reservationIndex = tables.value[tableIndex].reservations.findIndex(r => r.id === reservationId)
-        if (reservationIndex !== -1) {
-          tables.value[tableIndex].reservations[reservationIndex].status = 'SEATED'
-        }
-      }
-
-      return true
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message
-      return false
-    }
-  }
-
-  const moveTable = async (tableId: string, newPosition: { x: number; y: number }): Promise<boolean> => {
-    try {
-      await tablesApi.updatePosition(tableId, newPosition)
-
-      const tableIndex = tables.value.findIndex(t => t.id === tableId)
-      if (tableIndex !== -1) {
-        tables.value[tableIndex].position = newPosition
-      }
-
-      return true
-    } catch (err: any) {
-      error.value = err.response?.data?.error || err.message
-      return false
-    }
-  }
-
-  const findAvailableTable = (partySize: number, sectionId?: string): Table | null => {
-    const availableTables = tables.value.filter(table =>
-      table.status === TableStatus.AVAILABLE &&
-      table.capacity >= partySize &&
-      table.isActive &&
-      (!sectionId || table.section === sectionId)
-    )
-
-    if (availableTables.length === 0) return null
-
-    // Find the best fit (smallest table that can accommodate the party)
-    return availableTables.reduce((best, current) =>
-      current.capacity < best.capacity ? current : best
-    )
-  }
-
-  const getTableById = (tableId: string): Table | undefined => {
-    return tables.value.find(t => t.id === tableId)
-  }
-
-  const getTableByNumber = (tableNumber: string): Table | undefined => {
-    return tables.value.find(t => t.number === tableNumber)
-  }
-
-  const bulkUpdateStatus = async (tableIds: string[], status: TableStatus): Promise<boolean> => {
-    try {
-      await tablesApi.bulkUpdateStatus(tableIds, status)
-
-      tableIds.forEach(tableId => {
-        const tableIndex = tables.value.findIndex(t => t.id === tableId)
+      if (reservation.status === ReservationStatus.CANCELLED || reservation.status === ReservationStatus.COMPLETED) {
+        const tableIndex = tables.value.findIndex(table => table.id === reservation.tableId)
         if (tableIndex !== -1) {
-          tables.value[tableIndex].status = status
+          tables.value[tableIndex] = {
+            ...tables.value[tableIndex],
+            status: TableStatus.AVAILABLE
+          }
         }
-      })
+      }
+
+      if (reservation.status === ReservationStatus.CHECKED_IN) {
+        const tableIndex = tables.value.findIndex(table => table.id === reservation.tableId)
+        if (tableIndex !== -1) {
+          tables.value[tableIndex] = {
+            ...tables.value[tableIndex],
+            status: TableStatus.OCCUPIED
+          }
+        }
+      }
 
       return true
     } catch (err: any) {
-      error.value = err.response?.data?.error || err.message
+      error.value = err.response?.data?.message || err.message || 'Failed to update reservation'
+      console.error('Error updating reservation status:', err)
       return false
     }
   }
 
-  const checkReservationsStatus = () => {
-    const now = new Date()
+  const seatReservation = async (reservationId: number): Promise<boolean> => {
+    return updateReservationStatus(reservationId, ReservationStatus.CHECKED_IN)
+  }
 
-    tables.value.forEach(table => {
-      table.reservations.forEach(reservation => {
-        if (reservation.status === 'CONFIRMED') {
-          const reservationTime = new Date(reservation.reservationTime)
-          const timeDiff = reservationTime.getTime() - now.getTime()
+  const getTableById = (tableId: number): Table | undefined => {
+    return tables.value.find(table => table.id === tableId)
+  }
 
-          // If reservation is within 30 minutes and table is available, mark as reserved
-          if (timeDiff <= 30 * 60 * 1000 && timeDiff > 0 && table.status === TableStatus.AVAILABLE) {
-            table.status = TableStatus.RESERVED
-          }
-          // If reservation time has passed by more than 15 minutes, mark as no-show
-          else if (timeDiff < -15 * 60 * 1000) {
-            reservation.status = 'NO_SHOW'
-            if (table.status === TableStatus.RESERVED) {
-              table.status = TableStatus.AVAILABLE
-            }
-          }
-        }
-      })
-    })
+  const getReservationsForTable = (tableId: number): Reservation[] => {
+    return reservations.value.filter(reservation => reservation.tableId === tableId)
   }
 
   const clearError = () => {
@@ -402,9 +277,9 @@ export const useTablesStore = defineStore('tables', () => {
 
   return {
     // State
+    sections,
     tables,
-    floorPlan,
-    selectedTable,
+    reservations,
     isLoading,
     error,
     lastUpdate,
@@ -412,24 +287,17 @@ export const useTablesStore = defineStore('tables', () => {
     // Computed
     tablesByStatus,
     tableStats,
-    sectionsWithTables,
     upcomingReservations,
 
     // Actions
     fetchTables,
-    fetchFloorPlan,
+    fetchReservations,
     updateTableStatus,
-    assignOrderToTable,
-    clearTable,
     createReservation,
-    updateReservation,
+    updateReservationStatus,
     seatReservation,
-    moveTable,
-    findAvailableTable,
     getTableById,
-    getTableByNumber,
-    bulkUpdateStatus,
-    checkReservationsStatus,
+    getReservationsForTable,
     clearError
   }
 })
