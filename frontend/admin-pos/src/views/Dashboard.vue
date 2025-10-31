@@ -168,8 +168,8 @@ const ordersChange = computed(() => {
 
 const totalDishesOrdered = computed(() => {
   // Calculate from menu performance or fall back to orders
-  if (analyticsStore.menuPerformance.length > 0) {
-    return analyticsStore.menuPerformance.reduce((sum, item) => sum + (item.total_quantity || 0), 0)
+  if (analyticsStore.menuPerformanceItems.length > 0) {
+    return analyticsStore.menuPerformanceItems.reduce((sum, item) => sum + item.quantitySold, 0)
   }
   return ordersStore.orders.reduce((total, order) => {
     return total + (order.orderItems?.length || order.items?.length || 0)
@@ -179,7 +179,10 @@ const totalDishesOrdered = computed(() => {
 const totalCustomers = computed(() => {
   // Use customer insights if available
   if (analyticsStore.customerInsightsData) {
-    return analyticsStore.customerInsightsData.returningCustomers?.length || 0
+    return (
+      analyticsStore.customerInsightsData.newCustomers +
+      analyticsStore.customerInsightsData.returningCustomers
+    )
   }
   // Fallback to orders count
   const uniqueCustomers = new Set()
@@ -211,16 +214,16 @@ const recentOrdersForTable = computed(() => {
 
 // Most ordered dishes data from analytics
 const mostOrderedDishes = computed(() => {
-  if (analyticsStore.menuPerformance.length > 0) {
-    return analyticsStore.menuPerformance
+  if (analyticsStore.menuPerformanceItems.length > 0) {
+    return analyticsStore.menuPerformanceItems
       .slice(0, 3)
       .map(item => ({
-        id: item.id,
-        name: item.name,
-        image: item.imageUrl || '/placeholder-dish.png',
-        count: item.times_ordered || 0,
-        revenue: item.total_revenue || 0,
-        trending: 'up' // Could be calculated based on historical data
+        id: item.productId,
+        name: item.productName,
+        image: '/placeholder-dish.png',
+        count: item.quantitySold,
+        revenue: item.revenue,
+        trending: item.trend || 'stable'
       }))
   }
 

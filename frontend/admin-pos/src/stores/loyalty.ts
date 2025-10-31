@@ -66,6 +66,65 @@ export interface LoyaltyAnalytics {
   }>
 }
 
+const unwrapResponse = <T = any>(response: any): T => (response?.data ?? response)
+
+const extractArray = <T>(response: any, ...keys: string[]): T[] => {
+  const data: any = unwrapResponse(response)
+
+  if (Array.isArray(data)) {
+    return data as T[]
+  }
+
+  for (const key of keys) {
+    const value = data?.[key]
+    if (Array.isArray(value)) {
+      return value as T[]
+    }
+  }
+
+  if (Array.isArray(data?.items)) {
+    return data.items as T[]
+  }
+
+  if (Array.isArray(data?.content)) {
+    return data.content as T[]
+  }
+
+  if (Array.isArray(data?.results)) {
+    return data.results as T[]
+  }
+
+  return []
+}
+
+const extractValue = <T>(response: any, ...keys: string[]): T | undefined => {
+  const data: any = unwrapResponse(response)
+
+  for (const key of keys) {
+    if (data?.[key] !== undefined) {
+      return data[key] as T
+    }
+
+    if (data?.result?.[key] !== undefined) {
+      return data.result[key] as T
+    }
+
+    if (data?.payload?.[key] !== undefined) {
+      return data.payload[key] as T
+    }
+  }
+
+  if (data !== undefined && data !== null) {
+    return data as T
+  }
+
+  return undefined
+}
+
+const ensureNumber = (value: unknown, fallback = 0): number => {
+  return typeof value === 'number' && !Number.isNaN(value) ? value : fallback
+}
+
 export const useLoyaltyStore = defineStore('loyalty', () => {
   // State
   const programs = ref<LoyaltyProgram[]>([])
@@ -100,7 +159,7 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
     isLoading.value = true
     try {
       const data = await loyaltyApi.getPrograms()
-      programs.value = data.programs || data || []
+      programs.value = extractArray<LoyaltyProgram>(data, 'programs', 'data')
       return true
     } catch (err: any) {
       error.value = err.message
@@ -113,7 +172,8 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const createProgram = async (program: Omit<LoyaltyProgram, 'id'>): Promise<LoyaltyProgram | null> => {
     try {
       const data = await loyaltyApi.createProgram(program)
-      const newProgram = data.program || data
+      const newProgram =
+        extractValue<LoyaltyProgram>(data, 'program') ?? unwrapResponse<LoyaltyProgram>(data)
       programs.value.push(newProgram)
       return newProgram
     } catch (err: any) {
@@ -124,10 +184,15 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
 
   const updateProgram = async (programId: string, updates: Partial<LoyaltyProgram>): Promise<boolean> => {
     try {
-      await loyaltyApi.updateProgram(programId, updates)
+      const updatedResponse = await loyaltyApi.updateProgram(programId, updates)
       const index = programs.value.findIndex(p => p.id === programId)
       if (index !== -1) {
-        programs.value[index] = { ...programs.value[index], ...updates }
+        const updatedProgram = extractValue<LoyaltyProgram>(updatedResponse, 'program')
+        programs.value[index] = {
+          ...programs.value[index],
+          ...updates,
+          ...(updatedProgram ?? {})
+        }
       }
       return true
     } catch (err: any) {
@@ -145,13 +210,17 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
     programId?: string
   }): Promise<LoyaltyEnrollment | null> => {
     try {
-      const data = await loyaltyApi.enrollCustomer({
-        ...customerData,
+      const data = await loyaltyApi.enrollCustomer(customerData.customerId, {
+        customerName: customerData.customerName,
+        email: customerData.email,
+        phone: customerData.phone,
         programId: customerData.programId || defaultProgram.value?.id
       })
 
-      const enrollment = data.enrollment || data
-      if (enrollment) {
+      const enrollment =
+        extractValue<LoyaltyEnrollment>(data, 'enrollment', 'customer') ??
+        unwrapResponse<LoyaltyEnrollment>(data)
+      if (enrollment && enrollment.customerId) {
         customers.value.push(enrollment)
         return enrollment
       }
@@ -170,12 +239,8 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
     isLoading.value = true
     try {
       const data = await loyaltyApi.getCustomers(filters)
-
-      if (data) {
-        customers.value = data.customers || data || []
-        return true
-      }
-      throw new Error('Failed to fetch customers')
+      customers.value = extractArray<LoyaltyEnrollment>(data, 'customers', 'items')
+      return true
     } catch (err: any) {
       error.value = err.message
       return false
@@ -187,9 +252,12 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const getCustomerDetails = async (customerId: string): Promise<any> => {
     try {
       const data = await loyaltyApi.getCustomerDetails(customerId)
-
-      if (data) {
-        return data.customer || data
+      if (!data) {
+        throw new Error('Failed to fetch customer')
+      }
+      const customer = extractValue<any>(data, 'customer', 'profile') ?? unwrapResponse(data)
+      if (customer) {
+        return customer
       }
       throw new Error('Failed to fetch customer')
     } catch (err: any) {
@@ -201,20 +269,26 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   // Points Management
   const awardPoints = async (customerId: string, points: number, reason: string, orderId?: string): Promise<boolean> => {
     try {
-      const data = await loyaltyApi.awardPoints({
-        customerId,
+      const response = await loyaltyApi.awardPoints(customerId, {
         points,
         reason,
         orderId
       })
-      
-      const transaction = data.transaction || data
-      pointsTransactions.value.unshift(transaction)
 
-      // Update customer points
+      const data = unwrapResponse(response)
+      const transaction = extractValue<PointsTransaction>(data, 'transaction')
+      if (transaction) {
+        pointsTransactions.value.unshift(transaction)
+      }
+
       const customer = customers.value.find(c => c.customerId === customerId)
       if (customer) {
-        customer.points += points
+        const rawBalance = data?.newBalance ?? data?.balance ?? transaction?.balance
+        if (typeof rawBalance === 'number' && !Number.isNaN(rawBalance)) {
+          customer.points = rawBalance
+        } else {
+          customer.points += points
+        }
       }
 
       return true
@@ -230,22 +304,33 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
     newBalance?: number
   }> => {
     try {
-      const data = await loyaltyApi.redeemPoints({
-        customerId,
+      const response = await loyaltyApi.redeemPoints(customerId, {
         points,
         orderId
       })
-      
-      const { discountValue, newBalance, transaction, redemption } = data
 
-      pointsTransactions.value.unshift(transaction)
-      redemptions.value.unshift(redemption)
+      const data = unwrapResponse(response)
+      const transaction = extractValue<PointsTransaction>(data, 'transaction')
+      if (transaction) {
+        pointsTransactions.value.unshift(transaction)
+      }
 
-      // Update customer points
+      const redemption = extractValue<LoyaltyRedemption>(data, 'redemption')
+      if (redemption) {
+        redemptions.value.unshift(redemption)
+      }
+
+      const rawBalance = data?.newBalance ?? data?.balance ?? redemption?.balance
+
       const customer = customers.value.find(c => c.customerId === customerId)
       if (customer) {
-        customer.points = newBalance
+        if (typeof rawBalance === 'number' && !Number.isNaN(rawBalance)) {
+          customer.points = rawBalance
+        }
       }
+
+      const discountValue = ensureNumber(data?.discountValue ?? redemption?.discountValue, 0)
+      const newBalance = ensureNumber(rawBalance, customer?.points ?? 0)
 
       return { success: true, discountValue, newBalance }
     } catch (err: any) {
@@ -261,13 +346,20 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
         points,
         reason
       })
-      
-      const transaction = data.transaction || data
-      pointsTransactions.value.unshift(transaction)
+
+      const transaction = extractValue<PointsTransaction>(data, 'transaction')
+      if (transaction) {
+        pointsTransactions.value.unshift(transaction)
+      }
 
       const customer = customers.value.find(c => c.customerId === customerId)
       if (customer) {
-        customer.points = transaction.balance
+        const rawBalance = transaction?.balance ?? unwrapResponse(data)?.newBalance
+        if (typeof rawBalance === 'number' && !Number.isNaN(rawBalance)) {
+          customer.points = rawBalance
+        } else {
+          customer.points += points
+        }
       }
 
       return true
@@ -280,8 +372,7 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const fetchPointsHistory = async (customerId: string): Promise<PointsTransaction[]> => {
     try {
       const data = await loyaltyApi.getPointsHistory(customerId)
-      
-      return data.transactions || data || []
+      return extractArray<PointsTransaction>(data, 'transactions', 'history')
     } catch (err: any) {
       error.value = err.message
       return []
@@ -292,8 +383,8 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const createTier = async (programId: string, tier: Omit<LoyaltyTier, 'id' | 'programId'>): Promise<LoyaltyTier | null> => {
     try {
       const data = await loyaltyApi.createTier(programId, tier)
-      
-      const newTier = data.tier || data
+
+      const newTier = extractValue<LoyaltyTier>(data, 'tier') ?? unwrapResponse<LoyaltyTier>(data)
       const program = programs.value.find(p => p.id === programId)
       if (program) {
         if (!program.tiers) program.tiers = []
@@ -309,12 +400,13 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const updateTier = async (tierId: string, updates: Partial<LoyaltyTier>): Promise<boolean> => {
     try {
       const data = await loyaltyApi.updateTier(tierId, updates)
-      
+      const updatedTier = extractValue<LoyaltyTier>(data, 'tier')
+
       programs.value.forEach(program => {
         if (program.tiers) {
           const index = program.tiers.findIndex(t => t.id === tierId)
           if (index !== -1) {
-            program.tiers[index] = { ...program.tiers[index], ...updates }
+            program.tiers[index] = { ...program.tiers[index], ...updates, ...(updatedTier ?? {}) }
           }
         }
       })
@@ -328,7 +420,11 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const deleteTier = async (tierId: string): Promise<boolean> => {
     try {
       const data = await loyaltyApi.deleteTier(tierId)
-      
+      const result = unwrapResponse(data)
+      if (result?.success === false) {
+        throw new Error('Failed to delete tier')
+      }
+
       programs.value.forEach(program => {
         if (program.tiers) {
           program.tiers = program.tiers.filter(t => t.id !== tierId)
@@ -345,8 +441,9 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const createCampaign = async (campaign: Omit<LoyaltyCampaign, 'id' | 'usageCount'>): Promise<LoyaltyCampaign | null> => {
     try {
       const data = await loyaltyApi.createCampaign(campaign)
-      
-      const newCampaign = data.campaign || data
+
+      const newCampaign =
+        extractValue<LoyaltyCampaign>(data, 'campaign') ?? unwrapResponse<LoyaltyCampaign>(data)
       campaigns.value.push(newCampaign)
       return newCampaign
     } catch (err: any) {
@@ -358,10 +455,14 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const updateCampaign = async (campaignId: string, updates: Partial<LoyaltyCampaign>): Promise<boolean> => {
     try {
       const data = await loyaltyApi.updateCampaign(campaignId, updates)
-      
       const index = campaigns.value.findIndex(c => c.id === campaignId)
       if (index !== -1) {
-        campaigns.value[index] = { ...campaigns.value[index], ...updates }
+        const updatedCampaign = extractValue<LoyaltyCampaign>(data, 'campaign')
+        campaigns.value[index] = {
+          ...campaigns.value[index],
+          ...updates,
+          ...(updatedCampaign ?? {})
+        }
       }
       return true
     } catch (err: any) {
@@ -373,7 +474,11 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const deleteCampaign = async (campaignId: string): Promise<boolean> => {
     try {
       const data = await loyaltyApi.deleteCampaign(campaignId)
-      
+      const result = unwrapResponse(data)
+      if (result?.success === false) {
+        throw new Error('Failed to delete campaign')
+      }
+
       campaigns.value = campaigns.value.filter(c => c.id !== campaignId)
       return true
     } catch (err: any) {
@@ -385,8 +490,8 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   const fetchCampaigns = async (): Promise<boolean> => {
     try {
       const data = await loyaltyApi.getCampaigns()
-      
-      campaigns.value = data.campaigns || data || []
+
+      campaigns.value = extractArray<LoyaltyCampaign>(data, 'campaigns', 'items')
       return true
     } catch (err: any) {
       error.value = err.message
@@ -397,11 +502,50 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   // Analytics
   const fetchAnalytics = async (startDate?: string, endDate?: string): Promise<boolean> => {
     try {
-      const data = await loyaltyApi.getAnalytics({
-        params: { startDate, endDate }
-      })
-      
-      analytics.value = data.analytics || data
+      const params = {
+        startDate,
+        endDate
+      }
+
+      const [overviewResponse, customerResponse, redemptionResponse] = await Promise.all([
+        loyaltyApi.getAnalyticsOverview(params),
+        loyaltyApi.getCustomerAnalytics(params),
+        loyaltyApi.getRedemptionAnalytics(params)
+      ])
+
+      const overview = extractValue<any>(overviewResponse, 'analytics', 'overview') || {}
+      const customerStats = extractValue<any>(customerResponse, 'analytics', 'customers') || {}
+      const redemptionStats = extractValue<any>(redemptionResponse, 'analytics', 'redemptions') || {}
+
+      const customerTransactions = extractArray<PointsTransaction>(customerStats, 'recentTransactions')
+      const overviewTransactions = extractArray<PointsTransaction>(overview, 'recentTransactions')
+      const campaignPerformance = extractArray<any>(redemptionStats, 'campaignPerformance', 'campaigns')
+
+      analytics.value = {
+        totalMembers: ensureNumber(
+          overview.totalMembers ?? overview.enrolledCustomers ?? overview.totalCustomers,
+          0
+        ),
+        activeMembers: ensureNumber(overview.activeMembers ?? overview.activeCustomers, 0),
+        totalPointsIssued: ensureNumber(overview.totalPointsIssued ?? overview.pointsIssued, 0),
+        totalPointsRedeemed: ensureNumber(overview.totalPointsRedeemed ?? overview.pointsRedeemed, 0),
+        totalPointsExpired: ensureNumber(overview.totalPointsExpired ?? overview.pointsExpired, 0),
+        totalRedemptionValue: ensureNumber(
+          overview.totalRedemptionValue ?? overview.redemptionValue ?? redemptionStats.totalRedemptionValue,
+          0
+        ),
+        averagePointsPerMember: ensureNumber(
+          overview.averagePointsPerMember ?? overview.avgPointsPerMember,
+          0
+        ),
+        enrollmentRate: ensureNumber(overview.enrollmentRate, 0),
+        redemptionRate: ensureNumber(overview.redemptionRate ?? redemptionStats.redemptionRate, 0),
+        membersByTier: (overview.membersByTier ?? customerStats.membersByTier ?? {}) as Record<string, number>,
+        topMembers: customerStats.topMembers ?? [],
+        recentTransactions:
+          customerTransactions.length > 0 ? customerTransactions : overviewTransactions,
+        campaignPerformance
+      }
       return true
     } catch (err: any) {
       error.value = err.message
@@ -412,14 +556,17 @@ export const useLoyaltyStore = defineStore('loyalty', () => {
   // Data Export
   const exportData = async (type: 'customers' | 'transactions' | 'campaigns', format: 'CSV' | 'EXCEL'): Promise<boolean> => {
     try {
-      const response = await loyaltyApi.exportData(type, {
-        params: { format },
-        responseType: 'blob'
-      })
-
-      const blob = new Blob([response.data], {
-        type: format === 'CSV' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      })
+      const response = await loyaltyApi.exportData(type, { format })
+      const blobSource = response?.data ?? response
+      const blob =
+        blobSource instanceof Blob
+          ? blobSource
+          : new Blob([blobSource], {
+              type:
+                format === 'CSV'
+                  ? 'text/csv'
+                  : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url

@@ -289,22 +289,14 @@ const loadCustomerLoyalty = async () => {
   loyaltyError.value = null
 
   try {
-    const response = await loyaltyService.getCustomerLoyalty(selectedCustomer.value.id)
-    if (response.success) {
-      loyaltyProfile.value = response.data
+    loyaltyProfile.value = await loyaltyService.getCustomerLoyalty(selectedCustomer.value.id)
 
-      // Load current program details if customer is enrolled
-      if (loyaltyProfile.value?.customer.tier) {
-        const programsResponse = await loyaltyService.getAllPrograms()
-        if (programsResponse.success) {
-          currentProgram.value = programsResponse.data.find(p =>
-            p.tiers?.some(t => t.id === loyaltyProfile.value?.customer.tier?.id)
-          ) || null
-        }
-      }
-    } else {
-      loyaltyError.value = response.message || 'Failed to load loyalty profile'
-      loyaltyProfile.value = null
+    // Load current program details if customer is enrolled
+    if (loyaltyProfile.value?.customer.tier) {
+      const programs = await loyaltyService.getAllPrograms()
+      currentProgram.value = programs.find(p =>
+        p.tiers?.some(t => t.id === loyaltyProfile.value?.customer.tier?.id)
+      ) || null
     }
   } catch (error) {
     loyaltyError.value = error instanceof Error ? error.message : 'Failed to load loyalty profile'
@@ -318,25 +310,25 @@ const handlePointsRedemption = async (redemption: RedemptionRequest & { applyToO
   if (!selectedCustomer.value) return
 
   try {
-    const response = await loyaltyService.redeemPoints(selectedCustomer.value.id, redemption)
-    if (response.success) {
-      showMessage('Points redeemed successfully!', 'success')
-      showRedemptionModal.value = false
+    const { redemption: redemptionResult } = await loyaltyService.redeemPoints(
+      selectedCustomer.value.id,
+      redemption
+    )
 
-      // Apply to order if requested
-      if (redemption.applyToOrder && props.orderId) {
-        await loyaltyService.applyRedemptionToOrder(
-          props.orderId,
-          response.data.redemption.id,
-          selectedCustomer.value.id
-        )
-      }
+    showMessage('Points redeemed successfully!', 'success')
+    showRedemptionModal.value = false
 
-      // Reload loyalty profile
-      await loadCustomerLoyalty()
-    } else {
-      showMessage(response.message || 'Failed to redeem points', 'error')
+    // Apply to order if requested
+    if (redemption.applyToOrder && props.orderId) {
+      await loyaltyService.applyRedemptionToOrder(
+        props.orderId,
+        redemptionResult.id,
+        selectedCustomer.value.id
+      )
     }
+
+    // Reload loyalty profile
+    await loadCustomerLoyalty()
   } catch (error) {
     showMessage(error instanceof Error ? error.message : 'Failed to redeem points', 'error')
   }

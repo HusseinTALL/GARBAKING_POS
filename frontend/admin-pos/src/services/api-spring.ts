@@ -5,8 +5,16 @@
  */
 
 import axios from 'axios'
-import type { AxiosResponse, AxiosError, AxiosInstance } from 'axios'
+import type {
+  AxiosResponse,
+  AxiosError,
+  AxiosInstance,
+  AxiosProgressEvent,
+  AxiosRequestConfig
+} from 'axios'
 import { useToast } from 'vue-toastification'
+import type { KitchenOrder } from '@/stores/kitchen'
+import type { PaymentMethod } from '@/stores/payment'
 
 // API Configuration - Spring Boot API Gateway
 const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8080'
@@ -18,6 +26,90 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   }
+})
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const normalizeString = (value: unknown, fallback = ''): string => {
+  if (typeof value === 'string') {
+    return value
+  }
+  if (typeof value === 'number') {
+    return value.toString()
+  }
+  return fallback
+}
+
+export const mapOrderDtoToKitchenOrder = (order: any): KitchenOrder => {
+  const status = normalizeString(order?.status, 'CONFIRMED').toUpperCase() as KitchenOrder['status']
+  const priority = normalizeString(order?.priority, 'NORMAL').toUpperCase() as KitchenOrder['priority']
+
+  const orderItems = Array.isArray(order?.orderItems) ? order.orderItems : []
+
+  return {
+    id: normalizeString(order?.id ?? order?.orderId),
+    orderNumber: normalizeString(order?.orderNumber ?? `ORD-${order?.id ?? ''}`),
+    customerName: order?.customerName ?? undefined,
+    tableNumber: normalizeString(order?.tableNumber ?? '').trim() !== ''
+      ? normalizeString(order?.tableNumber)
+      : undefined,
+    orderType: normalizeString(order?.orderType ?? 'DINE_IN'),
+    status,
+    priority,
+    total: toNumber(order?.total ?? order?.totalAmount, 0),
+    createdAt: order?.createdAt ?? new Date().toISOString(),
+    estimatedTime: order?.estimatedTime ?? order?.prepTime ?? undefined,
+    actualTime: order?.actualTime ?? undefined,
+    kitchenNotes: order?.kitchenNotes ?? order?.notes ?? undefined,
+    orderItems: orderItems.map((item: any) => {
+      const itemStatus = normalizeString(item?.status ?? 'PENDING').toUpperCase() as KitchenOrder['orderItems'][number]['status']
+      const menuItem = item?.menuItem ?? {}
+
+      return {
+        id: normalizeString(item?.id ?? `${order?.id ?? 'order'}-${item?.menuItemId ?? 'item'}`),
+        quantity: toNumber(item?.quantity, 0),
+        menuItem: {
+          id: normalizeString(menuItem?.id ?? item?.menuItemId ?? item?.id),
+          name: normalizeString(menuItem?.name ?? item?.name ?? 'Unknown Item'),
+          price: toNumber(menuItem?.price ?? item?.unitPrice ?? item?.price, 0),
+          prepTime: menuItem?.prepTime ?? item?.prepTime ?? undefined,
+          station: menuItem?.station ?? item?.station ?? undefined,
+        },
+        totalPrice: toNumber(item?.totalPrice ?? (item?.unitPrice ?? item?.price) * toNumber(item?.quantity, 1), 0),
+        notes: item?.notes ?? item?.kitchenNotes ?? undefined,
+        status: itemStatus,
+        kitchenNotes: item?.kitchenNotes ?? undefined,
+        prepStartTime: item?.prepStartTime ?? item?.startedAt ?? undefined,
+        prepCompleteTime: item?.prepCompleteTime ?? item?.completedAt ?? undefined,
+        assignedStation: item?.assignedStation ?? menuItem?.station ?? undefined,
+      }
+    }),
+    isHeld: Boolean(order?.isHeld ?? false),
+    heldReason: order?.heldReason ?? undefined,
+    heldAt: order?.heldAt ?? undefined,
+  }
+}
+
+export const mapPaymentMethodDto = (method: any): PaymentMethod => ({
+  id: normalizeString(method?.id ?? method?.paymentMethodId ?? method?.code),
+  name: normalizeString(method?.name ?? method?.code ?? 'Unknown'),
+  type: normalizeString(method?.type ?? method?.paymentType ?? 'CASH').toUpperCase() as PaymentMethod['type'],
+  displayName: normalizeString(method?.displayName ?? method?.name ?? method?.code ?? 'Payment Method'),
+  icon: Array.isArray(method?.icon)
+    ? method.icon
+    : method?.icon
+      ? [normalizeString(method.icon)]
+      : [],
+  color: normalizeString(method?.color ?? '#0ea5e9'),
+  enabled: Boolean(method?.enabled ?? method?.active ?? true),
+  requiresAuth: Boolean(method?.requiresAuth ?? false),
+  processingFee: method?.processingFee ?? method?.fee ?? undefined,
+  minAmount: method?.minAmount ?? undefined,
+  maxAmount: method?.maxAmount ?? undefined,
+  config: method?.config ?? method?.metadata ?? {},
 })
 
 // Request interceptor to add auth token
@@ -282,9 +374,16 @@ export const menuItemsApi = {
 
 // Orders API (Order Service)
 export const ordersApi = {
-  async getAll() {
-    const response = await apiClient.get('/api/orders')
-    return response.data || []
+  async getAll(params?: Record<string, any>) {
+    const response = await apiClient.get('/api/orders', { params })
+    const data = response.data
+    if (Array.isArray(data)) {
+      return data
+    }
+    if (Array.isArray(data?.orders)) {
+      return data.orders
+    }
+    return data ? [data].flat() : []
   },
 
   async getById(id: number) {
@@ -322,7 +421,7 @@ export const ordersApi = {
     return response.data
   },
 
-  async updateStatus(orderId: number, status: string, reason?: string) {
+  async updateStatus(orderId: string | number, status: string, reason?: string) {
     const response = await apiClient.put(`/api/orders/${orderId}/status`, {
       status,
       reason
@@ -330,19 +429,19 @@ export const ordersApi = {
     return response.data
   },
 
-  async updatePayment(orderId: number, paymentData: any) {
+  async updatePayment(orderId: string | number, paymentData: any) {
     const response = await apiClient.put(`/api/orders/${orderId}/payment`, paymentData)
     return response.data
   },
 
-  async cancel(orderId: number, reason?: string) {
+  async cancel(orderId: string | number, reason?: string) {
     const response = await apiClient.post(`/api/orders/${orderId}/cancel`, null, {
       params: { reason: reason || 'Cancelled by staff' }
     })
     return response.data
   },
 
-  async delete(id: number) {
+  async delete(id: string | number) {
     await apiClient.delete(`/api/orders/${id}`)
   }
 }
@@ -351,6 +450,239 @@ export const ordersApi = {
 // Analytics API (Analytics Service - To be implemented)
 // NOTE: These endpoints are not yet fully implemented in Spring Boot backend
 // Some endpoints may aggregate data from existing services
+export interface SalesDataDto {
+  totalSales: number
+  totalOrders: number
+  averageOrderValue: number
+  uniqueCustomers: number
+  revenue: {
+    gross: number
+    net: number
+    tax: number
+    discounts: number
+    refunds: number
+  }
+  breakdown: {
+    cash: number
+    card: number
+    mobileMoney: number
+    credit: number
+  }
+}
+
+export interface ProductAnalyticsDto {
+  productId: string
+  productName: string
+  category: string
+  quantitySold: number
+  revenue: number
+  profit: number
+  profitMargin: number
+  averagePrice: number
+  timesOrdered: number
+  percentageOfTotal: number
+  trend: string
+  trendPercentage: number
+}
+
+export interface CategoryAnalyticsDto {
+  categoryId: string
+  categoryName: string
+  quantitySold: number
+  revenue: number
+  profit: number
+  orderCount: number
+  percentageOfTotal: number
+  topProducts: ProductAnalyticsDto[]
+  trend: string
+  trendPercentage: number
+}
+
+export interface StaffPerformanceDto {
+  staffId: string
+  staffName: string
+  role: string
+  totalSales: number
+  totalOrders: number
+  averageOrderValue: number
+  hoursWorked: number
+  salesPerHour: number
+  customerRating?: number
+  efficiency: number
+  trend: string
+}
+
+export interface CustomerAnalyticsDto {
+  totalCustomers: number
+  newCustomers: number
+  returningCustomers: number
+  averageOrdersPerCustomer: number
+  customerLifetimeValue: number
+  retentionRate: number
+  demographics: {
+    ageGroups: Record<string, number>
+    genderDistribution: Record<string, number>
+    locationDistribution: Record<string, number>
+  }
+}
+
+export interface TimeAnalyticsDto {
+  hour: number
+  period: string
+  orders: number
+  revenue: number
+  averageOrderValue: number
+  popularItems: string[]
+  staffCount: number
+  efficiency: number
+}
+
+export interface ComparisonDataDto {
+  current: SalesDataDto
+  previous: SalesDataDto
+  change: {
+    sales: number
+    orders: number
+    aov: number
+    customers: number
+  }
+  growth: {
+    daily: number
+    weekly: number
+    monthly: number
+    yearly: number
+  }
+}
+
+export interface InventoryAnalyticsDto {
+  totalProducts: number
+  lowStockItems: number
+  outOfStockItems: number
+  fastMovingItems: ProductAnalyticsDto[]
+  slowMovingItems: ProductAnalyticsDto[]
+  stockValue: number
+  turnoverRate: number
+  reorderSuggestions: {
+    productId: string
+    productName: string
+    currentStock: number
+    suggestedOrder: number
+    priority: string
+  }[]
+}
+
+export interface DashboardComparisonDto {
+  revenueChange: number
+  ordersChange: number
+}
+
+export interface DashboardPeriodMetricsDto {
+  orders: number
+  revenue: number
+  averageOrderValue: number
+  comparison: DashboardComparisonDto
+}
+
+export interface ActiveOrdersSummaryDto {
+  activeOrders: number
+  pendingOrders: number
+  preparingOrders: number
+  readyOrders: number
+}
+
+export interface DashboardAnalyticsDto {
+  today: DashboardPeriodMetricsDto
+  yesterday: DashboardPeriodMetricsDto
+  orders: ActiveOrdersSummaryDto
+  topMenuItems: ProductAnalyticsDto[]
+}
+
+export interface MenuPerformanceResponseDto {
+  period: string
+  menuItems: ProductAnalyticsDto[]
+  totalOrders: number
+}
+
+export interface PeakHoursResponseDto {
+  period: string
+  peakHours: TimeAnalyticsDto[]
+}
+
+export interface PaymentMethodAnalyticsDto {
+  period: string
+  counts: Record<string, number>
+  revenue: Record<string, number>
+}
+
+export interface CustomerInsightsResponseDto {
+  period: string
+  totalOrders: number
+  averageOrderValue: number
+  ordersByType: Record<string, number>
+  ordersByStatus: Record<string, number>
+  peakHours: { hour: number; label: string; orders: number }[] | any
+  newCustomers: number
+  returningCustomers: number
+}
+
+export interface ProductAnalyticsResponseDto {
+  period: string
+  products: ProductAnalyticsDto[]
+}
+
+export interface CategoryAnalyticsResponseDto {
+  period: string
+  categories: CategoryAnalyticsDto[]
+}
+
+export interface StaffPerformanceResponseDto {
+  staff: StaffPerformanceDto[]
+}
+
+export interface CustomerAnalyticsResponseDto {
+  customers: CustomerAnalyticsDto
+}
+
+export interface TimeAnalyticsResponseDto {
+  period: string
+  timeData: TimeAnalyticsDto[]
+}
+
+export interface ComparisonResponseDto {
+  comparison: ComparisonDataDto
+}
+
+export interface InventoryAnalyticsResponseDto {
+  inventory: InventoryAnalyticsDto
+}
+
+export interface GeneratedReportResponseDto {
+  reportUrl: string
+  type: string
+  generatedAt: string
+}
+
+export interface ReportConfigDto {
+  id: string
+  name: string
+  type: string
+  schedule: string
+  format: string
+  recipients: string[]
+  filters: Record<string, unknown>
+  isActive: boolean
+  lastGenerated: string | null
+  nextScheduled: string | null
+}
+
+export interface ScheduledReportResponseDto {
+  report: ReportConfigDto
+}
+
+export interface ReportConfigListResponseDto {
+  configs: ReportConfigDto[]
+}
+
 export const analyticsApi = {
   async getDashboardStats() {
     // This can be implemented later with a dedicated analytics service
@@ -387,92 +719,92 @@ export const analyticsApi = {
     }
   },
 
-  async getDashboardData() {
+  async getDashboardData(): Promise<DashboardAnalyticsDto> {
     const response = await apiClient.get('/api/analytics/dashboard')
     return response.data
   },
 
-  async getSalesData(params?: { startDate?: string; endDate?: string }) {
+  async getSalesData(params?: { startDate?: string; endDate?: string }): Promise<SalesDataDto> {
     const response = await apiClient.get('/api/analytics/sales', { params })
     return response.data
   },
 
-  async getMenuPerformance(days: number = 30) {
+  async getMenuPerformance(days: number = 30): Promise<MenuPerformanceResponseDto> {
     const response = await apiClient.get('/api/analytics/menu-performance', {
       params: { days }
     })
     return response.data
   },
 
-  async getPeakHours(days: number = 7) {
+  async getPeakHours(days: number = 7): Promise<PeakHoursResponseDto> {
     const response = await apiClient.get('/api/analytics/peak-hours', {
       params: { days }
     })
     return response.data
   },
 
-  async getPaymentMethods(days: number = 30) {
+  async getPaymentMethods(days: number = 30): Promise<PaymentMethodAnalyticsDto> {
     const response = await apiClient.get('/api/analytics/payment-methods', {
       params: { days }
     })
     return response.data
   },
 
-  async getCustomerInsights(days: number = 30) {
+  async getCustomerInsights(days: number = 30): Promise<CustomerInsightsResponseDto> {
     const response = await apiClient.get('/api/analytics/customer-insights', {
       params: { days }
     })
     return response.data
   },
 
-  async getProductAnalytics(period: string) {
+  async getProductAnalytics(period: string): Promise<ProductAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/products', {
       params: { period }
     })
     return response.data
   },
 
-  async getCategoryAnalytics(period: string) {
+  async getCategoryAnalytics(period: string): Promise<CategoryAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/categories', {
       params: { period }
     })
     return response.data
   },
 
-  async getStaffPerformance(period: string) {
+  async getStaffPerformance(period: string): Promise<StaffPerformanceResponseDto> {
     const response = await apiClient.get('/api/analytics/staff', {
       params: { period }
     })
     return response.data
   },
 
-  async getCustomerAnalytics(period: string) {
+  async getCustomerAnalytics(period: string): Promise<CustomerAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/customers', {
       params: { period }
     })
     return response.data
   },
 
-  async getTimeAnalytics(period: string) {
+  async getTimeAnalytics(period: string): Promise<TimeAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/time', {
       params: { period }
     })
     return response.data
   },
 
-  async getComparisonData(period: string) {
+  async getComparisonData(period: string): Promise<ComparisonResponseDto> {
     const response = await apiClient.get('/api/analytics/comparison', {
       params: { period }
     })
     return response.data
   },
 
-  async getInventoryAnalytics() {
+  async getInventoryAnalytics(): Promise<InventoryAnalyticsResponseDto> {
     const response = await apiClient.get('/api/analytics/inventory')
     return response.data
   },
 
-  async generateReport(reportType: string, config: any) {
+  async generateReport(reportType: string, config: any): Promise<GeneratedReportResponseDto> {
     const response = await apiClient.post('/api/analytics/reports/generate', {
       type: reportType,
       config
@@ -480,12 +812,12 @@ export const analyticsApi = {
     return response.data
   },
 
-  async scheduleReport(config: any) {
+  async scheduleReport(config: any): Promise<ScheduledReportResponseDto> {
     const response = await apiClient.post('/api/analytics/reports/schedule', config)
     return response.data
   },
 
-  async getReportConfigs() {
+  async getReportConfigs(): Promise<ReportConfigListResponseDto> {
     const response = await apiClient.get('/api/analytics/reports/configs')
     return response.data
   },
@@ -656,8 +988,18 @@ export const loyaltyApi = {
     return response.data
   },
 
-  async enrollCustomer(payload: any) {
-    const response = await apiClient.post('/api/loyalty/enroll', payload)
+  async deleteProgram(programId: string) {
+    const response = await apiClient.delete(`/api/loyalty/programs/${programId}`)
+    return response.data
+  },
+
+  async getProgramTiers(programId: string) {
+    const response = await apiClient.get(`/api/loyalty/programs/${programId}/tiers`)
+    return response.data
+  },
+
+  async enrollCustomer(customerId: string, payload: any) {
+    const response = await apiClient.post(`/api/loyalty/customer/${customerId}/join`, payload)
     return response.data
   },
 
@@ -671,13 +1013,33 @@ export const loyaltyApi = {
     return response.data
   },
 
-  async awardPoints(payload: any) {
-    const response = await apiClient.post('/api/loyalty/points/award', payload)
+  async getCustomerRewards(customerId: string, params?: any) {
+    const response = await apiClient.get(`/api/loyalty/customer/${customerId}/rewards`, { params })
     return response.data
   },
 
-  async redeemPoints(payload: any) {
-    const response = await apiClient.post('/api/loyalty/points/redeem', payload)
+  async getCustomerRedemptions(customerId: string, params?: any) {
+    const response = await apiClient.get(`/api/loyalty/customer/${customerId}/redemptions`, { params })
+    return response.data
+  },
+
+  async awardPoints(customerId: string, payload: any) {
+    const response = await apiClient.post(`/api/loyalty/customer/${customerId}/award`, payload)
+    return response.data
+  },
+
+  async awardPointsForOrder(orderId: string) {
+    const response = await apiClient.post(`/api/loyalty/order/${orderId}/award-points`)
+    return response.data
+  },
+
+  async redeemPoints(customerId: string, payload: any) {
+    const response = await apiClient.post(`/api/loyalty/customer/${customerId}/redeem`, payload)
+    return response.data
+  },
+
+  async applyRedemption(orderId: string, payload: any) {
+    const response = await apiClient.post(`/api/loyalty/order/${orderId}/apply-redemption`, payload)
     return response.data
   },
 
@@ -688,6 +1050,26 @@ export const loyaltyApi = {
 
   async getPointsHistory(customerId: string) {
     const response = await apiClient.get(`/api/loyalty/points/history/${customerId}`)
+    return response.data
+  },
+
+  async getAllRewards(params?: any) {
+    const response = await apiClient.get('/api/loyalty/rewards', { params })
+    return response.data
+  },
+
+  async reverseReward(rewardId: string) {
+    const response = await apiClient.post(`/api/loyalty/rewards/${rewardId}/reverse`)
+    return response.data
+  },
+
+  async getAllRedemptions(params?: any) {
+    const response = await apiClient.get('/api/loyalty/redemptions', { params })
+    return response.data
+  },
+
+  async updateRedemptionStatus(redemptionId: string, status: string) {
+    const response = await apiClient.patch(`/api/loyalty/redemptions/${redemptionId}`, { status })
     return response.data
   },
 
@@ -721,13 +1103,28 @@ export const loyaltyApi = {
     return response.data
   },
 
-  async getCampaigns() {
-    const response = await apiClient.get('/api/loyalty/campaigns')
+  async getCampaigns(params?: any) {
+    const response = await apiClient.get('/api/loyalty/campaigns', { params })
     return response.data
   },
 
-  async getAnalytics(params?: any) {
-    const response = await apiClient.get('/api/loyalty/analytics', { params })
+  async getAllCampaigns(params?: any) {
+    const response = await apiClient.get('/api/loyalty/campaigns/all', { params })
+    return response.data
+  },
+
+  async getAnalyticsOverview(params?: any) {
+    const response = await apiClient.get('/api/loyalty/analytics/overview', { params })
+    return response.data
+  },
+
+  async getCustomerAnalytics(params?: any) {
+    const response = await apiClient.get('/api/loyalty/analytics/customers', { params })
+    return response.data
+  },
+
+  async getRedemptionAnalytics(params?: any) {
+    const response = await apiClient.get('/api/loyalty/analytics/redemptions', { params })
     return response.data
   },
 
@@ -740,61 +1137,87 @@ export const loyaltyApi = {
   }
 }
 
-// Tables API (Table Service - To be implemented)
-// NOTE: These endpoints are not yet implemented in Spring Boot backend
+export interface DiningTableDto {
+  id: number
+  label: string
+  capacity: number
+  status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'DIRTY'
+}
+
+export interface FloorSectionDto {
+  id: number
+  name: string
+  tables: DiningTableDto[]
+}
+
+export interface ReservationDto {
+  id: number
+  tableId: number
+  customerName: string
+  contact: string
+  startTime: string
+  endTime: string
+  partySize: number
+  status: 'REQUESTED' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED'
+}
+
+export interface ReservationRequestDto {
+  tableId: number
+  customerName: string
+  contact: string
+  startTime: string
+  endTime: string
+  partySize: number
+}
+
+export interface ReservationStatusUpdateDto {
+  status: 'REQUESTED' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED'
+}
+
+export interface TableStatusUpdateDto {
+  status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'DIRTY'
+}
+
 export const tablesApi = {
-  async getAll() {
-    const response = await apiClient.get('/api/tables')
+  async getLayout(): Promise<FloorSectionDto[]> {
+    const response = await apiClient.get('/api/tables/layout')
     return response.data
   },
 
-  async updateStatus(tableId: string, payload: { status: string; notes?: string }) {
-    const response = await apiClient.patch(`/api/tables/${tableId}/status`, payload)
+  async updateStatus(tableId: number, payload: TableStatusUpdateDto): Promise<DiningTableDto> {
+    const response = await apiClient.put(`/api/tables/${tableId}/status`, payload)
     return response.data
   },
 
-  async assignOrder(tableId: string, orderId: string) {
-    const response = await apiClient.post(`/api/tables/${tableId}/assign-order`, { orderId })
+  async createReservation(reservation: ReservationRequestDto): Promise<ReservationDto> {
+    const response = await apiClient.post('/api/tables/reservations', reservation)
     return response.data
   },
 
-  async clearTable(tableId: string) {
-    const response = await apiClient.post(`/api/tables/${tableId}/clear`)
+  async listReservations(): Promise<ReservationDto[]> {
+    const response = await apiClient.get('/api/tables/reservations')
     return response.data
   },
 
-  async createReservation(tableId: string, reservation: any) {
-    const response = await apiClient.post(`/api/tables/${tableId}/reservations`, reservation)
+  async updateReservationStatus(
+    reservationId: number,
+    payload: ReservationStatusUpdateDto
+  ): Promise<ReservationDto> {
+    const response = await apiClient.put(`/api/tables/reservations/${reservationId}/status`, payload)
     return response.data
   },
 
-  async updateReservation(tableId: string, reservationId: string, updates: any) {
-    const response = await apiClient.patch(`/api/tables/${tableId}/reservations/${reservationId}`, updates)
-    return response.data
-  },
-
-  async seatReservation(tableId: string, reservationId: string) {
-    const response = await apiClient.post(`/api/tables/${tableId}/reservations/${reservationId}/seat`)
-    return response.data
-  },
-
-  async updatePosition(tableId: string, position: { x: number; y: number }) {
-    const response = await apiClient.patch(`/api/tables/${tableId}/position`, { position })
-    return response.data
-  },
-
-  async bulkUpdateStatus(tableIds: string[], status: string) {
-    const response = await apiClient.patch('/api/tables/bulk-status', { tableIds, status })
-    return response.data
+  async getActiveReservation(tableId: number, at: string): Promise<ReservationDto | null> {
+    const response = await apiClient.get('/api/tables/reservations/active', {
+      params: { tableId, at }
+    })
+    return response.data ?? null
   }
 }
 
-// Floor Plans API (Table Service - To be implemented)
-// NOTE: These endpoints are not yet implemented in Spring Boot backend
 export const floorPlansApi = {
-  async getActive() {
-    const response = await apiClient.get('/api/floor-plans/active')
-    return response.data
+  async getLayout(): Promise<FloorSectionDto[]> {
+    return tablesApi.getLayout()
   }
 }
 
@@ -867,7 +1290,12 @@ export const printersApi = {
 export const paymentApi = {
   async getPaymentMethods() {
     const response = await apiClient.get('/api/payment/methods')
-    return response.data
+    const methods = Array.isArray(response.data)
+      ? response.data
+      : Array.isArray(response.data?.methods)
+        ? response.data.methods
+        : []
+    return methods.map(mapPaymentMethodDto)
   },
 
   async processPayment(payload: any) {
@@ -922,6 +1350,54 @@ export const paymentApi = {
   }
 }
 
+export const uploadApi = {
+  async uploadMenuItemImage(
+    menuItemId: string | number,
+    formData: FormData,
+    options?: { onUploadProgress?: (event: AxiosProgressEvent) => void }
+  ) {
+    const config: AxiosRequestConfig<FormData> = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: options?.onUploadProgress,
+    }
+    const response = await apiClient.post(`/api/menu-items/${menuItemId}/images`, formData, config)
+    return response.data
+  },
+
+  async fetchMenuItemImages(menuItemId: string | number) {
+    const response = await apiClient.get(`/api/menu-items/${menuItemId}`)
+    const data = response.data
+    if (Array.isArray(data)) {
+      return data
+    }
+    return Array.isArray(data?.images) ? data.images : []
+  },
+
+  async deleteMenuItemImage(menuItemId: string | number, imageId: string | number) {
+    await apiClient.delete(`/api/menu-items/${menuItemId}/images/${imageId}`)
+  },
+
+  async uploadLegacyImage(formData: FormData, options?: { onUploadProgress?: (event: AxiosProgressEvent) => void }) {
+    const config: AxiosRequestConfig<FormData> = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: options?.onUploadProgress,
+    }
+    const response = await apiClient.post('/api/upload/image', formData, config)
+    return response.data
+  },
+
+  async deleteLegacyImage(url: string) {
+    const response = await apiClient.delete('/api/upload/image', {
+      data: { url },
+    })
+    return response.data
+  }
+}
+
 // Export axios instance
 export { apiClient }
 
@@ -943,5 +1419,6 @@ export default {
   floorPlans: floorPlansApi,
   receipts: receiptsApi,
   printers: printersApi,
-  payment: paymentApi
+  payment: paymentApi,
+  upload: uploadApi
 }

@@ -6,6 +6,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { parseIsoDateTime } from '@/utils/datetime'
 import { useAuthStore } from './auth'
 import { useNotificationStore } from './notification'
 import { ordersApi } from '@/services/api-spring'
@@ -97,9 +98,10 @@ export const useOrdersStore = defineStore('orders', () => {
 
   const todayOrders = computed(() => {
     const today = new Date().toDateString()
-    return orders.value.filter(order =>
-      new Date(order.createdAt).toDateString() === today
-    )
+    return orders.value.filter(order => {
+      const createdAt = parseIsoDateTime(order.createdAt)
+      return createdAt?.toDateString() === today
+    })
   })
 
   const filteredOrders = computed(() => {
@@ -129,7 +131,8 @@ export const useOrdersStore = defineStore('orders', () => {
     if (filters.value.dateRange) {
       const { start, end } = filters.value.dateRange
       filtered = filtered.filter(order => {
-        const orderDate = new Date(order.createdAt)
+        const orderDate = parseIsoDateTime(order.createdAt)
+        if (!orderDate) return false
         return orderDate >= start && orderDate <= end
       })
     }

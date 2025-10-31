@@ -316,13 +316,17 @@ const handleSubmit = async () => {
     let uploadedImageUrl = form.value.imageUrl
     if (selectedFile.value) {
       toast.info('Uploading image...')
-      const uploadResult = await uploadService.uploadImage(selectedFile.value, 'categories')
+      const uploadedImage = await uploadService.uploadImage(selectedFile.value, { uploadType: 'categories' })
 
-      if (uploadResult.success && uploadResult.data) {
-        uploadedImageUrl = uploadResult.data.url
-        toast.success(`Image uploaded (saved ${uploadResult.data.savedPercentage}% space)`)
+      uploadedImageUrl = uploadedImage.url
+      const savedPercentage = typeof uploadedImage.savedPercentage === 'number'
+        ? Math.round(uploadedImage.savedPercentage)
+        : null
+
+      if (savedPercentage !== null) {
+        toast.success(`Image uploaded (saved ${savedPercentage}% space)`)
       } else {
-        throw new Error(uploadResult.error || 'Image upload failed')
+        toast.success('Image uploaded successfully')
       }
     }
 

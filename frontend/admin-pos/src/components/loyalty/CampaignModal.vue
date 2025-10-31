@@ -415,15 +415,11 @@ const handleSubmit = async () => {
       isActive: form.value.autoActivate
     }
 
-    const response = await loyaltyService.createCampaign(campaignData)
+    const campaign = await loyaltyService.createCampaign(campaignData)
 
-    if (response.success) {
-      emit('created', response.data.id)
-      emit('close')
-      resetForm()
-    } else {
-      error.value = response.message || 'Failed to create campaign'
-    }
+    emit('created', campaign.id)
+    emit('close')
+    resetForm()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to create campaign'
   } finally {

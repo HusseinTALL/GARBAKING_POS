@@ -6,7 +6,7 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useOrdersStore } from '@/stores/orders'
-import { useTablesStore } from '@/stores/tables'
+import { useTablesStore, TableStatus } from '@/stores/tables'
 import { usePaymentStore } from '@/stores/payment'
 
 export interface WebSocketMessage {
@@ -357,23 +357,40 @@ export class WebSocketService {
    * Handle table updates
    */
   private handleTableUpdate(message: WebSocketMessage): void {
-    const { tableId, status, tableData } = message.data
+    const { tableId, status } = message.data
+    const numericTableId = typeof tableId === 'number' ? tableId : Number(tableId)
+
+    const toTableStatus = (value: string): TableStatus | null => {
+      if (Object.values(TableStatus).includes(value as TableStatus)) {
+        return value as TableStatus
+      }
+      return null
+    }
 
     switch (message.event) {
       case 'table_status_changed':
-        this.tablesStore.updateTableStatus(tableId, status)
+        {
+          const nextStatus = toTableStatus(status)
+          if (numericTableId && nextStatus) {
+            this.tablesStore.updateTableStatus(numericTableId, nextStatus)
+          }
+        }
         break
 
       case 'table_occupied':
-        this.tablesStore.updateTableStatus(tableId, 'OCCUPIED')
+        if (numericTableId) {
+          this.tablesStore.updateTableStatus(numericTableId, TableStatus.OCCUPIED)
+        }
         break
 
       case 'table_available':
-        this.tablesStore.updateTableStatus(tableId, 'AVAILABLE')
+        if (numericTableId) {
+          this.tablesStore.updateTableStatus(numericTableId, TableStatus.AVAILABLE)
+        }
         break
 
       case 'reservation_created':
-        this.tablesStore.addReservation(tableId, tableData.reservation)
+        this.tablesStore.fetchReservations()
         break
     }
   }

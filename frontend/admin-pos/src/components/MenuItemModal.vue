@@ -94,7 +94,7 @@
                     Category *
                   </label>
                   <select
-                    v-model="form.categoryId"
+                    v-model.number="form.categoryId"
                     required
                     class="input w-full"
                     :class="{ 'border-red-500': errors.categoryId }"
@@ -829,7 +829,7 @@ interface MenuItemFormExtended {
   description: string
   price: number
   cost: number
-  categoryId: string
+  categoryId: number | null
   imageUrl: string
   isAvailable: boolean
   isFeatured: boolean
@@ -874,7 +874,7 @@ const form = ref<MenuItemFormExtended>({
   description: '',
   price: 0,
   cost: 0,
-  categoryId: '',
+  categoryId: null,
   imageUrl: '',
   isAvailable: true,
   isFeatured: false,
@@ -925,7 +925,8 @@ const isFormValid = computed(() => {
   return (
     form.value.name.trim().length > 0 &&
     form.value.sku.trim().length > 0 &&
-    form.value.categoryId.length > 0 &&
+    form.value.categoryId !== null &&
+    !Number.isNaN(form.value.categoryId) &&
     form.value.price > 0 &&
     Object.keys(errors.value).length === 0
   )
@@ -1050,7 +1051,7 @@ const validateForm = () => {
     errors.value.sku = 'SKU must be at least 2 characters'
   }
 
-  if (!form.value.categoryId) {
+  if (form.value.categoryId === null || Number.isNaN(form.value.categoryId)) {
     errors.value.categoryId = 'Category selection is required'
   }
 
@@ -1143,7 +1144,7 @@ const initializeForm = () => {
       description: '',
       price: 0,
       cost: 0,
-      categoryId: '',
+      categoryId: null,
       imageUrl: '',
       isAvailable: true,
       isFeatured: false,
@@ -1196,19 +1197,7 @@ const handleSubmit = async () => {
   submitError.value = ''
 
   try {
-    // Handle file upload if selectedFile exists
-    let uploadedImageUrl = form.value.imageUrl.trim()
-    if (selectedFile.value) {
-      toast.info('Uploading image...')
-      const uploadResult = await uploadService.uploadImage(selectedFile.value, 'menu')
-
-      if (uploadResult.success && uploadResult.data) {
-        uploadedImageUrl = uploadResult.data.url
-        toast.success(`Image uploaded (saved ${uploadResult.data.savedPercentage}% space)`)
-      } else {
-        throw new Error(uploadResult.error || 'Image upload failed')
-      }
-    }
+    const trimmedImageUrl = form.value.imageUrl.trim()
 
     // Prepare the data
     const submitData: any = {
@@ -1217,8 +1206,8 @@ const handleSubmit = async () => {
       description: form.value.description.trim(),
       price: form.value.price,
       cost: form.value.cost || undefined,
-      categoryId: form.value.categoryId,
-      imageUrl: uploadedImageUrl || undefined,
+      categoryId: form.value.categoryId!,
+      imageUrl: trimmedImageUrl || undefined,
       isAvailable: form.value.isAvailable,
       isFeatured: form.value.isFeatured,
       isVegetarian: form.value.isVegetarian,
@@ -1238,6 +1227,44 @@ const handleSubmit = async () => {
       result = await menuStore.updateMenuItem(props.item.id, submitData)
     } else {
       result = await menuStore.createMenuItem(submitData)
+    }
+
+    if (trimmedImageUrl) {
+      result = { ...result, imageUrl: trimmedImageUrl }
+    }
+
+    if (selectedFile.value) {
+      const menuItemIdForUpload = isEditing.value && props.item ? props.item.id : result?.id
+
+      if (menuItemIdForUpload) {
+        toast.info('Uploading image...')
+        const uploadedImage = await uploadService.uploadImage(selectedFile.value, {
+          menuItemId: menuItemIdForUpload
+        })
+
+        const savedPercentage = typeof uploadedImage.savedPercentage === 'number'
+          ? Math.round(uploadedImage.savedPercentage)
+          : null
+
+        const primaryImage = (uploadedImage.images || []).find(image => image.isPrimary) || uploadedImage.image
+        const uploadedImageUrl = primaryImage?.signedUrl || primaryImage?.imageUrl || uploadedImage.url
+
+        if (uploadedImageUrl) {
+          form.value.imageUrl = uploadedImageUrl
+          imagePreview.value = uploadedImageUrl
+          result = { ...result, imageUrl: uploadedImageUrl }
+        }
+
+        if (savedPercentage !== null) {
+          toast.success(`Image uploaded (saved ${savedPercentage}% space)`)
+        } else {
+          toast.success('Image uploaded successfully')
+        }
+
+        selectedFile.value = null
+      } else {
+        toast.error('Menu item saved but image upload skipped because no item ID was returned.')
+      }
     }
 
     toast.success(`Menu item ${isEditing.value ? 'updated' : 'created'} successfully`)

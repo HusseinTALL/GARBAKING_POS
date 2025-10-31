@@ -11,7 +11,7 @@ export interface MenuItemCsvRow {
   description: string
   price: number
   cost?: number
-  categoryId: string
+  categoryId?: number
   categoryName?: string
   imageUrl?: string
   isAvailable: boolean
@@ -72,7 +72,7 @@ export function exportMenuItemsToCSV(items: MenuItem[], categories: any[]): stri
       escapeCSV(item.description || ''),
       item.price,
       item.cost || '',
-      escapeCSV(category?.name || item.categoryId),
+      escapeCSV(category?.name || String(item.categoryId)),
       escapeCSV(item.imageUrl || ''),
       item.isAvailable ? 'Yes' : 'No',
       (item as any).isFeatured ? 'Yes' : 'No',
@@ -161,13 +161,15 @@ export function parseCSVToMenuItems(csvContent: string, categories: any[]): {
       }
 
       // Build item object
+      const parsedCategoryId = category?.id ?? Number(values[5])
+
       const item: Partial<MenuItemCsvRow> = {
         name: values[0].trim(),
         sku: values[1].trim().toUpperCase(),
         description: values[2].trim(),
         price: price,
         cost: values[4] ? parseFloat(values[4]) : undefined,
-        categoryId: category?.id || '',
+        categoryId: !Number.isNaN(parsedCategoryId) ? parsedCategoryId : undefined,
         categoryName: categoryName,
         imageUrl: values[6].trim() || undefined,
         isAvailable,
@@ -378,7 +380,7 @@ export function validateMenuItem(item: Partial<MenuItemCsvRow>): string[] {
     errors.push('Price must be greater than 0')
   }
 
-  if (!item.categoryId || item.categoryId.trim().length === 0) {
+  if (item.categoryId === undefined || item.categoryId === null) {
     errors.push('Category is required')
   }
 
