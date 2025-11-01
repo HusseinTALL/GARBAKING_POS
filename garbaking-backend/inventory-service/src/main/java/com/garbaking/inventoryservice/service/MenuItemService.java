@@ -7,6 +7,7 @@ import com.garbaking.inventoryservice.dto.InventoryAuditRequest;
 import com.garbaking.inventoryservice.dto.MenuItemDTO;
 import com.garbaking.inventoryservice.dto.MenuItemImageDTO;
 import com.garbaking.inventoryservice.dto.MenuItemImageUploadResponse;
+import com.garbaking.inventoryservice.dto.PublicMenuItemDTO;
 import com.garbaking.inventoryservice.dto.StockAdjustmentDTO;
 import com.garbaking.inventoryservice.dto.SupplierAssignmentRequest;
 import com.garbaking.inventoryservice.dto.SupplierSummaryDTO;
@@ -35,6 +36,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -153,6 +155,32 @@ public class MenuItemService {
         return menuItemRepository.searchByName(name).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicMenuItemDTO> getPublicMenuItemsByCategory(Long categoryId) {
+        return menuItemRepository.findByCategoryIdAndIsActiveTrueAndIsAvailableTrueOrderByDisplayOrderAsc(categoryId).stream()
+                .map(this::mapToPublicMenuItem)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicMenuItemDTO> getPublicAvailableMenuItems() {
+        return menuItemRepository.findByIsActiveTrueAndIsAvailableTrueOrderByDisplayOrderAsc().stream()
+                .map(this::mapToPublicMenuItem)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicMenuItemDTO> searchPublicMenuItems(String name) {
+        return menuItemRepository.searchByName(name).stream()
+                .map(this::mapToPublicMenuItem)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public long countAvailableMenuItemsByCategory(Long categoryId) {
+        return menuItemRepository.countByCategoryIdAndIsActiveTrueAndIsAvailableTrue(categoryId);
     }
 
     @Transactional
@@ -499,5 +527,42 @@ public class MenuItemService {
                 .preferred(supplier.getPreferred())
                 .leadTimeDays(supplier.getLeadTimeDays())
                 .build();
+    }
+
+    private PublicMenuItemDTO mapToPublicMenuItem(MenuItem menuItem) {
+        return PublicMenuItemDTO.builder()
+                .id(menuItem.getId())
+                .name(menuItem.getName())
+                .description(menuItem.getDescription())
+                .sku(menuItem.getSku())
+                .price(menuItem.getPrice())
+                .categoryName(menuItem.getCategory() != null ? menuItem.getCategory().getName() : null)
+                .imageUrl(resolvePrimaryImage(menuItem))
+                .featured(menuItem.getIsFeatured())
+                .build();
+    }
+
+    private String resolvePrimaryImage(MenuItem menuItem) {
+        if (menuItem.getImages() == null || menuItem.getImages().isEmpty()) {
+            return null;
+        }
+
+        return menuItem.getImages().stream()
+                .sorted(Comparator
+                        .comparing(MenuItemImage::getIsPrimary, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(image -> image.getDisplayOrder() != null ? image.getDisplayOrder() : 0))
+                .map(image -> {
+                    String signed = imageStorageService.generateSignedUrl(image.getImageUrl(), null);
+                    if (StringUtils.hasText(signed)) {
+                        return signed;
+                    }
+                    if (StringUtils.hasText(image.getThumbnailUrl())) {
+                        return image.getThumbnailUrl();
+                    }
+                    return image.getImageUrl();
+                })
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse(null);
     }
 }

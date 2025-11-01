@@ -80,6 +80,8 @@
         class="mb-6"
       />
 
+      <SmartSuggestCard />
+
       <!-- Section heading -->
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-text-DEFAULT">
@@ -165,6 +167,7 @@ import { useMenuStore } from '@/stores/menu'
 import MenuItemCard from '@/components/MenuItemCard.vue'
 import CategoryIcons from '@/components/CategoryIcons.vue'
 import PromoBanner from '@/components/PromoBanner.vue'
+import SmartSuggestCard from '@/components/SmartSuggestCard.vue'
 import ProductDetail from '@/components/ProductDetail.vue'
 import BottomNavigation from '@/components/BottomNavigation.vue'
 
@@ -255,6 +258,7 @@ const addToCart = (item: MenuItem) => {
     id: item.id,
     name: item.name,
     price: item.price,
+    sku: item.sku,
     imageUrl: item.imageUrl || item.image,
     category: typeof item.category === 'string' ? item.category : item.category?.name
   })
@@ -276,6 +280,7 @@ const addToCartFromDetail = (data: { item: MenuItem; quantity: number; size?: st
     id: item.id,
     name: item.name,
     price: item.price,
+    sku: item.sku,
     imageUrl: item.imageUrl || item.image,
     category: typeof item.category === 'string' ? item.category : item.category?.name
   }, data.quantity)

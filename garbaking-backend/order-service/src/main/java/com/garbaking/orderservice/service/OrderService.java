@@ -157,6 +157,27 @@ public class OrderService {
     }
 
     /**
+     * Get orders by customer phone
+     */
+    @Transactional(readOnly = true)
+    public CustomerOrderHistoryResponse getOrdersByCustomerPhone(String phone, int limit) {
+        log.info("Fetching orders for customer phone: {}", phone);
+        List<Order> orders = orderRepository.findByCustomerPhoneWithItems(phone);
+        long total = orders.size();
+
+        List<OrderDTO> orderDtos = orders.stream()
+                .limit(limit)
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        return CustomerOrderHistoryResponse
+                .builder()
+                .orders(orderDtos)
+                .count(total)
+                .build();
+    }
+
+    /**
      * Get orders by status
      */
     @Transactional(readOnly = true)

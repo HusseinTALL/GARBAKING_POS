@@ -121,19 +121,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useOrdersStore } from '@/stores/orders'
 import { useAnalyticsStore } from '@/stores/analytics'
+import { useNotificationStore } from '@/stores/notification'
 import MetricCard from '@/components/dashboard/MetricCard.vue'
 import OrderReportTable from '@/components/dashboard/OrderReportTable.vue'
 import MostOrderedPanel from '@/components/dashboard/MostOrderedPanel.vue'
 import OrderTypeChart from '@/components/dashboard/OrderTypeChart.vue'
 import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue'
-import { DollarSign, ShoppingBag, Users, RefreshCw, Download, Calendar } from 'lucide-vue-next'
+import { DollarSign, ShoppingBag, Users, RefreshCw, Download } from 'lucide-vue-next'
 
-const router = useRouter()
 const ordersStore = useOrdersStore()
 const analyticsStore = useAnalyticsStore()
+const notificationStore = useNotificationStore()
 
 const isLoading = ref(false)
 const currentTime = ref('')
@@ -195,6 +195,12 @@ const totalCustomers = computed(() => {
 })
 
 // Recent orders formatted for table
+const normalizeOrderTotal = (order: any): number => {
+  const totalCandidate = order.total ?? order.totalAmount ?? order.subtotal
+  const parsed = Number(totalCandidate)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 const recentOrdersForTable = computed(() => {
   return ordersStore.orders
     .slice()
@@ -205,8 +211,8 @@ const recentOrdersForTable = computed(() => {
       orderNumber: order.orderNumber,
       customerName: order.customerName || 'Walk-in Customer',
       customerPhone: order.customerPhone || 'N/A',
-      orderItems: order.orderItems || order.items || [],
-      total: order.total,
+      orderItems: order.items || [],
+      total: normalizeOrderTotal(order),
       status: order.status,
       createdAt: order.createdAt
     }))
@@ -297,9 +303,21 @@ const orderTypeData = computed(() => {
 const formatDate = (date: Date): string =>
   date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
-const viewOrderDetails = (order: any) => {
-  ordersStore.selectOrder(order)
-  selectedOrderForModal.value = order
+const viewOrderDetails = async (orderSummary: any) => {
+  const orderId = orderSummary.id?.toString?.() ?? `${orderSummary.id}`
+
+  let fullOrder = ordersStore.getOrderById(orderId)
+  if (!fullOrder) {
+    fullOrder = await ordersStore.fetchOrderById(orderId)
+  }
+
+  if (!fullOrder) {
+    notificationStore.error('Order unavailable', 'Unable to load order details. Please try again.')
+    return
+  }
+
+  ordersStore.selectOrder(fullOrder)
+  selectedOrderForModal.value = fullOrder
   showOrderModal.value = true
 }
 

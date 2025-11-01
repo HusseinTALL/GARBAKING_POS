@@ -17,6 +17,7 @@ export interface CartItem {
   notes?: string
   imageUrl?: string
   category?: string
+  sku?: string
 }
 
 export interface CustomerInfo {
@@ -42,13 +43,21 @@ export const useCartStore = defineStore('cart', () => {
   })
 
   // Load cart from localStorage on initialization
+  const normalizeCartItems = (rawItems: CartItem[]): CartItem[] => {
+    return rawItems.map(item => ({
+      ...item,
+      menuItemId: String(item.menuItemId),
+      id: item.id || `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }))
+  }
+
   const loadCart = () => {
     try {
       const savedCart = localStorage.getItem('garbaking-cart')
       const savedCustomerInfo = localStorage.getItem('garbaking-customer')
 
       if (savedCart) {
-        items.value = JSON.parse(savedCart)
+        items.value = normalizeCartItems(JSON.parse(savedCart))
       }
 
       if (savedCustomerInfo) {
@@ -82,8 +91,12 @@ export const useCartStore = defineStore('cart', () => {
     return appStore.taxAmount(subtotal.value)
   })
 
+  const discount = computed(() => {
+    return 0
+  })
+
   const total = computed(() => {
-    return subtotal.value + tax.value
+    return subtotal.value + tax.value - discount.value
   })
 
   const isEmpty = computed(() => {
@@ -100,13 +113,15 @@ export const useCartStore = defineStore('cart', () => {
 
   // Actions
   const addItem = (menuItem: {
-    id: string
+    id: string | number
     name: string
     price: number
+    sku?: string
     imageUrl?: string
     category?: string
   }, quantity = 1, notes?: string) => {
-    const existingItem = getItemByMenuItemId.value(menuItem.id)
+    const menuItemId = String(menuItem.id)
+    const existingItem = getItemByMenuItemId.value(menuItemId)
 
     if (existingItem) {
       // Update existing item
@@ -118,13 +133,14 @@ export const useCartStore = defineStore('cart', () => {
       // Add new item
       const cartItem: CartItem = {
         id: `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        menuItemId: menuItem.id,
+        menuItemId,
         name: menuItem.name,
         price: menuItem.price,
         quantity,
         notes,
         imageUrl: menuItem.imageUrl,
-        category: menuItem.category
+        category: menuItem.category,
+        sku: menuItem.sku
       }
 
       items.value.push(cartItem)
@@ -244,6 +260,7 @@ export const useCartStore = defineStore('cart', () => {
     itemCount,
     subtotal,
     tax,
+    discount,
     total,
     isEmpty,
     getItemById,

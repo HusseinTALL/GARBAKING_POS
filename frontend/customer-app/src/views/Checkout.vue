@@ -234,6 +234,7 @@ import { useAppStore } from '@/stores/app'
 import { ordersApi } from '@/services/api'
 import { storeToRefs } from 'pinia'
 import { OrderType, PaymentMethod } from '@/types'
+import { formatCurrency } from '@/utils/currency'
 
 const router = useRouter()
 const toast = useToast()
@@ -303,9 +304,7 @@ const canConfirm = computed(() => {
 })
 
 // Methods
-const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
-}
+const formatPrice = (amount: number): string => formatCurrency(amount)
 
 const getOrderTypeLabel = (orderType: OrderType): string => {
   const labels = {
@@ -340,12 +339,19 @@ const confirmOrder = async () => {
       orderType: customerInfo.value.orderType,
       items: items.value.map(item => ({
         menuItemId: item.menuItemId,
+        sku: item.sku,
+        name: item.name,
+        price: item.price,
         quantity: item.quantity,
         notes: item.notes || undefined
       })),
       notes: customerInfo.value.notes || undefined,
       specialRequests: undefined,
-      paymentMethod: selectedPaymentMethod.value
+      paymentMethod: selectedPaymentMethod.value,
+      subtotal: subtotal.value,
+      taxAmount: tax.value,
+      discountAmount: discount.value,
+      deliveryFee: 0
     }
 
     // Submit order

@@ -21,7 +21,7 @@ BACKEND_DIR="$SCRIPT_DIR/garbaking-backend"
 LOGS_DIR="$SCRIPT_DIR/logs"
 
 # Ports used by backend services
-BACKEND_PORTS=(8762 8761 8081 8082 8083 8080)
+BACKEND_PORTS=(8762 8761 8081 8082 8083 8085 8086 8080)
 
 echo -e "${CYAN}"
 echo "╔════════════════════════════════════════════════════════════╗"
@@ -135,6 +135,8 @@ start_service "Discovery Server (Eureka)" "discovery-server" "discovery-server-1
 start_service "User Service" "user-service" "user-service-1.0.0.jar" 8081 "--spring.cloud.config.enabled=false"
 start_service "Order Service" "order-service" "order-service-1.0.0.jar" 8082 "--spring.cloud.config.enabled=false"
 start_service "Inventory Service" "inventory-service" "inventory-service-1.0.0.jar" 8083 "--spring.cloud.config.enabled=false"
+start_service "Operations Service" "operations-service" "operations-service-1.0.0.jar" 8085 "--spring.cloud.config.enabled=false"
+start_service "Analytics Service" "analytics-service" "analytics-service-1.0.0.jar" 8086 "--spring.cloud.config.enabled=false"
 
 print_info "Waiting for services to register with Eureka..."
 sleep 10
@@ -153,6 +155,8 @@ echo "  API Gateway:        http://localhost:8080"
 echo "  User Service:       http://localhost:8081"
 echo "  Order Service:      http://localhost:8082"
 echo "  Inventory Service:  http://localhost:8083"
+echo "  Operations Service: http://localhost:8085"
+echo "  Analytics Service:  http://localhost:8086"
 echo
 echo -e "${CYAN}Logs directory:${NC} $LOGS_DIR"
 echo -e "${CYAN}Stop script:${NC} Ctrl+C"

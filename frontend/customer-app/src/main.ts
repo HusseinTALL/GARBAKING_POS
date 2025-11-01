@@ -45,7 +45,12 @@ import {
   faExclamationTriangle,
   faSpinner,
   faEye,
-  faEyeSlash
+  faEyeSlash,
+  faShoppingBag,
+  faMotorcycle,
+  faCreditCard,
+  faMoneyBillWave,
+  faMobileAlt
 } from '@fortawesome/free-solid-svg-icons'
 
 // Toast notifications
@@ -80,7 +85,12 @@ library.add(
   faExclamationTriangle,
   faSpinner,
   faEye,
-  faEyeSlash
+  faEyeSlash,
+  faShoppingBag,
+  faMotorcycle,
+  faCreditCard,
+  faMoneyBillWave,
+  faMobileAlt
 )
 
 const app = createApp(App)

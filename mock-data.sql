@@ -183,52 +183,62 @@ INSERT INTO suppliers (id, name, contact_name, contact_email, contact_phone, web
 
 -- Seed categories
 INSERT INTO categories (id, name, description, image_url, is_active, display_order, color, created_at, updated_at) VALUES
-  (1, 'Artisan Pastries', 'Freshly baked croissants, brioches and viennoiseries', NULL, 1, 1, '#F59E0B', NOW() - INTERVAL 40 DAY, NOW() - INTERVAL 1 DAY),
-  (2, 'Signature Sandwiches', 'Garbaking favourites prepared with homemade breads', NULL, 1, 2, '#10B981', NOW() - INTERVAL 38 DAY, NOW() - INTERVAL 1 DAY),
-  (3, 'Hot & Cold Beverages', 'Specialty coffees, juices and drinks', NULL, 1, 3, '#3B82F6', NOW() - INTERVAL 37 DAY, NOW() - INTERVAL 1 DAY);
+  (1, 'Plats Authentiques', 'Recettes signature autour du garba, poisson et poulet épicé', NULL, 1, 1, '#EA580C', NOW() - INTERVAL 40 DAY, NOW() - INTERVAL 1 DAY),
+  (2, 'Snacks & Street Food', 'Alloco, sandwichs et encas croustillants', NULL, 1, 2, '#FACC15', NOW() - INTERVAL 38 DAY, NOW() - INTERVAL 1 DAY),
+  (3, 'Boissons Rafraîchissantes', 'Jus maison, boissons gingembre et smoothies', NULL, 1, 3, '#3B82F6', NOW() - INTERVAL 37 DAY, NOW() - INTERVAL 1 DAY),
+  (4, 'Desserts & Douceurs', 'Cakes banane, assortiments sucrés artisanaux', NULL, 1, 4, '#BE123C', NOW() - INTERVAL 36 DAY, NOW() - INTERVAL 1 DAY),
+  (5, 'Salades & Fraîcheur', 'Salades vitaminées et options légères', NULL, 1, 5, '#10B981', NOW() - INTERVAL 35 DAY, NOW() - INTERVAL 1 DAY);
 
 -- Seed menu items
 INSERT INTO menu_items (id, name, description, sku, price, cost_price, category_id, is_available, is_active, stock_quantity, low_stock_threshold, unit, preparation_time, calories, allergens, ingredients, is_featured, display_order, created_at, updated_at) VALUES
-  (1, 'Classic Butter Croissant', 'Layers of laminated dough baked with AOP butter.', 'CRS-001', 3.50, 1.20, 1, 1, 1, 120, 30, 'piece', 12, 320, 'Gluten, Dairy', 'Flour, butter, milk, yeast, sugar, salt', 1, 1, NOW() - INTERVAL 30 DAY, NOW()),
-  (2, 'Pain au Chocolat', 'Flaky pastry with premium dark chocolate sticks.', 'CRS-002', 3.80, 1.40, 1, 1, 1, 90, 25, 'piece', 14, 360, 'Gluten, Dairy, Soy', 'Flour, butter, chocolate, eggs, sugar, yeast', 0, 2, NOW() - INTERVAL 30 DAY, NOW()),
-  (3, 'Roasted Turkey Baguette', 'Sourdough baguette with roasted turkey and herb mayo.', 'SND-101', 8.90, 3.60, 2, 1, 1, 45, 10, 'sandwich', 6, 540, 'Gluten, Eggs', 'Sourdough bread, turkey, onions, arugula, herb mayo', 0, 1, NOW() - INTERVAL 25 DAY, NOW()),
-  (4, 'Mediterranean Veggie Panini', 'Grilled ciabatta with marinated vegetables and feta.', 'SND-105', 7.80, 3.10, 2, 1, 1, 38, 8, 'sandwich', 5, 480, 'Gluten, Dairy', 'Ciabatta, zucchini, bell peppers, eggplant, feta, pesto', 0, 2, NOW() - INTERVAL 25 DAY, NOW()),
-  (5, 'Vanilla Bean Latte', 'Double espresso with steamed milk and vanilla.', 'BEV-210', 4.60, 1.05, 3, 1, 1, 200, 40, 'cup', 3, 190, 'Dairy', 'Espresso, milk, vanilla syrup', 1, 1, NOW() - INTERVAL 25 DAY, NOW()),
-  (6, 'Hibiscus Iced Tea', 'Hibiscus infusion with orange zest and mint.', 'BEV-305', 3.90, 0.90, 3, 1, 1, 150, 35, 'cup', 2, 80, NULL, 'Hibiscus petals, orange zest, mint, cane sugar', 0, 2, NOW() - INTERVAL 20 DAY, NOW());
+  (1, 'Attiéké + Poisson', 'Semoule de manioc servie avec poisson frit, tomate et piment maison.', 'GAR-ATT001', 2500.00, 950.00, 1, 1, 1, 80, 20, 'portion', 12, 620, 'Poisson, Gluten traces', 'Attiéké, poisson, tomate, oignon, piment', 1, 1, NOW() - INTERVAL 30 DAY, NOW()),
+  (2, 'Attiéké + Thon', 'Version premium au thon grillé, sauce oignon-citron.', 'GAR-ATT002', 2200.00, 870.00, 1, 1, 1, 70, 18, 'portion', 10, 580, 'Poisson', 'Attiéké, thon, citron, oignon, épices', 0, 2, NOW() - INTERVAL 30 DAY, NOW()),
+  (3, 'Poulet Yassa', 'Cuisses de poulet marinées oignon-citron accompagnées de riz blanc.', 'GAR-PLT003', 2800.00, 1020.00, 1, 1, 1, 60, 15, 'assiette', 25, 690, 'Poulet, Moutarde', 'Poulet, riz, oignons, citron, moutarde', 0, 3, NOW() - INTERVAL 25 DAY, NOW()),
+  (4, 'Alloco + Omelette', 'Bananes plantains frites servies avec omelette parfumée.', 'GAR-SNK004', 1500.00, 520.00, 2, 1, 1, 100, 30, 'plateau', 8, 540, 'Œufs', 'Plantain, œufs, tomate, oignon', 1, 1, NOW() - INTERVAL 25 DAY, NOW()),
+  (5, 'Alloco + Poisson', 'Grande portion d’alloco avec beignets de poisson croustillants.', 'GAR-SNK005', 1800.00, 650.00, 2, 1, 1, 90, 25, 'plateau', 9, 560, 'Poisson', 'Plantain, poisson, huile végétale', 0, 2, NOW() - INTERVAL 24 DAY, NOW()),
+  (6, 'Sandwich Viande Kankan', 'Pain maison garni de viande marinée aux épices kankan.', 'GAR-SND006', 2000.00, 780.00, 2, 1, 1, 55, 15, 'sandwich', 6, 610, 'Gluten', 'Pain, viande kankan, salade, sauce maison', 0, 3, NOW() - INTERVAL 23 DAY, NOW()),
+  (7, 'Jus de Bissap', 'Infusion d’hibiscus, orange et menthe servie fraîche.', 'GAR-DRV007', 800.00, 210.00, 3, 1, 1, 180, 40, 'bouteille', 3, 120, NULL, 'Bissap, sucre de canne, agrumes, menthe', 1, 1, NOW() - INTERVAL 20 DAY, NOW()),
+  (8, 'Gingembre pressé', 'Boisson tonique gingembre-citron légèrement sucrée.', 'GAR-DRV008', 900.00, 250.00, 3, 1, 1, 170, 35, 'bouteille', 2, 90, NULL, 'Gingembre, citron, sucre', 0, 2, NOW() - INTERVAL 19 DAY, NOW()),
+  (9, 'Smoothie Papaye', 'Smoothie tropical papaye-ananas, lait de coco.', 'GAR-DRV009', 1300.00, 420.00, 3, 1, 1, 150, 30, 'verre', 4, 210, 'Coco', 'Papaye, ananas, lait de coco, miel', 0, 3, NOW() - INTERVAL 18 DAY, NOW()),
+  (10, 'Cake Banane', 'Cake moelleux à la banane et sucre roux caramélisé.', 'GAR-DST010', 1200.00, 350.00, 4, 1, 1, 120, 25, 'part', 5, 420, 'Gluten, Œufs', 'Banane, farine, sucre roux, beurre', 0, 1, NOW() - INTERVAL 18 DAY, NOW()),
+  (11, 'Salade Avocat Douceur', 'Avocat, concombre, mangue et vinaigrette légère.', 'GAR-SLD011', 1600.00, 480.00, 5, 1, 1, 85, 20, 'bol', 7, 310, 'Fruits à coque traces', 'Avocat, mangue, concombre, roquette, vinaigrette', 0, 1, NOW() - INTERVAL 17 DAY, NOW()),
+  (12, 'Tchep Garba', 'Riz parfumé au poisson braisé, légumes thym et laurier.', 'GAR-PLT012', 3000.00, 1100.00, 1, 1, 1, 65, 18, 'assiette', 30, 720, 'Poisson', 'Riz, poisson, carottes, aubergine, épices', 0, 4, NOW() - INTERVAL 16 DAY, NOW());
 
 INSERT INTO menu_item_suppliers (menu_item_id, supplier_id) VALUES
   (1, 1),
   (2, 1),
-  (5, 2);
+  (3, 1),
+  (4, 1),
+  (5, 1),
+  (6, 1),
+  (7, 2),
+  (8, 2),
+  (9, 2),
+  (10, 2),
+  (11, 2),
+  (12, 1);
 
 -- Seed orders
 INSERT INTO orders (id, order_number, status, order_type, user_id, customer_name, customer_phone, customer_email, subtotal, tax_amount, discount_amount, total_amount, payment_status, payment_method, transaction_id, paid_at, delivery_address, delivery_instructions, delivery_fee, notes, table_number, estimated_preparation_time, scheduled_for, confirmed_at, completed_at, cancelled_at, cancellation_reason, created_at, updated_at)
 VALUES
-  (1, CONCAT('ORD-', CURDATE(), '-0001'), 'COMPLETED', 'DINE_IN', 1, 'Amelia Baker', '+22670012345', 'amelia.baker@garbaking.com', 11.60, 1.52, 0.00, 13.12, 'PAID', 'CARD', 'TXN-001', NOW() - INTERVAL 28 MINUTE, NULL, NULL, NULL, 'Customer asked for extra warm milk on the side.', 'Table 4', 20, NULL, NOW() - INTERVAL 40 MINUTE, NOW() - INTERVAL 10 MINUTE, NULL, NULL, NOW() - INTERVAL 45 MINUTE, NOW() - INTERVAL 10 MINUTE),
-  (2, CONCAT('ORD-', CURDATE(), '-0008'), 'PREPARING', 'TAKEAWAY', 2, 'Noah Clerk', '+22670987654', 'noah.clerk@garbaking.com', 20.60, 2.08, 1.50, 21.18, 'PAID', 'CARD', 'TXN-002', NOW() - INTERVAL 90 MINUTE, NULL, NULL, NULL, 'Pack with compostable utensils. Customer arriving at noon.', NULL, 15, NULL, NOW() - INTERVAL 2 HOUR, NULL, NULL, NULL, NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 90 MINUTE),
-  (3, CONCAT('ORD-', CURDATE(), '-0015'), 'READY', 'DELIVERY', 4, 'Oumar Customer', '+22670554433', 'oumar.customer@garbaking.com', 43.40, 4.90, 0.00, 51.80, 'PAID', 'MOBILE_MONEY', 'TXN-003', NOW() - INTERVAL 45 MINUTE, 'Villa 17, Rue des Marronniers, Riviera 3', 'Call when arriving, guard has instructions.', 3.50, 'Deliver with insulated bag.', NULL, 25, NULL, NOW() - INTERVAL 75 MINUTE, NULL, NULL, NULL, NOW() - INTERVAL 80 MINUTE, NOW() - INTERVAL 45 MINUTE),
-  (4, CONCAT('ORD-', CURDATE(), '-0020'), 'PENDING', 'DINE_IN', 3, 'Lina Chef', '+22670112233', 'lina.chef@garbaking.com', 8.10, 0.82, 0.00, 8.92, 'PENDING', 'CASH', NULL, NULL, NULL, NULL, NULL, NULL, 'Table 7', 10, NULL, NOW() - INTERVAL 25 MINUTE, NULL, NULL, NULL, NOW() - INTERVAL 25 MINUTE, NOW() - INTERVAL 25 MINUTE),
-  (5, CONCAT('ORD-', CURDATE(), '-0025'), 'CANCELLED', 'TAKEAWAY', 4, 'Oumar Customer', '+22670554433', 'oumar.customer@garbaking.com', 25.40, 2.45, 0.00, 27.85, 'REFUNDED', 'CARD', 'TXN-004', NULL, NULL, NULL, NULL, 'Customer called to cancel due to change of plans', NULL, 20, NULL, NOW() - INTERVAL 1 DAY, NULL, NOW() - INTERVAL 1 DAY + INTERVAL 10 MINUTE, 'Customer change of plans', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY + INTERVAL 10 MINUTE);
+  (1, CONCAT('ORD-', CURDATE(), '-0001'), 'COMPLETED', 'DINE_IN', 1, 'Fatou Diabaté', '+22501020304', 'fatou.diabate@example.com', 3300.00, 165.00, 0.00, 3465.00, 'PAID', 'CARD', 'TXN-GAR-001', NOW() - INTERVAL 45 MINUTE, NULL, NULL, NULL, 'Servir avec sauce piment séparée.', 'Table 3', 18, NULL, NOW() - INTERVAL 60 MINUTE, NOW() - INTERVAL 20 MINUTE, NULL, NULL, NOW() - INTERVAL 65 MINUTE, NOW() - INTERVAL 20 MINUTE),
+  (2, CONCAT('ORD-', CURDATE(), '-0007'), 'PREPARING', 'TAKEAWAY', 2, 'Ismael Traoré', '+22505060708', 'ismael.traore@example.com', 3600.00, 180.00, 0.00, 3780.00, 'PAID', 'MOBILE_MONEY', 'TXN-GAR-002', NOW() - INTERVAL 80 MINUTE, NULL, 'Préparer pour 12h15, ajouter serviettes.', NULL, 'Client fidèle, offrir mini piment.', NULL, 15, NULL, NOW() - INTERVAL 90 MINUTE, NULL, NULL, NULL, NOW() - INTERVAL 90 MINUTE, NOW() - INTERVAL 80 MINUTE),
+  (3, CONCAT('ORD-', CURDATE(), '-0012'), 'READY', 'DELIVERY', 4, 'Mariam Koné', '+22507080910', 'mariam.kone@example.com', 5900.00, 295.00, 0.00, 6695.00, 'PAID', 'CARD', 'TXN-GAR-003', NOW() - INTERVAL 35 MINUTE, 'Immeuble Ebène, Cocody, Abidjan', 'Téléphoner en arrivant, code portail 2486.', 500.00, 'Remettre avec sac isotherme.', NULL, 25, NULL, NOW() - INTERVAL 70 MINUTE, NULL, NOW() - INTERVAL 25 MINUTE, NULL, NOW() - INTERVAL 75 MINUTE, NOW() - INTERVAL 35 MINUTE);
 
--- Seed order items
 INSERT INTO order_items (id, order_id, menu_item_id, menu_item_name, menu_item_sku, quantity, unit_price, subtotal, special_instructions, status, created_at) VALUES
-  (1, 1, 1, 'Classic Butter Croissant', 'CRS-001', 2, 3.50, 7.00, 'Serve warm', 'SERVED', NOW() - INTERVAL 40 MINUTE),
-  (2, 1, 5, 'Vanilla Bean Latte', 'BEV-210', 1, 4.60, 4.60, 'Extra warm milk on the side', 'SERVED', NOW() - INTERVAL 38 MINUTE),
-  (3, 2, 3, 'Roasted Turkey Baguette', 'SND-101', 1, 8.90, 8.90, NULL, 'PREPARING', NOW() - INTERVAL 2 HOUR),
-  (4, 2, 4, 'Mediterranean Veggie Panini', 'SND-105', 1, 7.80, 7.80, NULL, 'PREPARING', NOW() - INTERVAL 2 HOUR),
-  (5, 2, 6, 'Hibiscus Iced Tea', 'BEV-305', 2, 3.90, 7.80, 'Less ice', 'PENDING', NOW() - INTERVAL 105 MINUTE),
-  (6, 3, 1, 'Classic Butter Croissant', 'CRS-001', 6, 3.50, 21.00, 'Deliver warm', 'READY', NOW() - INTERVAL 75 MINUTE),
-  (7, 3, 2, 'Pain au Chocolat', 'CRS-002', 4, 3.80, 15.20, NULL, 'READY', NOW() - INTERVAL 74 MINUTE),
-  (8, 3, 6, 'Hibiscus Iced Tea', 'BEV-305', 4, 3.90, 15.60, 'Add reusable cups', 'READY', NOW() - INTERVAL 70 MINUTE),
-  (9, 4, 5, 'Vanilla Bean Latte', 'BEV-210', 1, 4.60, 4.60, NULL, 'PENDING', NOW() - INTERVAL 25 MINUTE),
-  (10, 4, 1, 'Classic Butter Croissant', 'CRS-001', 1, 3.50, 3.50, NULL, 'PENDING', NOW() - INTERVAL 24 MINUTE),
-  (11, 5, 3, 'Roasted Turkey Baguette', 'SND-101', 2, 8.90, 17.80, NULL, 'PENDING', NOW() - INTERVAL 1 DAY),
-  (12, 5, 6, 'Hibiscus Iced Tea', 'BEV-305', 2, 3.90, 7.80, NULL, 'PENDING', NOW() - INTERVAL 1 DAY);
+  (1, 1, 1, 'Attiéké + Poisson', 'GAR-ATT001', 1, 2500.00, 2500.00, 'Sauce piment à part', 'SERVED', NOW() - INTERVAL 50 MINUTE),
+  (2, 1, 7, 'Jus de Bissap', 'GAR-DRV007', 1, 800.00, 800.00, 'Servir bien frais', 'SERVED', NOW() - INTERVAL 45 MINUTE),
+  (3, 2, 4, 'Alloco + Omelette', 'GAR-SNK004', 1, 1500.00, 1500.00, NULL, 'PREPARING', NOW() - INTERVAL 90 MINUTE),
+  (4, 2, 8, 'Gingembre pressé', 'GAR-DRV008', 1, 900.00, 900.00, 'Peu de sucre', 'PREPARING', NOW() - INTERVAL 85 MINUTE),
+  (5, 2, 10, 'Cake Banane', 'GAR-DST010', 1, 1200.00, 1200.00, NULL, 'PENDING', NOW() - INTERVAL 80 MINUTE),
+  (6, 3, 12, 'Tchep Garba', 'GAR-PLT012', 1, 3000.00, 3000.00, 'Ajouter sauce supplémentaire', 'READY', NOW() - INTERVAL 60 MINUTE),
+  (7, 3, 9, 'Smoothie Papaye', 'GAR-DRV009', 1, 1300.00, 1300.00, 'Sans glaçons', 'READY', NOW() - INTERVAL 55 MINUTE),
+  (8, 3, 11, 'Salade Avocat Douceur', 'GAR-SLD011', 1, 1600.00, 1600.00, NULL, 'READY', NOW() - INTERVAL 50 MINUTE);
 
 -- Seed inventory audits
 INSERT INTO inventory_audits (id, menu_item_id, menu_item_name, change_quantity, previous_quantity, new_quantity, reason, source, performed_by, created_at) VALUES
-  (1, 1, 'Classic Butter Croissant', -10, 120, 110, 'Morning prep usage', 'INVENTORY_SERVICE', 'Amelia Baker', NOW() - INTERVAL 4 HOUR),
-  (2, 6, 'Hibiscus Iced Tea', 20, 130, 150, 'Batch preparation', 'INVENTORY_SERVICE', 'Noah Clerk', NOW() - INTERVAL 3 HOUR),
-  (3, 5, 'Vanilla Bean Latte', -15, 200, 185, 'High demand', 'INVENTORY_SERVICE', 'Lina Chef', NOW() - INTERVAL 2 HOUR);
+  (1, 1, 'Attiéké + Poisson', -12, 80, 68, 'Préparation du service du midi', 'INVENTORY_SERVICE', 'Fatou Diabaté', NOW() - INTERVAL 4 HOUR),
+  (2, 4, 'Alloco + Omelette', 25, 75, 100, 'Réapprovisionnement bananes plantain', 'INVENTORY_SERVICE', 'Ismael Traoré', NOW() - INTERVAL 3 HOUR),
+  (3, 7, 'Jus de Bissap', -18, 180, 162, 'Vente forte du matin', 'INVENTORY_SERVICE', 'Mariam Koné', NOW() - INTERVAL 2 HOUR);
 
 COMMIT;

@@ -5,6 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { formatCurrency } from '@/utils/currency'
 
 export const useAppStore = defineStore('app', () => {
   // State
@@ -20,7 +21,7 @@ export const useAppStore = defineStore('app', () => {
 
   // Getters
   const formattedCurrency = computed(() => (amount: number) => {
-    return `${amount.toLocaleString()} ${appConfig.value.currency}`
+    return formatCurrency(amount)
   })
 
   const taxAmount = computed(() => (subtotal: number) => {

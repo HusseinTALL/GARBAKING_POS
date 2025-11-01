@@ -66,6 +66,7 @@
 
 <script setup lang="ts">
 import type { MenuItem } from '@/services/mockApi'
+import { formatCurrency } from '@/utils/currency'
 
 // Props
 interface Props {
@@ -81,9 +82,7 @@ const emit = defineEmits<{
 }>()
 
 // Methods
-const formatPrice = (amount: number): string => {
-  return `$${(amount / 1000).toFixed(2)}`
-}
+const formatPrice = (amount: number): string => formatCurrency(amount)
 
 const handleAddToCart = () => {
   emit('add-to-cart', props.item)

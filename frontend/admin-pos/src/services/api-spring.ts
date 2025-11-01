@@ -290,7 +290,7 @@ export const categoriesApi = {
     return response.data || []
   },
 
-  async getById(id: number) {
+  async getById(id: string | number) {
     const response = await apiClient.get(`/api/categories/${id}`)
     return response.data
   },

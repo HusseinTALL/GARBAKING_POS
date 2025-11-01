@@ -9,7 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -86,6 +88,23 @@ public class OrderController {
         log.info("GET /orders/user/{}", userId);
         List<OrderDTO> orders = orderService.getOrdersByUserId(userId);
         return ResponseEntity.ok(orders);
+    }
+
+    /**
+     * Get customer orders by phone number (public)
+     * GET /orders/customer/history?phone=...
+     */
+    @GetMapping("/customer/history")
+    public ResponseEntity<CustomerOrderHistoryResponse> getCustomerOrderHistory(
+            @RequestParam String phone,
+            @RequestParam(name = "limit", required = false, defaultValue = "20") Integer limitParam
+    ) {
+        if (!StringUtils.hasText(phone)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "phone is required");
+        }
+        int limit = limitParam == null ? 20 : Math.max(1, Math.min(limitParam, 50));
+        CustomerOrderHistoryResponse response = orderService.getOrdersByCustomerPhone(phone.trim(), limit);
+        return ResponseEntity.ok(response);
     }
 
     /**

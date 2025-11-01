@@ -96,4 +96,9 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
      * Count available menu items
      */
     long countByIsAvailableTrue();
+
+    /**
+     * Count available menu items by category
+     */
+    long countByCategoryIdAndIsActiveTrueAndIsAvailableTrue(Long categoryId);
 }

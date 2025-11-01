@@ -140,16 +140,18 @@ export const useMenuStore = defineStore('menu', () => {
       const response = await menuApi.getPublicMenu()
 
       if (response.success && response.data) {
-        categories.value = response.data.categories
+        categories.value = response.data.categories.map((category: any) => ({
+          ...category,
+          menuItems: category.menuItems || category.items || [],
+          items: undefined
+        }))
 
         // Flatten menu items from all categories
-        menuItems.value = response.data.categories.reduce((items: MenuItem[], category: Category) => {
-          if (category.menuItems) {
-            // Map items and add image property for compatibility
+        menuItems.value = categories.value.reduce((items: MenuItem[], category: Category) => {
+          if (category.menuItems && category.menuItems.length) {
             const mappedItems = category.menuItems.map(item => ({
               ...item,
               category,
-              // Map imageUrl to image for MenuItemCard compatibility
               image: item.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'
             }))
             items.push(...mappedItems)
@@ -223,7 +225,7 @@ export const useMenuStore = defineStore('menu', () => {
       const cacheData = {
         ...menuData,
         timestamp: Date.now(),
-        version: '1.0'
+        version: '2.0'
       }
       localStorage.setItem('garbaking-menu-cache', JSON.stringify(cacheData))
     } catch (error) {
@@ -237,6 +239,18 @@ export const useMenuStore = defineStore('menu', () => {
       if (!cached) return null
 
       const cacheData = JSON.parse(cached)
+
+      // Validate cache version & structure
+      const hasValidStructure =
+        cacheData.version === '2.0' &&
+        Array.isArray(cacheData.categories) &&
+        Array.isArray(cacheData.menuItems) &&
+        cacheData.categories.every((category: any) => Array.isArray(category.menuItems))
+
+      if (!hasValidStructure) {
+        localStorage.removeItem('garbaking-menu-cache')
+        return null
+      }
 
       // Check if cache is valid (less than 1 hour old)
       const cacheAge = Date.now() - cacheData.timestamp

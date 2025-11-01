@@ -32,6 +32,8 @@ public class JwtAuthenticationFilter implements GatewayFilter {
             "/api/auth/login",
             "/api/auth/register",
             "/api/menu/public",
+            "/api/menu/categories",
+            "/api/menu/items",
             "/actuator"
     );
 

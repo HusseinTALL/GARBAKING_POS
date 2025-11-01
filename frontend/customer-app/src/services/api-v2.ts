@@ -7,6 +7,7 @@
 import axios, { AxiosResponse, AxiosError, AxiosInstance } from 'axios'
 import { useToast } from 'vue-toastification'
 import { useNetworkStore } from '@/stores/network'
+import { formatCurrency } from '@/utils/currency'
 
 // API Configuration - Spring Boot API Gateway
 const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8080'
@@ -349,7 +350,7 @@ export const apiUtils = {
    * Format price for display
    */
   formatPrice(amount: number): string {
-    return `${amount.toLocaleString()} FCFA`
+    return formatCurrency(amount)
   },
 
   /**

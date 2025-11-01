@@ -1,6 +1,5 @@
 server:
   port: 8080
-
 spring:
   application:
     name: api-gateway
@@ -11,62 +10,47 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
-        # User Service Routes
-        - id: user-service
-          uri: lb://user-service
-          predicates:
-            - Path=/api/users/**, /api/auth/**
-          filters:
-            - RewritePath=/api/(?<segment>.*), /$\{segment}
-
-        # Order Service Routes
-        - id: order-service
-          uri: lb://order-service
-          predicates:
-            - Path=/api/orders/**
-          filters:
-            - RewritePath=/api/(?<segment>.*), /$\{segment}
-
-        # Operations Service Routes
-        - id: operations-service
-          uri: lb://operations-service
-          predicates:
-            - Path=/api/loyalty/**, /api/tables/**, /api/receipts/**, /api/printers/**, /api/payments/**, /api/operations/**
-          filters:
-            - RewritePath=/api/(?<segment>.*), /$\{segment}
-
-        # Cross-Cutting Analytics Routes
-        - id: analytics-service
-          uri: lb://analytics-service
-          predicates:
-            - Path=/api/analytics/cross-cutting/**
-          filters:
-            - RewritePath=/api/(?<segment>.*), /$\{segment}
-
-        # Order Analytics Routes
-        - id: order-analytics
-          uri: lb://order-service
-          predicates:
-            - Path=/api/analytics/**
-          filters:
-            - RewritePath=/api/(?<segment>.*), /$\{segment}
-
-        # Inventory Service Routes
-        - id: inventory-service
-          uri: lb://inventory-service
-          predicates:
-            - Path=/api/categories/**, /api/menu-items/**
-          filters:
-            - RewritePath=/api/(?<segment>.*), /$\{segment}
-
-      # CORS configuration is handled by CorsConfig.java
-      # globalcors removed to avoid conflict
-
+      - id: user-service
+        uri: lb://user-service
+        predicates:
+        - Path=/api/users/**, /api/auth/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: order-service
+        uri: lb://order-service
+        predicates:
+        - Path=/api/orders/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: operations-service
+        uri: lb://operations-service
+        predicates:
+        - Path=/api/loyalty/**, /api/tables/**, /api/receipts/**, /api/printers/**,
+          /api/payments/**, /api/operations/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: analytics-service
+        uri: lb://analytics-service
+        predicates:
+        - Path=/api/analytics/cross-cutting/**, /api/recommendations/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: order-analytics
+        uri: lb://order-service
+        predicates:
+        - Path=/api/analytics/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: inventory-service
+        uri: lb://inventory-service
+        predicates:
+        - Path=/api/categories/**, /api/menu-items/**, /api/menu/public, /api/menu/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
 eureka:
   client:
     serviceUrl:
       defaultZone: http://localhost:8761/eureka/
-
 management:
   endpoints:
     web:
@@ -89,14 +73,12 @@ management:
     export:
       prometheus:
         enabled: true
-
 logging:
   config: classpath:logback-structured.xml
   level:
     root: INFO
     org.springframework.cloud.gateway: DEBUG
     reactor.netty: INFO
-
 garbaking:
   observability:
     environment: edge

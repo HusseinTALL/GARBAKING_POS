@@ -150,6 +150,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Order } from '@/services/mockApi'
+import { formatCurrency } from '@/utils/currency'
 
 // Composables
 const { t } = useI18n()
@@ -191,9 +192,7 @@ const estimatedTime = computed(() => {
 })
 
 // Methods
-const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
-}
+const formatPrice = (amount: number): string => formatCurrency(amount)
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString)

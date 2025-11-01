@@ -44,7 +44,7 @@ class RawOrderWebSocketHandlerTest {
         handler.afterConnectionEstablished(session);
         handler.handleTextMessage(session, new TextMessage("{\"destination\":\"/topic/orders\",\"orderId\":1}"));
 
-        verify(messagingTemplate).convertAndSend(eq("/topic/orders"), any());
+        verify(messagingTemplate).convertAndSend(eq("/topic/orders"), any(Object.class));
         verify(session).sendMessage(any(TextMessage.class));
     }
 

@@ -30,6 +30,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     /**
+     * Find orders by customer phone
+     */
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items WHERE o.customerPhone = :customerPhone ORDER BY o.createdAt DESC")
+    List<Order> findByCustomerPhoneWithItems(@Param("customerPhone") String customerPhone);
+
+    /**
      * Find orders by status
      */
     List<Order> findByStatusOrderByCreatedAtDesc(Order.OrderStatus status);

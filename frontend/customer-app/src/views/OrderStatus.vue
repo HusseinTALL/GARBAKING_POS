@@ -309,6 +309,7 @@ import { ordersApi } from '@/services/api'
 import websocketService from '@/services/websocket'
 import { storeToRefs } from 'pinia'
 import { OrderStatus, OrderType, Order } from '@/types'
+import { formatCurrency } from '@/utils/currency'
 
 const route = useRoute()
 const router = useRouter()
@@ -385,9 +386,7 @@ const statusTimeline = computed(() => [
 ])
 
 // Methods
-const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
-}
+const formatPrice = (amount: number): string => formatCurrency(amount)
 
 const formatDateTime = (dateString: string): string => {
   const date = new Date(dateString)

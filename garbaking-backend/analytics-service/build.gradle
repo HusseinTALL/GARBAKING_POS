@@ -13,4 +13,5 @@ dependencies {
     implementation project(':common-libs')
 
     testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

@@ -36,9 +36,13 @@ export interface OrderItem {
   menuItemId: string
   name: string
   price: number
+  unitPrice: number
+  totalPrice: number
   quantity: number
   specialInstructions?: string
   modifications?: string[]
+  notes?: string
+  customizations?: string[]
 }
 
 export interface Order {
@@ -149,23 +153,51 @@ export const useOrdersStore = defineStore('orders', () => {
   }))
 
   // Helper Functions
+  const toNumber = (value: unknown, fallback = 0): number => {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : fallback
+    }
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
   const transformBackendOrder = (backendOrder: any): Order => ({
-    id: backendOrder.id,
-    orderNumber: backendOrder.orderNumber || `ORD-${backendOrder.id}`,
-    tableNumber: backendOrder.tableNumber ? parseInt(backendOrder.tableNumber) : undefined,
+    id: backendOrder.id?.toString() ?? backendOrder.orderId?.toString(),
+    orderNumber: backendOrder.orderNumber || `ORD-${backendOrder.id ?? backendOrder.orderId ?? ''}`,
+    tableNumber: backendOrder.tableNumber ? parseInt(backendOrder.tableNumber, 10) : undefined,
     customerName: backendOrder.customerName,
     customerPhone: backendOrder.customerPhone,
-    items: (backendOrder.orderItems || backendOrder.items || []).map((orderItem: any) => ({
-      id: orderItem.id,
-      menuItemId: orderItem.menuItemId,
-      name: orderItem.menuItem?.name || orderItem.name || 'Unknown Item',
-      price: orderItem.unitPrice || orderItem.price,
-      quantity: orderItem.quantity,
-      specialInstructions: orderItem.notes || orderItem.specialInstructions
-    })),
-    subtotal: backendOrder.subtotal,
-    tax: backendOrder.tax,
-    total: backendOrder.total,
+    items: (backendOrder.orderItems || backendOrder.items || []).map((orderItem: any) => {
+      const quantity = toNumber(orderItem.quantity, 1)
+      const unitPrice = toNumber(orderItem.unitPrice ?? orderItem.price)
+      const totalPrice = toNumber(orderItem.totalPrice ?? unitPrice * quantity)
+
+      return {
+        id: orderItem.id?.toString(),
+        menuItemId: orderItem.menuItemId?.toString?.() ?? orderItem.menuItemId,
+        name: orderItem.menuItem?.name || orderItem.name || 'Unknown Item',
+        price: unitPrice,
+        unitPrice,
+        totalPrice,
+        quantity,
+        specialInstructions: orderItem.notes || orderItem.specialInstructions,
+        notes: orderItem.notes,
+        customizations: orderItem.customizations || orderItem.options || [],
+        modifications: orderItem.modifications
+      }
+    }),
+    subtotal: toNumber(
+      backendOrder.subtotal ??
+      backendOrder.totalBeforeTax ??
+      backendOrder.totalAmount ??
+      backendOrder.total
+    ),
+    tax: toNumber(backendOrder.tax ?? backendOrder.taxAmount),
+    total: toNumber(
+      backendOrder.total ??
+      backendOrder.totalAmount ??
+      (backendOrder.subtotal ?? 0) + (backendOrder.tax ?? 0)
+    ),
     status: backendOrder.status as OrderStatus,
     paymentStatus: backendOrder.paymentStatus as PaymentStatus,
     paymentMethod: backendOrder.paymentMethod,
@@ -358,6 +390,29 @@ export const useOrdersStore = defineStore('orders', () => {
     return orders.value.find(order => order.id === id)
   }
 
+  const fetchOrderById = async (id: string) => {
+    try {
+      const backendOrder = await ordersApi.getById(id)
+      if (!backendOrder) {
+        return null
+      }
+      const transformedOrder = transformBackendOrder(backendOrder)
+      const existingIndex = orders.value.findIndex(order => order.id === transformedOrder.id)
+
+      if (existingIndex !== -1) {
+        orders.value[existingIndex] = transformedOrder
+      } else {
+        orders.value.unshift(transformedOrder)
+      }
+
+      return transformedOrder
+    } catch (error) {
+      console.error('Error fetching order by id:', error)
+      notification.error('Error', 'Failed to load order details')
+      return null
+    }
+  }
+
   const selectOrder = (order: Order | null) => {
     selectedOrder.value = order
   }
@@ -389,6 +444,7 @@ export const useOrdersStore = defineStore('orders', () => {
     setFilters,
     clearFilters,
     getOrderById,
+    fetchOrderById,
     selectOrder
   }
 })

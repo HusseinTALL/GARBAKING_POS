@@ -159,6 +159,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useCartStore } from '@/stores/cart'
 import { ordersApi } from '@/services/api'
+import { formatCurrency } from '@/utils/currency'
 
 const router = useRouter()
 const toast = useToast()
@@ -172,9 +173,7 @@ const isLoading = ref(false)
 const customerPhone = computed(() => cartStore.customerInfo.phone)
 
 // Methods
-const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
-}
+const formatPrice = (amount: number): string => formatCurrency(amount)
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
@@ -286,19 +285,16 @@ const reorderItems = (order: any) => {
   // Add all items from the order to cart
   order.orderItems.forEach((item: any) => {
     const cartItem = {
-      menuItemId: item.menuItemId,
-      id: item.menuItem.sku,
+      menuItemId: String(item.menuItemId),
+      id: String(item.menuItemId),
       name: item.name || item.menuItem.name,
       price: item.unitPrice,
-      quantity: item.quantity,
       imageUrl: item.menuItem.imageUrl,
-      notes: item.notes || ''
+      notes: item.notes || '',
+      sku: item.menuItem?.sku
     }
 
-    // Add each item the correct number of times
-    for (let i = 0; i < item.quantity; i++) {
-      cartStore.addItem(cartItem)
-    }
+    cartStore.addItem(cartItem, item.quantity)
   })
 
   // Show success message

@@ -157,6 +157,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MenuItem } from '@/services/mockApi'
+import { formatCurrency } from '@/utils/currency'
 
 // Composables
 const { t } = useI18n()
@@ -192,9 +193,7 @@ const cartTotal = computed(() =>
 )
 
 // Methods
-const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
-}
+const formatPrice = (amount: number): string => formatCurrency(amount)
 
 const updateQuantity = (sku: string, newQuantity: number) => {
   emit('update-quantity', sku, Math.max(0, newQuantity))

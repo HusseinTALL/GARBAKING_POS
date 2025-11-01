@@ -69,6 +69,8 @@ cleanup() {
     lsof -ti:8081 | xargs kill -9 2>/dev/null || true  # User Service
     lsof -ti:8082 | xargs kill -9 2>/dev/null || true  # Order Service
     lsof -ti:8083 | xargs kill -9 2>/dev/null || true  # Inventory Service
+    lsof -ti:8085 | xargs kill -9 2>/dev/null || true  # Operations Service
+    lsof -ti:8086 | xargs kill -9 2>/dev/null || true  # Analytics Service
     lsof -ti:3000 | xargs kill -9 2>/dev/null || true  # Admin POS
     lsof -ti:3002 | xargs kill -9 2>/dev/null || true  # Customer App
     lsof -ti:3003 | xargs kill -9 2>/dev/null || true  # KDS App
@@ -84,7 +86,7 @@ mkdir -p "$LOGS_DIR"
 
 # Check and kill existing processes
 print_info "Checking for existing processes..."
-for port in 8080 8761 8762 8081 8082 8083 3000 3002 3003; do
+for port in 8080 8761 8762 8081 8082 8083 8085 8086 3000 3002 3003; do
     if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1 ; then
         print_warning "Port $port is in use. Killing existing process..."
         lsof -ti:$port | xargs kill -9 2>/dev/null || true
@@ -220,6 +222,42 @@ else
     print_warning "Inventory Service may have failed to start"
 fi
 
+# Start Operations Service
+echo
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+print_info "Starting Operations Service (Port 8085)..."
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+cd "$BACKEND_DIR/operations-service"
+java -jar build/libs/operations-service-1.0.0.jar --spring.cloud.config.enabled=false > "$LOGS_DIR/operations-service.log" 2>&1 &
+OPERATIONS_PID=$!
+PIDS+=($OPERATIONS_PID)
+sleep 10
+
+if kill -0 $OPERATIONS_PID 2>/dev/null; then
+    print_status "Operations Service started (PID: $OPERATIONS_PID)"
+else
+    print_warning "Operations Service may have failed to start"
+fi
+
+# Start Analytics Service
+echo
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+print_info "Starting Analytics Service (Port 8086)..."
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+cd "$BACKEND_DIR/analytics-service"
+java -jar build/libs/analytics-service-1.0.0.jar --spring.cloud.config.enabled=false > "$LOGS_DIR/analytics-service.log" 2>&1 &
+ANALYTICS_PID=$!
+PIDS+=($ANALYTICS_PID)
+sleep 10
+
+if kill -0 $ANALYTICS_PID 2>/dev/null; then
+    print_status "Analytics Service started (PID: $ANALYTICS_PID)"
+else
+    print_warning "Analytics Service may have failed to start"
+fi
+
 # Start API Gateway
 echo
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -312,6 +350,8 @@ echo -e "   API Gateway:        http://localhost:8080"
 echo -e "   User Service:       http://localhost:8081"
 echo -e "   Order Service:      http://localhost:8082"
 echo -e "   Inventory Service:  http://localhost:8083"
+echo -e "   Operations Service: http://localhost:8085"
+echo -e "   Analytics Service:  http://localhost:8086"
 echo
 echo -e "${CYAN}📱 Frontend Apps:${NC}"
 echo -e "   🖥️  Admin POS:         http://localhost:3000"
