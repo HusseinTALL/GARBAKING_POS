@@ -77,6 +77,12 @@ export default defineConfig({
   server: {
     port: 3002,
     host: '0.0.0.0',
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 3002,
+      clientPort: 3002
+    },
     proxy: {
       '/local': {
         target: 'http://localhost:8080',

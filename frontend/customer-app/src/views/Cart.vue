@@ -41,7 +41,7 @@
       <div class="text-center">
         <FontAwesomeIcon :icon="['fas', 'shopping-cart']" class="text-6xl text-gray-300 mb-6" />
         <h2 class="text-2xl font-bold text-gray-900 mb-4">Votre panier est vide</h2>
-        <p class="text-gray-600 mb-8 max-w-sm">
+        <p class="text-gray-600 mb-8 max-w-sm">ear
           Découvrez notre délicieux menu et ajoutez vos plats préférés à votre panier.
         </p>
         <button

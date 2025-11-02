@@ -91,6 +91,26 @@ const makeRequest = async <T>(
   }
 }
 
+const normalizeOrderResponse = (raw: any): ApiResponse<{ order: any }> => {
+  if (raw && typeof raw === 'object') {
+    if (typeof (raw as any).success === 'boolean') {
+      return raw as ApiResponse<{ order: any }>
+    }
+
+    return {
+      success: true,
+      data: {
+        order: raw
+      }
+    }
+  }
+
+  return {
+    success: false,
+    error: 'Réponse inattendue du serveur'
+  }
+}
+
 // Menu API
 export const menuApi = {
   /**
@@ -413,9 +433,10 @@ export const ordersApi = {
    */
   async getOrderStatus(orderNumber: string): Promise<ApiResponse<{ order: any }>> {
     try {
-      return await makeRequest(`/api/orders/status/${orderNumber}`, {
+      const raw = await makeRequest(`/api/orders/track/${orderNumber}`, {
         method: 'GET'
       })
+      return normalizeOrderResponse(raw)
     } catch (error: any) {
       return {
         success: false,
@@ -429,9 +450,10 @@ export const ordersApi = {
    */
   async trackOrder(orderNumber: string): Promise<ApiResponse<{ order: any }>> {
     try {
-      return await makeRequest(`/api/orders/track/${orderNumber}`, {
+      const raw = await makeRequest(`/api/orders/track/${orderNumber}`, {
         method: 'GET'
       })
+      return normalizeOrderResponse(raw)
     } catch (error: any) {
       return {
         success: false,
@@ -477,10 +499,27 @@ export const ordersApi = {
    */
   async cancelOrder(orderNumber: string, reason?: string): Promise<ApiResponse<{ order: any; message: string }>> {
     try {
-      return await makeRequest(`/api/orders/${orderNumber}/cancel`, {
+      const raw = await makeRequest(`/api/orders/number/${orderNumber}/cancel`, {
         method: 'POST',
-        data: { reason: reason || 'Cancelled by customer' }
+        params: reason ? { reason } : undefined
       })
+
+      const normalized = normalizeOrderResponse(raw)
+
+      if (normalized.success && normalized.data?.order) {
+        return {
+          success: true,
+          data: {
+            order: normalized.data.order,
+            message: 'Order cancelled successfully'
+          }
+        }
+      }
+
+      return {
+        success: false,
+        error: normalized.error || 'Failed to cancel order'
+      }
     } catch (error: any) {
       return {
         success: false,
