@@ -1,0 +1,17 @@
+plugins {
+    id 'java-library'
+}
+
+// Disable bootJar and jar tasks for library module
+tasks.named('bootJar') {
+    enabled = false
+}
+
+tasks.named('jar') {
+    enabled = true
+}
+
+dependencies {
+    // Common utilities
+    implementation 'org.springframework.boot:spring-boot-starter'
+}

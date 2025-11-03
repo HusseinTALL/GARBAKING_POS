@@ -8,6 +8,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from '@/router'
 import i18n from '@/plugins/i18n'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 // Styles
 import './style.css'
@@ -45,7 +46,12 @@ import {
   faExclamationTriangle,
   faSpinner,
   faEye,
-  faEyeSlash
+  faEyeSlash,
+  faShoppingBag,
+  faMotorcycle,
+  faCreditCard,
+  faMoneyBillWave,
+  faMobileAlt
 } from '@fortawesome/free-solid-svg-icons'
 
 // Toast notifications
@@ -80,14 +86,20 @@ library.add(
   faExclamationTriangle,
   faSpinner,
   faEye,
-  faEyeSlash
+  faEyeSlash,
+  faShoppingBag,
+  faMotorcycle,
+  faCreditCard,
+  faMoneyBillWave,
+  faMobileAlt
 )
 
 const app = createApp(App)
-
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 app.use(router)
 app.use(i18n)
+pinia.use(piniaPluginPersistedstate)
 app.use(Toast, {
   position: POSITION.TOP_CENTER,
   timeout: 3000,

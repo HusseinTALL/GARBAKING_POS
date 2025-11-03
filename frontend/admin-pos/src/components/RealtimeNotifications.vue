@@ -56,13 +56,14 @@
       </transition-group>
     </div>
 
-    <!-- Sound notification disabled - audio files not provided -->
+    <!-- Audio notifications enabled via Web Audio API -->
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useGlobalWebSocket } from '../composables/useWebSocket'
+import { audioService, type NotificationType } from '@/utils/audioNotifications'
 
 // Icons (you can replace with your preferred icon library)
 import {
@@ -120,8 +121,7 @@ const {
 // Reactive data
 const notifications = ref<Notification[]>([])
 const toasts = ref<Toast[]>([])
-// Audio disabled - sound files not provided
-// const notificationSound = ref<HTMLAudioElement>()
+const audioSettings = ref(audioService.getSettings())
 
 // Computed properties
 const connectionStatusClass = computed(() => ({
@@ -153,9 +153,12 @@ function addNotification(notification: Omit<Notification, 'id' | 'timestamp'>) {
     notifications.value = notifications.value.slice(0, props.maxNotifications)
   }
 
-  // Play sound if enabled
-  if (props.enableSound && notification.type !== 'info') {
-    playNotificationSound()
+  // Play sound if enabled (map notification types to audio types)
+  if (props.enableSound) {
+    const audioType: NotificationType = notification.type === 'order' ? 'order' :
+                                        notification.type === 'success' ? 'payment' :
+                                        notification.type as NotificationType
+    playNotificationSound(audioType)
   }
 
   // Auto-dismiss non-persistent notifications
@@ -198,9 +201,16 @@ function handleNotificationClick(notification: Notification) {
   emit('notificationClick', notification)
 }
 
-function playNotificationSound() {
-  // Audio notification disabled - sound files not provided
-  console.log('🔔 Notification sound (audio disabled)')
+async function playNotificationSound(type: NotificationType = 'info') {
+  if (!props.enableSound || !audioSettings.value.enabled) {
+    return
+  }
+
+  try {
+    await audioService.playNotification(type)
+  } catch (error) {
+    console.error('Failed to play notification sound:', error)
+  }
 }
 
 function getNotificationIcon(type: string) {
@@ -282,6 +292,15 @@ function handleUserOffline(data: any) {
   })
 }
 
+// Initialize audio context on user interaction
+async function initAudio() {
+  try {
+    await audioService.resumeContext()
+  } catch (error) {
+    console.error('Failed to initialize audio:', error)
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   // Register WebSocket event listeners
@@ -290,10 +309,27 @@ onMounted(() => {
   orderEvents.onPaymentCompleted(handlePaymentCompleted)
   presenceEvents.onUserOnline(handleUserOnline)
   presenceEvents.onUserOffline(handleUserOffline)
+
+  // Initialize audio on first user click
+  document.addEventListener('click', initAudio, { once: true })
 })
 
 onUnmounted(() => {
   // Event listeners are automatically cleaned up by the WebSocket composable
+  document.removeEventListener('click', initAudio)
+})
+
+// Expose audio settings updater
+function updateAudioSettings(settings: Partial<typeof audioSettings.value>) {
+  audioService.updateSettings(settings)
+  audioSettings.value = audioService.getSettings()
+}
+
+// Expose for parent components
+defineExpose({
+  audioSettings,
+  updateAudioSettings,
+  playNotificationSound
 })
 </script>
 

@@ -5,6 +5,9 @@
 
 <template>
   <div id="app" class="min-h-screen bg-white">
+    <!-- Backend Status Indicator -->
+    <BackendStatusIndicator />
+
     <!-- Offline indicator -->
     <div v-if="!isOnline" class="offline-banner">
       <div class="flex items-center">
@@ -54,6 +57,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useNotificationStore } from './stores/notification'
 import { storeToRefs } from 'pinia'
 import { WifiOff, CheckCircle, Bell, X } from 'lucide-vue-next'
+import BackendStatusIndicator from './components/BackendStatusIndicator.vue'
 
 // Network status
 const isOnline = ref(navigator.onLine)

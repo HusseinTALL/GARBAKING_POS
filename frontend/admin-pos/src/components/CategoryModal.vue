@@ -77,20 +77,42 @@
             </label>
             <div class="space-y-3">
               <!-- Image Preview -->
-              <div v-if="form.imageUrl" class="relative">
+              <div v-if="form.imageUrl || imagePreview" class="relative">
                 <img
-                  :src="form.imageUrl"
+                  :src="imagePreview || form.imageUrl"
                   alt="Category preview"
                   class="w-32 h-32 object-cover rounded-lg border border-gray-600"
                 />
                 <button
                   type="button"
-                  @click="form.imageUrl = ''"
+                  @click="clearImage"
                   class="absolute -top-2 -right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
                 >
                   <X class="w-4 h-4" />
                 </button>
               </div>
+
+              <!-- File Upload -->
+              <div>
+                <input
+                  ref="fileInput"
+                  type="file"
+                  accept="image/*"
+                  @change="handleFileSelect"
+                  class="hidden"
+                />
+                <button
+                  type="button"
+                  @click="$refs.fileInput.click()"
+                  class="btn btn-secondary w-full"
+                >
+                  <Upload class="w-4 h-4 mr-2" />
+                  {{ selectedFile ? selectedFile.name : 'Choose Image File' }}
+                </button>
+                <p class="text-gray-400 text-sm mt-1">JPG, PNG, or WebP (max 5MB)</p>
+              </div>
+
+              <div class="text-center text-gray-500 text-sm">OR</div>
 
               <!-- Image URL Input -->
               <input
@@ -141,8 +163,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { X } from 'lucide-vue-next'
+import { X, Upload } from 'lucide-vue-next'
 import { useMenuStore, type MenuCategory, type CategoryForm } from '@/stores/menu'
+import { uploadService } from '@/services/uploadService'
+import { useToast } from 'vue-toastification'
 
 interface Props {
   category?: MenuCategory | null
@@ -158,6 +182,7 @@ const emit = defineEmits<{
 }>()
 
 const menuStore = useMenuStore()
+const toast = useToast()
 
 // Form state
 const form = ref<CategoryForm>({
@@ -170,6 +195,9 @@ const form = ref<CategoryForm>({
 const errors = ref<Record<string, string>>({})
 const submitError = ref('')
 const isSubmitting = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
+const imagePreview = ref<string>('')
 
 // Computed
 const isEditing = computed(() => !!props.category)
@@ -212,6 +240,44 @@ const isValidUrl = (string: string) => {
 // Watch for form changes to validate
 watch(form, validateForm, { deep: true })
 
+// File handling
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (file) {
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB')
+      return
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+
+    selectedFile.value = file
+
+    // Create preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imagePreview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const clearImage = () => {
+  form.value.imageUrl = ''
+  imagePreview.value = ''
+  selectedFile.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
 // Initialize form
 const initializeForm = () => {
   if (props.category) {
@@ -233,6 +299,8 @@ const initializeForm = () => {
   }
   errors.value = {}
   submitError.value = ''
+  imagePreview.value = ''
+  selectedFile.value = null
 }
 
 // Handle form submission
@@ -244,18 +312,42 @@ const handleSubmit = async () => {
   submitError.value = ''
 
   try {
+    // Handle file upload if selectedFile exists
+    let uploadedImageUrl = form.value.imageUrl
+    if (selectedFile.value) {
+      toast.info('Uploading image...')
+      const uploadedImage = await uploadService.uploadImage(selectedFile.value, { uploadType: 'categories' })
+
+      uploadedImageUrl = uploadedImage.url
+      const savedPercentage = typeof uploadedImage.savedPercentage === 'number'
+        ? Math.round(uploadedImage.savedPercentage)
+        : null
+
+      if (savedPercentage !== null) {
+        toast.success(`Image uploaded (saved ${savedPercentage}% space)`)
+      } else {
+        toast.success('Image uploaded successfully')
+      }
+    }
+
     let result: MenuCategory
 
+    const categoryData = {
+      ...form.value,
+      imageUrl: uploadedImageUrl
+    }
+
     if (isEditing.value && props.category) {
-      result = await menuStore.updateCategory(props.category.id, form.value)
+      result = await menuStore.updateCategory(props.category.id, categoryData)
     } else {
-      result = await menuStore.createCategory(form.value)
+      result = await menuStore.createCategory(categoryData)
     }
 
     emit('success', result)
     emit('close')
   } catch (error: any) {
     submitError.value = error.message || 'An error occurred while saving the category'
+    toast.error(submitError.value)
   } finally {
     isSubmitting.value = false
   }

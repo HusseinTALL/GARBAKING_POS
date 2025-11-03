@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { formatCurrency } from '@/utils/currency'
 
 // Props
 const props = defineProps<{
@@ -65,9 +66,7 @@ const router = useRouter()
 const orderTotal = ref(0)
 
 // Methods
-const formatPrice = (price: number): string => {
-  return `${price.toLocaleString()} FCFA`
-}
+const formatPrice = (price: number): string => formatCurrency(price)
 
 const goToOrderStatus = (): void => {
   router.push(`/order-status/${props.orderNumber}`)

@@ -41,11 +41,11 @@
       <div class="text-center">
         <FontAwesomeIcon :icon="['fas', 'shopping-cart']" class="text-6xl text-gray-300 mb-6" />
         <h2 class="text-2xl font-bold text-gray-900 mb-4">Votre panier est vide</h2>
-        <p class="text-gray-600 mb-8 max-w-sm">
+        <p class="text-gray-600 mb-8 max-w-sm">ear
           Découvrez notre délicieux menu et ajoutez vos plats préférés à votre panier.
         </p>
         <button
-          @click="$router.push('/menu')"
+          @click="$router.push('/')"
           class="bg-primary-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-primary-700 transition-colors shadow-sm"
         >
           <FontAwesomeIcon :icon="['fas', 'utensils']" class="mr-2" />
@@ -245,6 +245,7 @@ import { useAppStore } from '@/stores/app'
 import { storeToRefs } from 'pinia'
 import CartItemCard from '@/components/CartItemCard.vue'
 import { OrderType } from '@/types'
+import { formatCurrency } from '@/utils/currency'
 
 const router = useRouter()
 const toast = useToast()
@@ -256,13 +257,15 @@ const appStore = useAppStore()
 // Destructure store state
 const {
   items,
-  totalItems,
+  itemCount,
   subtotal,
   tax,
   discount,
   total,
   customerInfo
 } = storeToRefs(cartStore)
+
+const totalItems = computed(() => itemCount.value)
 
 const { appConfig } = storeToRefs(appStore)
 
@@ -302,7 +305,7 @@ const canCheckout = computed(() => {
 
 // Methods
 const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
+  return formatCurrency(amount)
 }
 
 const updateQuantity = (itemId: string, quantity: number) => {
@@ -353,7 +356,7 @@ onMounted(() => {
   document.title = `Panier (${totalItems.value}) - Garbaking`
 
   // Restore cart from storage
-  cartStore.loadFromStorage()
+  cartStore.loadCart()
 })
 </script>
 

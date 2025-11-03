@@ -139,6 +139,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useToast } from 'vue-toastification'
+import { formatCurrency } from '@/utils/currency'
 
 // Props
 interface Props {
@@ -173,7 +174,7 @@ const itemTotal = computed(() => props.item.price * props.item.quantity)
 
 // Methods
 const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
+  return formatCurrency(amount)
 }
 
 const increaseQuantity = () => {

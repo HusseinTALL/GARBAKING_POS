@@ -1,0 +1,56 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0' apply false
+    id 'io.spring.dependency-management' version '1.1.4' apply false
+}
+
+ext {
+    set('springCloudVersion', "2023.0.0")
+    set('springBootVersion', "3.2.0")
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    group = 'com.garbaking'
+    version = '1.0.0'
+
+    java {
+        sourceCompatibility = '17'
+        targetCompatibility = '17'
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+
+    dependencies {
+        // Common dependencies for all modules
+        implementation 'org.springframework.boot:spring-boot-starter'
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        implementation 'io.micrometer:micrometer-registry-prometheus'
+        implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+        implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
+        implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
+        // Lombok for reducing boilerplate
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+
+        // Testing
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.testcontainers:junit-jupiter'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+}

@@ -148,6 +148,7 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { v4 as uuidv4 } from 'uuid'
 import type { MenuItem, OrderItem } from '@/services/mockApi'
+import { formatCurrency } from '@/utils/currency'
 
 // Composables
 const { t } = useI18n()
@@ -192,9 +193,7 @@ const orderTotal = computed(() =>
 )
 
 // Methods
-const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
-}
+const formatPrice = (amount: number): string => formatCurrency(amount)
 
 const validateInput = (): boolean => {
   const input = customerInfo.value.trim()

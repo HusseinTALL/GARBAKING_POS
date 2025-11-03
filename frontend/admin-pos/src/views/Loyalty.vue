@@ -13,16 +13,9 @@
           <p class="text-sm text-gray-600 mt-1">Manage customer loyalty programs, rewards, and redemptions</p>
         </div>
         <div class="flex items-center space-x-3">
-          <!-- Quick Actions -->
-          <button
-            @click="showQuickActions = true"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
-          >
-            Quick Actions
-          </button>
           <button
             @click="exportData"
-            class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm font-medium"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
           >
             Export Data
           </button>
@@ -54,81 +47,93 @@
 
     <!-- Content Area -->
     <div class="flex-1 overflow-auto p-6">
-      <!-- Overview Tab -->
-      <div v-if="activeTab === 'overview'">
-        <LoyaltyOverview />
-      </div>
-
-      <!-- Programs Tab -->
-      <div v-if="activeTab === 'programs'">
-        <ProgramsManager />
-      </div>
-
-      <!-- Customers Tab -->
+      <!-- Customer Enrollment Tab -->
       <div v-if="activeTab === 'customers'">
-        <LoyaltyManager />
+        <CustomerEnrollment />
       </div>
 
-      <!-- Rewards Tab -->
-      <div v-if="activeTab === 'rewards'">
-        <RewardsManager />
+      <!-- Tier Management Tab -->
+      <div v-if="activeTab === 'tiers'">
+        <TierManagement />
       </div>
 
-      <!-- Redemptions Tab -->
-      <div v-if="activeTab === 'redemptions'">
-        <RedemptionManager />
+      <!-- Campaigns Tab -->
+      <div v-if="activeTab === 'campaigns'">
+        <CampaignManagement />
       </div>
 
       <!-- Analytics Tab -->
       <div v-if="activeTab === 'analytics'">
         <LoyaltyAnalytics />
       </div>
-
-      <!-- Settings Tab -->
-      <div v-if="activeTab === 'settings'">
-        <LoyaltySettings />
-      </div>
     </div>
 
-    <!-- Quick Actions Modal -->
-    <QuickActionsModal
-      :is-open="showQuickActions"
-      @close="showQuickActions = false"
-    />
-
     <!-- Export Modal -->
-    <ExportModal
-      :is-open="showExportModal"
-      @close="showExportModal = false"
-    />
+    <div
+      v-if="showExportModal"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      @click="showExportModal = false"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl w-full max-w-md p-6"
+        @click.stop
+      >
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Export Loyalty Data</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Export Format
+            </label>
+            <select
+              v-model="exportFormat"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="CSV">CSV</option>
+              <option value="EXCEL">Excel</option>
+            </select>
+          </div>
+
+          <div class="flex items-center space-x-3">
+            <button
+              @click="handleExport"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              Export
+            </button>
+            <button
+              @click="showExportModal = false"
+              class="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import LoyaltyOverview from '@/components/loyalty/LoyaltyOverview.vue'
-import ProgramsManager from '@/components/loyalty/ProgramsManager.vue'
-import LoyaltyManager from '@/components/loyalty/LoyaltyManager.vue'
-import RewardsManager from '@/components/loyalty/RewardsManager.vue'
-import RedemptionManager from '@/components/loyalty/RedemptionManager.vue'
+import { ref, computed, onMounted } from 'vue'
+import { useLoyaltyStore } from '@/stores/loyalty'
+import CustomerEnrollment from '@/components/loyalty/CustomerEnrollment.vue'
+import TierManagement from '@/components/loyalty/TierManagement.vue'
+import CampaignManagement from '@/components/loyalty/CampaignManagement.vue'
 import LoyaltyAnalytics from '@/components/loyalty/LoyaltyAnalytics.vue'
-import LoyaltySettings from '@/components/loyalty/LoyaltySettings.vue'
-import QuickActionsModal from '@/components/loyalty/QuickActionsModal.vue'
-import ExportModal from '@/components/loyalty/ExportModal.vue'
+
+const loyaltyStore = useLoyaltyStore()
 
 // State
-const activeTab = ref('overview')
-const showQuickActions = ref(false)
+const activeTab = ref('customers')
 const showExportModal = ref(false)
+const exportFormat = ref<'CSV' | 'EXCEL'>('EXCEL')
 
-const tabs = ref([
-  { id: 'overview', label: 'Overview' },
-  { id: 'programs', label: 'Programs', count: 3 },
-  { id: 'customers', label: 'Customers', count: 1247 },
-  { id: 'rewards', label: 'Rewards', count: 156 },
-  { id: 'redemptions', label: 'Redemptions', count: 42 },
-  { id: 'analytics', label: 'Analytics' },
-  { id: 'settings', label: 'Settings' }
+const tabs = computed(() => [
+  { id: 'customers', label: 'Customer Enrollment', count: loyaltyStore.customers.length },
+  { id: 'tiers', label: 'Tier Management' },
+  { id: 'campaigns', label: 'Campaigns', count: loyaltyStore.campaigns.length },
+  { id: 'analytics', label: 'Analytics' }
 ])
 
 // Methods
@@ -136,8 +141,20 @@ const exportData = () => {
   showExportModal.value = true
 }
 
+const handleExport = async () => {
+  const success = await loyaltyStore.exportData('customers', exportFormat.value)
+  if (success) {
+    alert(`Data exported successfully as ${exportFormat.value}`)
+  } else {
+    alert('Failed to export data')
+  }
+  showExportModal.value = false
+}
+
 // Lifecycle
-onMounted(() => {
-  // Load initial data or perform setup
+onMounted(async () => {
+  await loyaltyStore.fetchPrograms()
+  await loyaltyStore.fetchCustomers()
+  await loyaltyStore.fetchCampaigns()
 })
 </script>

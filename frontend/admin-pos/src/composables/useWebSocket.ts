@@ -56,7 +56,10 @@ export function useWebSocket() {
     connectionStatus.connecting = true
     connectionStatus.error = null
 
-    const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+    const serverUrl =
+      import.meta.env.VITE_API_GATEWAY_URL ||
+      import.meta.env.VITE_API_URL ||
+      'http://localhost:8080'
 
     socket = io(serverUrl, {
       auth: {

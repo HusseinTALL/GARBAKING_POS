@@ -255,23 +255,29 @@ const loadRedemptions = async (append = false) => {
 
   loadingRedemptions.value = true
   try {
-    const response = await loyaltyService.getAllRedemptions({
+    const { redemptions: fetchedRedemptions, pagination } = await loyaltyService.getAllRedemptions({
       status: statusFilter.value || undefined,
       limit,
       offset: offset.value
     })
 
-    if (response.success) {
-      if (append) {
-        redemptions.value.push(...response.data.redemptions)
-      } else {
-        redemptions.value = response.data.redemptions
-      }
-      hasMore.value = response.data.pagination.hasMore
-      offset.value += limit
+    if (append) {
+      redemptions.value.push(...fetchedRedemptions)
     } else {
-      console.error('Failed to load redemptions:', response.message)
+      redemptions.value = fetchedRedemptions
     }
+
+    const total = pagination?.total ?? null
+    const hasExplicitMore = pagination?.hasMore ?? null
+    if (hasExplicitMore !== null) {
+      hasMore.value = Boolean(hasExplicitMore)
+    } else if (typeof total === 'number') {
+      hasMore.value = offset.value + fetchedRedemptions.length < total
+    } else {
+      hasMore.value = fetchedRedemptions.length === limit
+    }
+
+    offset.value += fetchedRedemptions.length
   } catch (error) {
     console.error('Error loading redemptions:', error)
   } finally {
@@ -323,12 +329,8 @@ const getStatusClass = (status: string) => {
 
 const markAsApplied = async (redemptionId: string) => {
   try {
-    const response = await loyaltyService.updateRedemptionStatus(redemptionId, 'APPLIED')
-    if (response.success) {
-      await loadRedemptions()
-    } else {
-      alert(response.message || 'Failed to update redemption')
-    }
+    await loyaltyService.updateRedemptionStatus(redemptionId, 'APPLIED')
+    await loadRedemptions()
   } catch (error) {
     alert('Failed to update redemption')
   }
@@ -340,12 +342,8 @@ const cancelRedemption = async (redemptionId: string) => {
   }
 
   try {
-    const response = await loyaltyService.updateRedemptionStatus(redemptionId, 'CANCELLED')
-    if (response.success) {
-      await loadRedemptions()
-    } else {
-      alert(response.message || 'Failed to cancel redemption')
-    }
+    await loyaltyService.updateRedemptionStatus(redemptionId, 'CANCELLED')
+    await loadRedemptions()
   } catch (error) {
     alert('Failed to cancel redemption')
   }

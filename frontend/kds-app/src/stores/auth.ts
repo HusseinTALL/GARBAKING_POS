@@ -7,8 +7,14 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 
-// Configure axios base URL
-axios.defaults.baseURL = 'http://localhost:3001'
+const DEFAULT_GATEWAY_URL = 'http://localhost:8080'
+const configuredGatewayUrl =
+  import.meta.env.VITE_API_GATEWAY_URL ||
+  import.meta.env.VITE_API_URL ||
+  DEFAULT_GATEWAY_URL
+const normalizeBase = (url: string) => (url.endsWith('/') ? url.slice(0, -1) : url)
+
+axios.defaults.baseURL = `${normalizeBase(configuredGatewayUrl)}/api`
 
 // Backend role types matching our permissions system
 export type BackendRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'CASHIER' | 'KITCHEN'

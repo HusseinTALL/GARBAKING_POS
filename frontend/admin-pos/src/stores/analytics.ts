@@ -5,144 +5,23 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
-
-// Types
-export interface SalesData {
-  period: string
-  totalSales: number
-  totalOrders: number
-  averageOrderValue: number
-  totalItems: number
-  totalCustomers: number
-  revenue: {
-    gross: number
-    net: number
-    tax: number
-    discounts: number
-    refunds: number
-  }
-  breakdown: {
-    cash: number
-    card: number
-    mobileMoney: number
-    credit: number
-  }
-}
-
-export interface ProductAnalytics {
-  productId: string
-  productName: string
-  category: string
-  quantitySold: number
-  revenue: number
-  profit: number
-  profitMargin: number
-  averagePrice: number
-  timesOrdered: number
-  percentageOfTotal: number
-  trend: 'up' | 'down' | 'stable'
-  trendPercentage: number
-}
-
-export interface CategoryAnalytics {
-  categoryId: string
-  categoryName: string
-  quantitySold: number
-  revenue: number
-  profit: number
-  orderCount: number
-  percentageOfTotal: number
-  topProducts: ProductAnalytics[]
-  trend: 'up' | 'down' | 'stable'
-  trendPercentage: number
-}
-
-export interface StaffPerformance {
-  staffId: string
-  staffName: string
-  role: string
-  totalSales: number
-  totalOrders: number
-  averageOrderValue: number
-  hoursWorked: number
-  salesPerHour: number
-  customerRating?: number
-  efficiency: number
-  trend: 'up' | 'down' | 'stable'
-}
-
-export interface CustomerAnalytics {
-  totalCustomers: number
-  newCustomers: number
-  returningCustomers: number
-  averageOrdersPerCustomer: number
-  customerLifetimeValue: number
-  retentionRate: number
-  demographics: {
-    ageGroups: Record<string, number>
-    genderDistribution: Record<string, number>
-    locationDistribution: Record<string, number>
-  }
-}
-
-export interface TimeAnalytics {
-  hour: number
-  period: string
-  orders: number
-  revenue: number
-  averageOrderValue: number
-  popularItems: string[]
-  staffCount: number
-  efficiency: number
-}
-
-export interface ComparisonData {
-  current: SalesData
-  previous: SalesData
-  change: {
-    sales: number
-    orders: number
-    aov: number
-    customers: number
-  }
-  growth: {
-    daily: number
-    weekly: number
-    monthly: number
-    yearly: number
-  }
-}
-
-export interface InventoryAnalytics {
-  totalProducts: number
-  lowStockItems: number
-  outOfStockItems: number
-  fastMovingItems: ProductAnalytics[]
-  slowMovingItems: ProductAnalytics[]
-  stockValue: number
-  turnoverRate: number
-  reorderSuggestions: {
-    productId: string
-    productName: string
-    currentStock: number
-    suggestedOrder: number
-    priority: 'high' | 'medium' | 'low'
-  }[]
-}
-
-export interface ReportConfig {
-  id: string
-  name: string
-  type: ReportType
-  schedule: ReportSchedule
-  format: 'PDF' | 'Excel' | 'CSV'
-  recipients: string[]
-  filters: Record<string, any>
-  isActive: boolean
-  lastGenerated?: string
-  nextScheduled?: string
-}
+import {
+  analyticsApi,
+  type CategoryAnalyticsDto,
+  type ComparisonDataDto,
+  type CustomerAnalyticsDto,
+  type CustomerInsightsResponseDto,
+  type DashboardAnalyticsDto,
+  type InventoryAnalyticsDto,
+  type MenuPerformanceResponseDto,
+  type PaymentMethodAnalyticsDto,
+  type PeakHoursResponseDto,
+  type ProductAnalyticsDto,
+  type ReportConfigDto,
+  type SalesDataDto,
+  type StaffPerformanceDto,
+  type TimeAnalyticsDto
+} from '@/services/api-spring'
 
 export enum ReportType {
   DAILY_SALES = 'DAILY_SALES',
@@ -165,15 +44,15 @@ export enum ReportSchedule {
 
 export const useAnalyticsStore = defineStore('analytics', () => {
   // State
-  const salesData = ref<SalesData | null>(null)
-  const productAnalytics = ref<ProductAnalytics[]>([])
-  const categoryAnalytics = ref<CategoryAnalytics[]>([])
-  const staffPerformance = ref<StaffPerformance[]>([])
-  const customerAnalytics = ref<CustomerAnalytics | null>(null)
-  const timeAnalytics = ref<TimeAnalytics[]>([])
-  const comparisonData = ref<ComparisonData | null>(null)
-  const inventoryAnalytics = ref<InventoryAnalytics | null>(null)
-  const reportConfigs = ref<ReportConfig[]>([])
+  const salesData = ref<SalesDataDto | null>(null)
+  const productAnalytics = ref<ProductAnalyticsDto[]>([])
+  const categoryAnalytics = ref<CategoryAnalyticsDto[]>([])
+  const staffPerformance = ref<StaffPerformanceDto[]>([])
+  const customerAnalytics = ref<CustomerAnalyticsDto | null>(null)
+  const timeAnalytics = ref<TimeAnalyticsDto[]>([])
+  const comparisonData = ref<ComparisonDataDto | null>(null)
+  const inventoryAnalytics = ref<InventoryAnalyticsDto | null>(null)
+  const reportConfigs = ref<ReportConfigDto[]>([])
 
   const selectedPeriod = ref<'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom'>('today')
   const customDateRange = ref({ start: '', end: '' })
@@ -220,47 +99,91 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     if (!comparisonData.value) return null
 
     const { current, previous } = comparisonData.value
-    const salesChange = ((current.totalSales - previous.totalSales) / previous.totalSales) * 100
+    const previousSales = previous.totalSales || 0
+    if (!previousSales) {
+      return {
+        direction: current.totalSales > 0 ? 'up' : 'stable',
+        percentage: current.totalSales > 0 ? 100 : 0,
+        value: current.totalSales - previousSales
+      }
+    }
+
+    const salesChange = ((current.totalSales - previousSales) / previousSales) * 100
 
     return {
       direction: salesChange > 0 ? 'up' : salesChange < 0 ? 'down' : 'stable',
       percentage: Math.abs(salesChange),
-      value: current.totalSales - previous.totalSales
+      value: current.totalSales - previousSales
     }
   })
 
   const kpiMetrics = computed(() => {
     if (!salesData.value) return null
 
+    const revenue = salesData.value.revenue
+    const gross = revenue.gross || 0
+    const net = revenue.net || 0
+    const totalCustomers = customerAnalytics.value?.totalCustomers || 0
+
     return {
       totalRevenue: salesData.value.totalSales,
       totalOrders: salesData.value.totalOrders,
       averageOrderValue: salesData.value.averageOrderValue,
-      conversionRate: customerAnalytics.value
-        ? (salesData.value.totalOrders / customerAnalytics.value.totalCustomers) * 100
-        : 0,
-      profitMargin: salesData.value.revenue.net / salesData.value.revenue.gross * 100,
+      conversionRate:
+        totalCustomers > 0 ? (salesData.value.uniqueCustomers / totalCustomers) * 100 : 0,
+      profitMargin: gross > 0 ? (net / gross) * 100 : 0,
       customerSatisfaction: staffPerformance.value.length > 0
-        ? staffPerformance.value.reduce((sum, staff) => sum + (staff.customerRating || 0), 0) / staffPerformance.value.length
+        ? staffPerformance.value.reduce((sum, staff) => sum + (staff.customerRating || 0), 0) /
+          staffPerformance.value.length
         : 0
     }
   })
 
+  // Dashboard-specific state
+  const dashboardData = ref<DashboardAnalyticsDto | null>(null)
+  const menuPerformanceSummary = ref<MenuPerformanceResponseDto | null>(null)
+  const peakHoursSummary = ref<PeakHoursResponseDto | null>(null)
+  const paymentMethodsData = ref<PaymentMethodAnalyticsDto | null>(null)
+  const customerInsightsData = ref<CustomerInsightsResponseDto | null>(null)
+
+  const menuPerformanceItems = computed(() => menuPerformanceSummary.value?.menuItems ?? [])
+  const peakHoursData = computed<TimeAnalyticsDto[]>(
+    () => peakHoursSummary.value?.peakHours ?? []
+  )
+
   // Actions
+  const fetchDashboardData = async (): Promise<boolean> => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const data = await analyticsApi.getDashboardData()
+      dashboardData.value = data
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('Dashboard fetch error:', err)
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const fetchSalesData = async (period: string, dateRange?: { start: string; end: string }): Promise<boolean> => {
     isLoading.value = true
     error.value = null
 
     try {
-      const params = { period, ...dateRange }
-      const response = await axios.get('/api/analytics/sales', { params })
+      const params: any = {}
 
-      if (response.data.success) {
-        salesData.value = response.data.data.sales
-        return true
+      if (dateRange?.start && dateRange?.end) {
+        params.startDate = dateRange.start
+        params.endDate = dateRange.end
       }
 
-      throw new Error(response.data.error || 'Failed to fetch sales data')
+      const data = await analyticsApi.getSalesData(params)
+      salesData.value = data
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -269,16 +192,55 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
+  const fetchMenuPerformance = async (days: number = 30): Promise<boolean> => {
+    try {
+      const data = await analyticsApi.getMenuPerformance(days)
+      menuPerformanceSummary.value = data
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      return false
+    }
+  }
+
+  const fetchPeakHours = async (days: number = 7): Promise<boolean> => {
+    try {
+      const data = await analyticsApi.getPeakHours(days)
+      peakHoursSummary.value = data
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      return false
+    }
+  }
+
+  const fetchPaymentMethods = async (days: number = 30): Promise<boolean> => {
+    try {
+      const data = await analyticsApi.getPaymentMethods(days)
+      paymentMethodsData.value = data
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      return false
+    }
+  }
+
+  const fetchCustomerInsights = async (days: number = 30): Promise<boolean> => {
+    try {
+      const data = await analyticsApi.getCustomerInsights(days)
+      customerInsightsData.value = data
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      return false
+    }
+  }
+
   const fetchProductAnalytics = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/products', { params: { period } })
-
-      if (response.data.success) {
-        productAnalytics.value = response.data.data.products || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch product analytics')
+      const data = await analyticsApi.getProductAnalytics(period)
+      productAnalytics.value = data.products || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -287,14 +249,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchCategoryAnalytics = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/categories', { params: { period } })
-
-      if (response.data.success) {
-        categoryAnalytics.value = response.data.data.categories || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch category analytics')
+      const data = await analyticsApi.getCategoryAnalytics(period)
+      categoryAnalytics.value = data.categories || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -303,14 +260,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchStaffPerformance = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/staff', { params: { period } })
-
-      if (response.data.success) {
-        staffPerformance.value = response.data.data.staff || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch staff performance')
+      const data = await analyticsApi.getStaffPerformance(period)
+      staffPerformance.value = data.staff || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -319,14 +271,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchCustomerAnalytics = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/customers', { params: { period } })
-
-      if (response.data.success) {
-        customerAnalytics.value = response.data.data.customers
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch customer analytics')
+      const data = await analyticsApi.getCustomerAnalytics(period)
+      customerAnalytics.value = data.customers
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -335,14 +282,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchTimeAnalytics = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/time', { params: { period } })
-
-      if (response.data.success) {
-        timeAnalytics.value = response.data.data.timeData || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch time analytics')
+      const data = await analyticsApi.getTimeAnalytics(period)
+      timeAnalytics.value = data.timeData || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -351,14 +293,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchComparisonData = async (period: string): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/comparison', { params: { period } })
-
-      if (response.data.success) {
-        comparisonData.value = response.data.data.comparison
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch comparison data')
+      const data = await analyticsApi.getComparisonData(period)
+      comparisonData.value = data.comparison
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -367,14 +304,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchInventoryAnalytics = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/inventory')
-
-      if (response.data.success) {
-        inventoryAnalytics.value = response.data.data.inventory
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch inventory analytics')
+      const data = await analyticsApi.getInventoryAnalytics()
+      inventoryAnalytics.value = data.inventory
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -383,33 +315,21 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const generateReport = async (reportType: ReportType, config: any): Promise<string | null> => {
     try {
-      const response = await axios.post('/api/analytics/reports/generate', {
-        type: reportType,
-        config
-      })
-
-      if (response.data.success) {
-        return response.data.data.reportUrl
-      }
-
-      throw new Error(response.data.error || 'Failed to generate report')
+      const data = await analyticsApi.generateReport(reportType, config)
+      return data.reportUrl || null
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return null
     }
   }
 
-  const scheduleReport = async (config: Omit<ReportConfig, 'id'>): Promise<boolean> => {
+  const scheduleReport = async (config: Omit<ReportConfigDto, 'id'>): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/analytics/reports/schedule', config)
-
-      if (response.data.success) {
-        const newReport = response.data.data.report
-        reportConfigs.value.push(newReport)
-        return true
+      const data = await analyticsApi.scheduleReport(config)
+      if (data.report) {
+        reportConfigs.value.push(data.report)
       }
-
-      throw new Error(response.data.error || 'Failed to schedule report')
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -418,14 +338,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const fetchReportConfigs = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/analytics/reports/configs')
-
-      if (response.data.success) {
-        reportConfigs.value = response.data.data.configs || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch report configs')
+      const data = await analyticsApi.getReportConfigs()
+      reportConfigs.value = data.configs || []
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
       return false
@@ -433,32 +348,97 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   }
 
   const exportData = async (
-    dataType: 'sales' | 'products' | 'staff' | 'customers',
-    format: 'CSV' | 'Excel' | 'PDF',
-    period: string
-  ): Promise<string | null> => {
+    type: 'sales' | 'products' | 'staff' | 'customers' | 'inventory' = 'sales',
+    format: 'CSV' | 'Excel' | 'PDF' = 'CSV',
+    period: string = 'today'
+  ): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/analytics/export', {
-        dataType,
-        format,
+      const params: any = {
+        type,
+        format: format.toLowerCase(),
         period
-      }, {
-        responseType: 'blob'
-      })
+      }
 
-      const blob = new Blob([response.data])
+      // Add custom date range if applicable
+      if (selectedPeriod.value === 'custom' && customDateRange.value.start && customDateRange.value.end) {
+        params.startDate = customDateRange.value.start
+        params.endDate = customDateRange.value.end
+      }
+
+      const response = await analyticsApi.exportData(params)
+
+      // Determine MIME type and extension based on format
+      const mimeTypes: Record<string, string> = {
+        'CSV': 'text/csv',
+        'Excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'PDF': 'application/pdf'
+      }
+
+      const extensions: Record<string, string> = {
+        'CSV': 'csv',
+        'Excel': 'xlsx',
+        'PDF': 'pdf'
+      }
+
+      // Handle file download
+      const blob = new Blob([response.data], { type: mimeTypes[format] })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${dataType}-${period}.${format.toLowerCase()}`
+      link.download = `${type}-report-${new Date().toISOString().split('T')[0]}.${extensions[format]}`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
 
-      return url
+      return true
     } catch (err: any) {
       error.value = err.response?.data?.error || err.message
+      console.error('Export error:', err)
+      return false
+    }
+  }
+
+  // New comparison methods for YoY and MoM
+  const fetchYearOverYearComparison = async (): Promise<ComparisonDataDto | null> => {
+    try {
+      const data = await analyticsApi.getYearOverYearComparison()
+      return data.comparison
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('YoY comparison error:', err)
+      return null
+    }
+  }
+
+  const fetchMonthOverMonthComparison = async (): Promise<ComparisonDataDto | null> => {
+    try {
+      const data = await analyticsApi.getMonthOverMonthComparison()
+      return data.comparison
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('MoM comparison error:', err)
+      return null
+    }
+  }
+
+  const fetchCustomComparison = async (
+    startDate1: string,
+    endDate1: string,
+    startDate2: string,
+    endDate2: string
+  ): Promise<ComparisonDataDto | null> => {
+    try {
+      const data = await analyticsApi.getCustomComparison({
+        startDate1,
+        endDate1,
+        startDate2,
+        endDate2
+      })
+      return data.comparison
+    } catch (err: any) {
+      error.value = err.response?.data?.error || err.message
+      console.error('Custom comparison error:', err)
       return null
     }
   }
@@ -469,10 +449,25 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     try {
       const dateRange = selectedPeriod.value === 'custom' ? customDateRange.value : undefined
 
+      // Load dashboard-specific data
+      await fetchDashboardData()
+
       // Silently handle 404s for endpoints that don't exist yet
       await Promise.allSettled([
         fetchSalesData(period, dateRange).catch(err => {
           if (err.response?.status !== 404) console.error('Sales data error:', err)
+        }),
+        fetchMenuPerformance(30).catch(err => {
+          if (err.response?.status !== 404) console.error('Menu performance error:', err)
+        }),
+        fetchPeakHours(7).catch(err => {
+          if (err.response?.status !== 404) console.error('Peak hours error:', err)
+        }),
+        fetchPaymentMethods(30).catch(err => {
+          if (err.response?.status !== 404) console.error('Payment methods error:', err)
+        }),
+        fetchCustomerInsights(30).catch(err => {
+          if (err.response?.status !== 404) console.error('Customer insights error:', err)
         }),
         fetchProductAnalytics(period).catch(err => {
           if (err.response?.status !== 404) console.error('Product analytics error:', err)
@@ -555,6 +550,16 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     isLoading,
     error,
 
+    // Dashboard-specific state
+    dashboardData,
+    menuPerformanceSummary,
+    paymentMethodsData,
+    customerInsightsData,
+
+    // Derived collections
+    menuPerformanceItems,
+    peakHoursData,
+
     // Computed
     topSellingProducts,
     mostProfitableProducts,
@@ -565,7 +570,12 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     kpiMetrics,
 
     // Actions
+    fetchDashboardData,
     fetchSalesData,
+    fetchMenuPerformance,
+    fetchPeakHours,
+    fetchPaymentMethods,
+    fetchCustomerInsights,
     fetchProductAnalytics,
     fetchCategoryAnalytics,
     fetchStaffPerformance,
@@ -582,6 +592,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     setPeriod,
     setCustomDateRange,
     clearError,
+    // New comparison methods
+    fetchYearOverYearComparison,
+    fetchMonthOverMonthComparison,
+    fetchCustomComparison,
 
     // Helpers
     formatCurrency,

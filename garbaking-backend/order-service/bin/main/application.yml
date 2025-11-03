@@ -1,0 +1,115 @@
+spring:
+  application:
+    name: order-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/garbaking_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: rootpassword
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: order-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+  # Cloud Configuration
+  cloud:
+    config:
+      enabled: false  # Disable for now, enable when Config Server is ready
+
+  config:
+    import: optional:configserver:http://localhost:8888
+
+# Server Configuration
+server:
+  port: 8082
+
+# Eureka Configuration
+eureka:
+  instance:
+    prefer-ip-address: false
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    sampling:
+      probability: 0.4
+    propagation:
+      type: B3,W3C
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Logging
+logging:
+  config: classpath:logback-structured.xml
+  level:
+    root: INFO
+    com.garbaking: DEBUG
+
+garbaking:
+  observability:
+    environment: local
+    alerts:
+      order-backlog-threshold: 25
+      evaluation-interval: PT2M
+
+# QR Payment Configuration
+qr:
+  token:
+    # IMPORTANT: Change this secret in production!
+    # Must be at least 32 characters for HS256
+    secret: ${QR_TOKEN_SECRET:garbaking-qr-payment-secret-key-change-in-production-min-32-chars}
+    expiry:
+      minutes: 5  # Token expires after 5 minutes
+    issuer: garbaking-pos
+    audience: payment-confirmation
+
+security:
+  rate-limit:
+    qr-scan:
+      requests: 10  # Max 10 scans per minute
+      per-seconds: 60
+    qr-confirm:
+      requests: 5  # Max 5 confirmations per minute
+      per-seconds: 60

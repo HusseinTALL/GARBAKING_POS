@@ -165,6 +165,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { MenuItem } from '@/services/mockApi'
+import { formatCurrency } from '@/utils/currency'
 
 interface CartItem extends MenuItem {
   quantity: number
@@ -195,9 +196,7 @@ const getCategoryEmoji = (category: string): string => {
   return emojiMap[category] || '🍽️'
 }
 
-const formatPrice = (price: number): string => {
-  return `${price.toLocaleString('fr-FR')} FCFA`
-}
+const formatPrice = (price: number): string => formatCurrency(price)
 
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
@@ -211,7 +210,7 @@ const subtotal = computed(() => {
 })
 
 const deliveryFee = computed(() => {
-  return subtotal.value > 20 ? 0 : 2.50
+  return subtotal.value > 20000 ? 0 : 1000
 })
 
 const discount = ref(0)

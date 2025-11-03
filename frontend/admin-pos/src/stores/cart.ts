@@ -1,12 +1,17 @@
 /**
  * Cart/Order management store for GARBAKING POS
  * Handles cart state, order processing, and payment workflow with real-time synchronization
+ *
+ * NOTE: This is a client-side state management store with no direct API calls.
+ * Cart operations are processed when orders are created via the orders store.
+ * Loyalty integration uses loyaltyService (to be migrated when loyalty store is updated).
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { MenuItem } from './menu'
 import { loyaltyService, type CustomerLoyaltyProfile, type RedemptionRequest } from '@/services/loyalty'
+import { draftStorage, type CartDraft } from '@/utils/draftStorage'
 
 // Cart item interface
 export interface CartItem {
@@ -81,6 +86,14 @@ export const useCartStore = defineStore('cart', () => {
   const isLoadingLoyalty = ref(false)
   const loyaltyError = ref<string | null>(null)
 
+  // Draft-related state
+  const availableDrafts = ref<CartDraft[]>([])
+  const currentDraftId = ref<string | null>(null)
+  const isLoadingDrafts = ref(false)
+  const draftError = ref<string | null>(null)
+  const customerInfo = ref<{name?: string, phone?: string}>({})
+  const hasUnsavedChanges = ref(false)
+
   // Computed values
   const itemCount = computed(() => {
     return items.value.reduce((total, item) => total + item.quantity, 0)
@@ -140,6 +153,16 @@ export const useCartStore = defineStore('cart', () => {
     return totalDiscounts.value.toFixed(2)
   })
 
+  // Helper functions
+  const markAsChanged = () => {
+    hasUnsavedChanges.value = true
+  }
+
+  const updateCustomerInfo = (info: {name?: string, phone?: string}) => {
+    customerInfo.value = { ...customerInfo.value, ...info }
+    markAsChanged()
+  }
+
   // Actions
   const addItem = (menuItem: MenuItem, quantity: number = 1, specialInstructions?: string) => {
     const existingItemIndex = items.value.findIndex(item =>
@@ -162,6 +185,9 @@ export const useCartStore = defineStore('cart', () => {
       items.value.push(cartItem)
     }
 
+    // Mark as changed for draft tracking
+    markAsChanged()
+
     // Save to localStorage
     saveToLocalStorage()
   }
@@ -170,6 +196,7 @@ export const useCartStore = defineStore('cart', () => {
     const index = items.value.findIndex(item => item.id === cartItemId)
     if (index !== -1) {
       items.value.splice(index, 1)
+      markAsChanged()
       saveToLocalStorage()
     }
   }
@@ -183,6 +210,7 @@ export const useCartStore = defineStore('cart', () => {
     const item = items.value.find(item => item.id === cartItemId)
     if (item) {
       item.quantity = newQuantity
+      markAsChanged()
       saveToLocalStorage()
     }
   }
@@ -237,13 +265,7 @@ export const useCartStore = defineStore('cart', () => {
     loyaltyError.value = null
 
     try {
-      const response = await loyaltyService.getCustomerLoyalty(customer.id)
-      if (response.success) {
-        customerLoyaltyProfile.value = response.data
-      } else {
-        loyaltyError.value = response.message || 'Failed to load customer loyalty profile'
-        customerLoyaltyProfile.value = null
-      }
+      customerLoyaltyProfile.value = await loyaltyService.getCustomerLoyalty(customer.id)
     } catch (error) {
       loyaltyError.value = error instanceof Error ? error.message : 'Failed to load loyalty data'
       customerLoyaltyProfile.value = null
@@ -265,27 +287,27 @@ export const useCartStore = defineStore('cart', () => {
     }
 
     try {
-      const response = await loyaltyService.redeemPoints(selectedCustomer.value.id, redemptionRequest)
-      if (response.success) {
-        const discount: AppliedDiscount = {
-          id: response.data.redemption.id,
-          type: 'LOYALTY_REDEMPTION',
-          description: redemptionRequest.description,
-          amount: response.data.redemption.discountValue,
-          pointsUsed: redemptionRequest.pointsToRedeem
-        }
+      const { redemption, discountValue } = await loyaltyService.redeemPoints(
+        selectedCustomer.value.id,
+        redemptionRequest
+      )
 
-        appliedDiscounts.value.push(discount)
-
-        // Update customer loyalty profile
-        if (customerLoyaltyProfile.value) {
-          customerLoyaltyProfile.value.customer.loyaltyPoints -= redemptionRequest.pointsToRedeem
-        }
-
-        return response.data
-      } else {
-        throw new Error(response.message || 'Failed to apply loyalty discount')
+      const discount: AppliedDiscount = {
+        id: redemption.id,
+        type: 'LOYALTY_REDEMPTION',
+        description: redemptionRequest.description,
+        amount: discountValue,
+        pointsUsed: redemptionRequest.pointsToRedeem
       }
+
+      appliedDiscounts.value.push(discount)
+
+      // Update customer loyalty profile
+      if (customerLoyaltyProfile.value) {
+        customerLoyaltyProfile.value.customer.loyaltyPoints -= redemptionRequest.pointsToRedeem
+      }
+
+      return { redemption, discountValue }
     } catch (error) {
       throw error instanceof Error ? error : new Error('Failed to apply loyalty discount')
     }
@@ -452,8 +474,163 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  // Draft management functions
+  const saveDraft = async (draftName?: string): Promise<string | null> => {
+    if (items.value.length === 0) {
+      draftError.value = 'Cannot save empty cart as draft'
+      return null
+    }
+
+    try {
+      const draft: Omit<CartDraft, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: draftName || `Draft ${new Date().toLocaleString()}`,
+        items: items.value.map(item => ({
+          id: item.id,
+          menuItem: item.menuItem,
+          quantity: item.quantity,
+          specialInstructions: item.specialInstructions
+        })),
+        customerName: customerInfo.value.name,
+        customerPhone: customerInfo.value.phone,
+        paymentMethod: paymentMethod.value,
+        subtotal: subtotal.value,
+        tax: tax.value,
+        total: total.value,
+        itemCount: itemCount.value
+      }
+
+      if (currentDraftId.value) {
+        // Update existing draft
+        await draftStorage.updateDraft(currentDraftId.value, draft)
+        await loadDrafts()
+        hasUnsavedChanges.value = false
+        return currentDraftId.value
+      } else {
+        // Save new draft
+        const draftId = await draftStorage.saveDraft(draft)
+        currentDraftId.value = draftId
+        await loadDrafts()
+        hasUnsavedChanges.value = false
+        return draftId
+      }
+    } catch (error) {
+      draftError.value = error instanceof Error ? error.message : 'Failed to save draft'
+      console.error('Failed to save draft:', error)
+      return null
+    }
+  }
+
+  const loadDraft = async (draftId: string): Promise<boolean> => {
+    try {
+      const draft = await draftStorage.getDraft(draftId)
+      if (!draft) {
+        draftError.value = 'Draft not found'
+        return false
+      }
+
+      // Clear current cart
+      items.value = []
+
+      // Load draft items
+      items.value = draft.items.map(item => ({
+        ...item,
+        addedAt: new Date()
+      }))
+
+      // Load customer info
+      if (draft.customerName || draft.customerPhone) {
+        customerInfo.value = {
+          name: draft.customerName,
+          phone: draft.customerPhone
+        }
+      }
+
+      // Load payment method
+      if (draft.paymentMethod) {
+        paymentMethod.value = draft.paymentMethod as 'cash' | 'card' | 'mobile'
+      }
+
+      currentDraftId.value = draftId
+      hasUnsavedChanges.value = false
+
+      return true
+    } catch (error) {
+      draftError.value = error instanceof Error ? error.message : 'Failed to load draft'
+      console.error('Failed to load draft:', error)
+      return false
+    }
+  }
+
+  const loadDrafts = async (): Promise<void> => {
+    isLoadingDrafts.value = true
+    draftError.value = null
+
+    try {
+      availableDrafts.value = await draftStorage.getAllDrafts()
+    } catch (error) {
+      draftError.value = error instanceof Error ? error.message : 'Failed to load drafts'
+      console.error('Failed to load drafts:', error)
+    } finally {
+      isLoadingDrafts.value = false
+    }
+  }
+
+  const deleteDraft = async (draftId: string): Promise<boolean> => {
+    try {
+      await draftStorage.deleteDraft(draftId)
+
+      if (currentDraftId.value === draftId) {
+        currentDraftId.value = null
+      }
+
+      await loadDrafts()
+      return true
+    } catch (error) {
+      draftError.value = error instanceof Error ? error.message : 'Failed to delete draft'
+      console.error('Failed to delete draft:', error)
+      return false
+    }
+  }
+
+  const deleteAllDrafts = async (): Promise<boolean> => {
+    try {
+      await draftStorage.deleteAllDrafts()
+      currentDraftId.value = null
+      availableDrafts.value = []
+      return true
+    } catch (error) {
+      draftError.value = error instanceof Error ? error.message : 'Failed to delete all drafts'
+      console.error('Failed to delete all drafts:', error)
+      return false
+    }
+  }
+
+  const getDraftCount = async (): Promise<number> => {
+    try {
+      return await draftStorage.getDraftCount()
+    } catch (error) {
+      console.error('Failed to get draft count:', error)
+      return 0
+    }
+  }
+
+  const autoSaveDraft = async (): Promise<void> => {
+    if (items.value.length === 0 || !hasUnsavedChanges.value) {
+      return
+    }
+
+    const draftName = currentDraftId.value
+      ? (availableDrafts.value.find(d => d.id === currentDraftId.value)?.name || 'Auto-saved Draft')
+      : 'Auto-saved Draft'
+
+    await saveDraft(draftName)
+  }
+
   // Initialize cart from localStorage on store creation
   loadFromLocalStorage()
+
+  // Load drafts on initialization
+  loadDrafts()
 
   return {
     // State
@@ -469,6 +646,14 @@ export const useCartStore = defineStore('cart', () => {
     appliedDiscounts,
     isLoadingLoyalty,
     loyaltyError,
+
+    // Draft state
+    availableDrafts,
+    currentDraftId,
+    isLoadingDrafts,
+    draftError,
+    customerInfo,
+    hasUnsavedChanges,
 
     // Computed
     itemCount,
@@ -502,6 +687,17 @@ export const useCartStore = defineStore('cart', () => {
     clearCustomer,
     applyLoyaltyDiscount,
     removeDiscount,
+
+    // Draft actions
+    saveDraft,
+    loadDraft,
+    loadDrafts,
+    deleteDraft,
+    deleteAllDrafts,
+    getDraftCount,
+    autoSaveDraft,
+    markAsChanged,
+    updateCustomerInfo,
 
     // Utilities
     saveToLocalStorage,

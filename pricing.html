@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GarbaKing POS – Solution de Caisse Offline-First pour l'Afrique de l'Ouest | Démo Gratuite</title>
+    <meta name="description" content="GarbaKing POS : Le système de caisse conçu pour l'Afrique. Fonctionne 100% hors-ligne, synchronise automatiquement, accepte Wave/Orange Money. Démo gratuite 14 jours sans carte bancaire." />
+    <meta name="keywords" content="POS Afrique, caisse restaurant, système offline, Wave, Orange Money, garbadrome Burkina Faso" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="GarbaKing POS – Solution de Caisse Offline-First" />
+    <meta property="og:description" content="Système de caisse qui fonctionne sans Internet. Conçu pour l'Afrique de l'Ouest." />
+    <meta property="og:type" content="website" />
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    
+    <!-- Google Tag Manager -->
+    <script>
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+      var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;
+      j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-XXXXXXX');
+    </script>
+
+    <style>
+      :root {
+        --bg-primary: #0a0e1a;
+        --bg-secondary: #141824;
+        --bg-card: #1a1f2e;
+        --bg-elevated: #242938;
+        --brand-orange: #FF6B35;
+        --brand-orange-light: #FF8A5A;
+        --brand-orange-dark: #E5552A;
+        --accent-blue: #3B82F6;
+        --accent-blue-dark: #2563EB;
+        --text-primary: #F8FAFC;
+        --text-secondary: #CBD5E1;
+        --text-tertiary: #94A3B8;
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --border-medium: rgba(255, 255, 255, 0.15);
+      }
+      
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* Smooth scrolling */
+      html {
+        scroll-behavior: smooth;
+      }
+      
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: var(--brand-orange);
+        border-radius: 5px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--brand-orange-light);
+      }
+      
+      /* Animations */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
+      
+      @keyframes gradient-shift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+      }
+      
+      @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 53, 0.3); }
+        50% { box-shadow: 0 0 40px rgba(255, 107, 53, 0.6); }
+      }
+      
+      .animate-fadeInUp {
+        animation: fadeInUp 0.6s ease-out forwards;
+      }
+      
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
+      
+      /* Navbar */
+      .navbar {
+        backdrop-filter: blur(12px) saturate(150%);
+        background: rgba(10, 14, 26, 0.85);
+        border-bottom: 1px solid var(--border-subtle);
+        transition: all 0.3s ease;
+      }
+      
+      .navbar.scrolled {
+        background: rgba(10, 14, 26, 0.95);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      
+      /* Pricing cards */
+      .pricing-card {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .pricing-card.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      
+      .pricing-card:hover {
+        transform: translateY(-8px) scale(1.02);
+      }
+      
+      .pricing-card-featured {
+        position: relative;
+        background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-dark) 100%);
+        transform: scale(1.05);
+        box-shadow: 0 20px 60px rgba(59, 130, 246, 0.3);
+      }
+      
+      .pricing-card-featured:hover {
+        transform: scale(1.07) translateY(-8px);
+      }
+      
+      /* Badge */
+      .badge-popular {
+        position: absolute;
+        top: -14px;
+        right: 20px;
+        background: linear-gradient(90deg, #10B981, #059669);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 6px 14px;
+        border-radius: 9999px;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      
+      /* CTA Section */
+      .cta-gradient {
+        background: linear-gradient(135deg, var(--brand-orange) 0%, var(--accent-blue) 50%, var(--bg-primary) 100%);
+        background-size: 200% 200%;
+        animation: gradient-shift 8s ease infinite;
+      }
+      
+      /* Floating button */
+      .floating-btn {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        width: 64px;
+        height: 64px;
+        background: var(--brand-orange);
+        color: white;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        z-index: 100;
+        transition: all 0.3s ease;
+        animation: pulse-glow 2s ease-in-out infinite;
+      }
+      
+      .floating-btn:hover {
+        background: var(--brand-orange-light);
+        transform: scale(1.1);
+      }
+      
+      /* Toggle switch */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 68px;
+        height: 34px;
+      }
+      
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: #475569;
+        border-radius: 34px;
+        transition: 0.3s;
+      }
+      
+      .slider:before {
+        content: "";
+        position: absolute;
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background: white;
+        border-radius: 50%;
+        transition: 0.3s;
+      }
+      
+      input:checked + .slider {
+        background: var(--brand-orange);
+      }
+      
+      input:checked + .slider:before {
+        transform: translateX(34px);
+      }
+      
+      /* FAQ */
+      .faq-item {
+        transition: all 0.3s ease;
+      }
+      
+      .faq-item:hover {
+        border-color: var(--brand-orange);
+      }
+      
+      .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+      
+      .faq-answer.open {
+        max-height: 500px;
+      }
+      
+      .faq-icon {
+        transition: transform 0.3s ease;
+      }
+      
+      .faq-icon.open {
+        transform: rotate(45deg);
+      }
+      
+      /* Feature icons */
+      .feature-icon {
+        display: inline-flex;
+        width: 20px;
+        height: 20px;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+      }
+      
+      /* Stats counter */
+      .stat-number {
+        font-feature-settings: 'tnum';
+        font-variant-numeric: tabular-nums;
+      }
+      
+      /* Testimonial cards */
+      .testimonial-card {
+        transition: all 0.3s ease;
+      }
+      
+      .testimonial-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      }
+      
+      /* Benefits grid */
+      .benefit-item {
+        transition: all 0.3s ease;
+      }
+      
+      .benefit-item:hover {
+        transform: translateY(-4px);
+        border-color: var(--brand-orange);
+      }
+      
+      /* Mobile menu */
+      .mobile-menu {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+      
+      .mobile-menu.open {
+        max-height: 500px;
+      }
+      
+      /* Responsive utilities */
+      @media (max-width: 768px) {
+        .pricing-card-featured {
+          transform: scale(1);
+        }
+        
+        .pricing-card-featured:hover {
+          transform: scale(1.02) translateY(-4px);
+        }
+      }
+    </style>
+  </head>
+  
+  <body>
+    <!-- GTM noscript -->
+    <noscript>
+      <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX" 
+              height="0" width="0" style="display:none;visibility:hidden"></iframe>
+    </noscript>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed top-0 left-0 right-0 z-50" id="navbar">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16 md:h-20">
+          <!-- Logo -->
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+              <span class="text-white text-xl font-bold">G</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-base md:text-lg font-bold tracking-tight">GarbaKing POS</span>
+              <span class="text-xs text-gray-400 hidden md:block">Offline-First</span>
+            </div>
+          </div>
+          
+          <!-- Desktop Navigation -->
+          <div class="hidden lg:flex items-center gap-8">
+            <a href="#pricing" class="text-sm font-medium text-gray-300 hover:text-white transition-colors">Tarifs</a>
+            <a href="#features" class="text-sm font-medium text-gray-300 hover:text-white transition-colors">Fonctionnalités</a>
+            <a href="#comparison" class="text-sm font-medium text-gray-300 hover:text-white transition-colors">Comparatif</a>
+            <a href="#testimonials" class="text-sm font-medium text-gray-300 hover:text-white transition-colors">Témoignages</a>
+            <a href="#faq" class="text-sm font-medium text-gray-300 hover:text-white transition-colors">FAQ</a>
+          </div>
+          
+          <!-- CTA Button -->
+          <div class="flex items-center gap-4">
+            <a href="#cta" 
+               class="hidden md:inline-flex bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow-lg transition-all duration-300">
+              Démo Gratuite
+            </a>
+            
+            <!-- Mobile menu button -->
+            <button id="mobile-menu-btn" 
+                    class="lg:hidden p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+                    aria-label="Menu">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div class="mobile-menu lg:hidden" id="mobile-menu">
+          <div class="py-4 space-y-3 border-t border-white/10">
+            <a href="#pricing" class="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Tarifs</a>
+            <a href="#features" class="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Fonctionnalités</a>
+            <a href="#comparison" class="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Comparatif</a>
+            <a href="#testimonials" class="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Témoignages</a>
+            <a href="#faq" class="block px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">FAQ</a>
+            <a href="#cta" class="block px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg text-center">Démo Gratuite</a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Pricing toggle bar -->
+      <div class="border-t border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div class="flex items-center justify-center gap-4">
+            <span class="text-sm font-medium text-gray-300">Mensuel</span>
+            <label class="switch" aria-label="Basculer entre tarification mensuelle et annuelle">
+              <input type="checkbox" id="pricingToggle" />
+              <span class="slider"></span>
+            </label>
+            <span class="text-sm font-medium text-gray-300 flex items-center gap-2">
+              Annuel
+              <span class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+                -17%
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative pt-32 md:pt-40 pb-16 md:pb-24 overflow-hidden">
+      <!-- Background decoration -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-1/4 -left-20 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-4xl mx-auto">
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-2 mb-8 animate-fadeInUp">
+            <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+            <span class="text-sm font-semibold text-orange-400">Conçu pour l'Afrique de l'Ouest</span>
+          </div>
+          
+          <h1 class="text-4xl md:text-6xl lg:text-7xl font-black leading-tight mb-6 animate-fadeInUp" style="animation-delay: 0.1s">
+            <span class="bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500 bg-clip-text text-transparent">
+              Votre caisse fonctionne
+            </span>
+            <br />
+            <span class="text-white">même sans Internet</span>
+          </h1>
+          
+          <p class="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-10 leading-relaxed animate-fadeInUp" style="animation-delay: 0.2s">
+            GarbaKing POS est le seul système de caisse <strong class="text-white">100% offline-first</strong> avec Raspberry Pi intégré. 
+            Servez vos clients sans interruption, synchronisez quand vous voulez, acceptez Wave & Orange Money.
+          </p>
+          
+          <!-- CTA Buttons -->
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 animate-fadeInUp" style="animation-delay: 0.3s">
+            <a href="#pricing" 
+               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold px-8 py-4 rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105">
+              <span>Voir les tarifs</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+              </svg>
+            </a>
+            <a href="#cta" 
+               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white font-semibold px-8 py-4 rounded-xl border border-white/10 transition-all duration-300">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>Voir la démo</span>
+            </a>
+          </div>
+          
+          <!-- Trust badges -->
+          <div class="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400 animate-fadeInUp" style="animation-delay: 0.4s">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <span><strong class="text-white">14 jours</strong> gratuits</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <span>Sans <strong class="text-white">carte bancaire</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <span><strong class="text-white">Installation</strong> incluse</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto mt-20 animate-fadeInUp" style="animation-delay: 0.5s">
+          <div class="text-center">
+            <div class="text-3xl md:text-4xl font-black text-orange-500 mb-2 stat-number">200+</div>
+            <div class="text-sm text-gray-400">Restaurants équipés</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl md:text-4xl font-black text-orange-500 mb-2 stat-number">99.9%</div>
+            <div class="text-sm text-gray-400">Disponibilité</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl md:text-4xl font-black text-orange-500 mb-2 stat-number">5M+</div>
+            <div class="text-sm text-gray-400">Transactions/mois</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl md:text-4xl font-black text-orange-500 mb-2 stat-number">24/7</div>
+            <div class="text-sm text-gray-400">Support local</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 md:py-28 bg-gradient-to-b from-transparent to-blue-950/20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-5xl font-black text-white mb-4">
+            Pourquoi <span class="text-orange-500">GarbaKing POS</span> ?
+          </h2>
+          <p class="text-lg text-gray-300 max-w-3xl mx-auto">
+            Conçu spécifiquement pour les défis de l'Afrique de l'Ouest : coupures réseau fréquentes, 
+            paiements mobiles locaux, et besoin de fiabilité maximale.
+          </p>
+        </div>
+        
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <!-- Feature 1 -->
+          <div class="benefit-item bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-3">100% Offline-First</h3>
+            <p class="text-gray-300 leading-relaxed">
+              Fonctionne parfaitement sans Internet grâce au serveur local Raspberry Pi. 
+              Synchronisation automatique et intelligente dès que la connexion revient.
+            </p>
+          </div>
+          
+          <!-- Feature 2 -->
+          <div class="benefit-item bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-3">Paiements Locaux</h3>
+            <p class="text-gray-300 leading-relaxed">
+              Intégration native Wave, Orange Money, MTN Money, Moov Money. 
+              Acceptez les méthodes de paiement que vos clients utilisent vraiment.
+            </p>
+          </div>
+          
+          <!-- Feature 3 -->
+          <div class="benefit-item bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-3">Sécurité Renforcée</h3>
+            <p class="text-gray-300 leading-relaxed">
+              Sauvegardes automatiques multi-niveaux, chiffrement de bout en bout, 
+              authentification multi-facteurs et contrôle d'accès granulaire.
+            </p>
+          </div>
+          
+          <!-- Feature 4 -->
+          <div class="benefit-item bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-3">Analytics Avancés</h3>
+            <p class="text-gray-300 leading-relaxed">
+              Dashboard en temps réel, rapports détaillés, prévisions IA, 
+              et insights actionnables pour optimiser vos ventes.
+            </p>
+          </div>
+          
+          <!-- Feature 5 -->
+          <div class="benefit-item bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div class="w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-3">Ultra Personnalisable</h3>
+            <p class="text-gray-300 leading-relaxed">
+              Adaptez l'interface, les menus, les flux de travail et les rapports 
+              selon vos besoins spécifiques. API REST complète disponible.
+            </p>
+          </div>
+          
+          <!-- Feature 6 -->
+          <div class="benefit-item bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div class="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-3">Support Local 24/7</h3>
+            <p class="text-gray-300 leading-relaxed">
+              Équipe technique basée à Ouagadougou, Abidjan et Dakar. 
+              Assistance en français par téléphone, WhatsApp ou visite sur site.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <main id="pricing" class="py-20 md:py-28">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-5xl font-black text-white mb-4">
+            Tarifs <span class="text-orange-500">Transparents</span>
+          </h2>
+          <p class="text-lg text-gray-300 max-w-2xl mx-auto">
+            Choisissez le plan qui correspond à vos besoins. Tous les plans incluent le mode offline, 
+            les mises à jour et l'assistance technique.
+          </p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-8 lg:gap-10 max-w-7xl mx-auto">
+          <!-- Basic Plan -->
+          <article class="pricing-card bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-3xl p-8 lg:p-10 border border-white/10 backdrop-blur-sm">
+            <div class="mb-8">
+              <h3 class="text-2xl font-bold text-orange-500 mb-2">Basic</h3>
+              <p class="text-gray-400 text-sm">Parfait pour débuter</p>
+            </div>
+            
+            <div class="mb-8">
+              <div class="flex items-baseline gap-2">
+                <span class="text-5xl font-black text-white">
+                  <span id="basicPrice" class="price">25 000</span>
+                </span>
+                <div class="flex flex-col">
+                  <span class="text-gray-400 text-sm font-medium">FCFA</span>
+                  <span class="text-gray-400 text-xs" id="basicPeriod">/ mois</span>
+                </div>
+              </div>
+              <div class="text-xs text-emerald-400 font-semibold mt-2 h-5" id="basicSave"></div>
+            </div>
+            
+            <ul class="space-y-4 mb-10">
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span><strong class="text-white">Mode Offline</strong> avec Raspberry Pi</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span>Caisse & <strong class="text-white">tickets thermiques</strong></span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span>Gestion de menu (CRUD + import CSV)</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span><strong class="text-white">Synchronisation cloud</strong> automatique</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-blue-400 mt-0.5">⚙</span>
+                <span>1 admin + <strong class="text-white">2 employés</strong></span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-blue-400 mt-0.5">📊</span>
+                <span>Rapports ventes quotidiens</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-blue-400 mt-0.5">🔒</span>
+                <span>Sauvegarde locale automatique</span>
+              </li>
+            </ul>
+            
+            <a href="#cta" 
+               class="block w-full text-center bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+              Choisir Basic
+            </a>
+            
+            <p class="text-center text-xs text-gray-400 mt-4">
+              Idéal pour kiosques et garbadromes (≤ 1 imprimante)
+            </p>
+          </article>
+          
+          <!-- Pro Plan (Featured) -->
+          <article class="pricing-card pricing-card-featured rounded-3xl p-8 lg:p-10 border-2 border-blue-400">
+            <div class="badge-popular">⭐ Le Plus Populaire</div>
+            
+            <div class="mb-8">
+              <h3 class="text-2xl font-bold text-white mb-2">Pro</h3>
+              <p class="text-blue-100 text-sm">Pour restaurants établis</p>
+            </div>
+            
+            <div class="mb-8">
+              <div class="flex items-baseline gap-2">
+                <span class="text-5xl font-black text-white">
+                  <span id="proPrice" class="price">50 000</span>
+                </span>
+                <div class="flex flex-col">
+                  <span class="text-blue-100 text-sm font-medium">FCFA</span>
+                  <span class="text-blue-100 text-xs" id="proPeriod">/ mois</span>
+                </div>
+              </div>
+              <div class="text-xs text-emerald-200 font-semibold mt-2 h-5" id="proSave"></div>
+            </div>
+            
+            <ul class="space-y-4 mb-10">
+              <li class="flex items-start gap-3 text-sm text-white">
+                <span class="feature-icon text-emerald-300 mt-0.5">✓</span>
+                <span><strong>Toutes les fonctions</strong> Basic</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-white">
+                <span class="feature-icon text-emerald-300 mt-0.5">✓</span>
+                <span><strong>Paiements mobiles</strong> Wave, OM, MTN, Moov</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-white">
+                <span class="feature-icon text-emerald-300 mt-0.5">✓</span>
+                <span><strong>Dashboard</strong> temps réel avec analytics</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-white">
+                <span class="feature-icon text-emerald-300 mt-0.5">✓</span>
+                <span><strong>KDS</strong> (écran cuisine) + timers de commande</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-white">
+                <span class="feature-icon text-emerald-300 mt-0.5">✓</span>
+                <span>Programme de <strong>fidélité</strong> & coupons</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-white">
+                <span class="feature-icon text-emerald-300 mt-0.5">✓</span>
+                <span>Reporting avancé (CSV, PDF, Excel)</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-blue-100">
+                <span class="feature-icon mt-0.5">⚙</span>
+                <span>Jusqu'à <strong class="text-white">3 imprimantes</strong> + 1 KDS</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-blue-100">
+                <span class="feature-icon mt-0.5">☎️</span>
+                <span>Support par téléphone & WhatsApp</span>
+              </li>
+            </ul>
+            
+            <a href="#cta" 
+               class="block w-full text-center bg-white hover:bg-gray-100 text-blue-600 font-bold py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl">
+              Choisir Pro
+            </a>
+            
+            <p class="text-center text-xs text-blue-100 mt-4">
+              <strong class="text-white">Best-seller</strong> pour 1 à 3 caisses simultanées
+            </p>
+          </article>
+          
+          <!-- Premium Plan -->
+          <article class="pricing-card bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-3xl p-8 lg:p-10 border border-white/10 backdrop-blur-sm">
+            <div class="mb-8">
+              <h3 class="text-2xl font-bold text-orange-500 mb-2">Premium</h3>
+              <p class="text-gray-400 text-sm">Pour chaînes et franchises</p>
+            </div>
+            
+            <div class="mb-8">
+              <div class="flex items-baseline gap-2">
+                <span class="text-5xl font-black text-white">
+                  <span id="premiumPrice" class="price">80 000</span>
+                </span>
+                <div class="flex flex-col">
+                  <span class="text-gray-400 text-sm font-medium">FCFA</span>
+                  <span class="text-gray-400 text-xs" id="premiumPeriod">/ mois</span>
+                </div>
+              </div>
+              <div class="text-xs text-emerald-400 font-semibold mt-2 h-5" id="premiumSave"></div>
+            </div>
+            
+            <ul class="space-y-4 mb-10">
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span><strong class="text-white">Toutes les fonctions</strong> Pro</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span><strong class="text-white">Multi-établissements</strong> avec synchro centralisée</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span><strong class="text-white">Inventaire complet</strong> & fiches matières</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span><strong class="text-white">IA prédictive</strong> : prévisions & recommandations</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span>Campagnes marketing (happy hour, bundles)</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span><strong class="text-white">MFA + RBAC</strong> + audit logs complets</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-emerald-400 mt-0.5">✓</span>
+                <span>Sauvegardes cloud & <strong class="text-white">monitoring 24/7</strong></span>
+              </li>
+              <li class="flex items-start gap-3 text-sm text-gray-200">
+                <span class="feature-icon text-purple-400 mt-0.5">⭐</span>
+                <span><strong class="text-white">Support prioritaire</strong> avec SLA garanti</span>
+              </li>
+            </ul>
+            
+            <a href="#cta" 
+               class="block w-full text-center bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+              Choisir Premium
+            </a>
+            
+            <p class="text-center text-xs text-gray-400 mt-4">
+              Solution entreprise avec assistance dédiée
+            </p>
+          </article>
+        </div>
+        
+        <!-- Additional info -->
+        <div class="mt-16 text-center">
+          <p class="text-gray-400 max-w-3xl mx-auto">
+            <strong class="text-white">Tous les plans incluent :</strong> Mode offline/online, synchronisation automatique, 
+            compatibilité ESC/POS, mises à jour gratuites, formation initiale, et migration de données assistée.
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Comparison Table -->
+    <section id="comparison" class="py-20 md:py-28 bg-gradient-to-b from-transparent to-gray-900/30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-5xl font-black text-white mb-4">
+            Comparaison <span class="text-orange-500">Détaillée</span>
+          </h2>
+          <p class="text-lg text-gray-300 max-w-2xl mx-auto">
+            Analysez les différences entre nos plans pour choisir celui qui correspond le mieux à vos besoins.
+          </p>
+        </div>
+        
+        <div class="overflow-x-auto rounded-2xl border border-white/10 shadow-2xl">
+          <table class="min-w-full divide-y divide-white/10">
+            <thead class="bg-gradient-to-r from-gray-800 to-gray-900">
+              <tr>
+                <th scope="col" class="px-6 py-5 text-left text-sm font-bold text-white uppercase tracking-wider">
+                  Fonctionnalité
+                </th>
+                <th scope="col" class="px-6 py-5 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Basic
+                </th>
+                <th scope="col" class="px-6 py-5 text-center text-sm font-bold text-white uppercase tracking-wider bg-blue-600/20">
+                  Pro
+                </th>
+                <th scope="col" class="px-6 py-5 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Premium
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/10 bg-gray-900/50 backdrop-blur-sm">
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Mode Offline-First</strong> (Raspberry Pi)
+                </td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+                <td class="px-6 py-4 text-center text-2xl bg-blue-600/10">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Paiements Mobile Money</strong> (Wave/OM/MTN/Moov)
+                </td>
+                <td class="px-6 py-4 text-center text-2xl text-red-400">❌</td>
+                <td class="px-6 py-4 text-center text-2xl bg-blue-600/10">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Dashboard</strong> temps réel avec analytics
+                </td>
+                <td class="px-6 py-4 text-center text-sm text-gray-400">Basique</td>
+                <td class="px-6 py-4 text-center text-2xl bg-blue-600/10">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">KDS</strong> (écran cuisine) + timers
+                </td>
+                <td class="px-6 py-4 text-center text-2xl text-red-400">❌</td>
+                <td class="px-6 py-4 text-center text-2xl bg-blue-600/10">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  Programme de <strong class="text-white">fidélité</strong> & coupons
+                </td>
+                <td class="px-6 py-4 text-center text-2xl text-red-400">❌</td>
+                <td class="px-6 py-4 text-center text-2xl bg-blue-600/10">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Inventaire</strong> & fiches matières
+                </td>
+                <td class="px-6 py-4 text-center text-2xl text-red-400">❌</td>
+                <td class="px-6 py-4 text-center text-sm text-gray-400 bg-blue-600/10">Basique</td>
+                <td class="px-6 py-4 text-center text-sm text-emerald-400">✅ Avancé</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Campagnes marketing</strong> (happy hour, bundles)
+                </td>
+                <td class="px-6 py-4 text-center text-2xl text-red-400">❌</td>
+                <td class="px-6 py-4 text-center text-sm text-gray-400 bg-blue-600/10">Limité</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Multi-établissements</strong>
+                </td>
+                <td class="px-6 py-4 text-center text-2xl text-red-400">❌</td>
+                <td class="px-6 py-4 text-center text-2xl text-red-400 bg-blue-600/10">❌</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">IA prédictive</strong> & recommandations
+                </td>
+                <td class="px-6 py-4 text-center text-2xl text-red-400">❌</td>
+                <td class="px-6 py-4 text-center text-2xl text-red-400 bg-blue-600/10">❌</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Sécurité</strong> (MFA, RBAC, audit)
+                </td>
+                <td class="px-6 py-4 text-center text-sm text-gray-400">Basique</td>
+                <td class="px-6 py-4 text-center text-sm text-blue-300 bg-blue-600/10">Standard</td>
+                <td class="px-6 py-4 text-center text-sm text-emerald-400">Avancée</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Sauvegarde</strong> & monitoring
+                </td>
+                <td class="px-6 py-4 text-center text-sm text-gray-400">Local</td>
+                <td class="px-6 py-4 text-center text-sm text-blue-300 bg-blue-600/10">Local + Cloud</td>
+                <td class="px-6 py-4 text-center text-sm text-emerald-400">Cloud 24/7</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Support technique</strong>
+                </td>
+                <td class="px-6 py-4 text-center text-sm text-gray-400">Email</td>
+                <td class="px-6 py-4 text-center text-sm text-blue-300 bg-blue-600/10">Tel/WhatsApp</td>
+                <td class="px-6 py-4 text-center text-sm text-emerald-400">24/7 + SLA</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Nombre d'imprimantes</strong>
+                </td>
+                <td class="px-6 py-4 text-center text-sm text-white">1</td>
+                <td class="px-6 py-4 text-center text-sm text-white bg-blue-600/10">3</td>
+                <td class="px-6 py-4 text-center text-sm text-white">Illimité</td>
+              </tr>
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-6 py-4 text-sm text-gray-200">
+                  <strong class="text-white">Utilisateurs</strong> simultanés
+                </td>
+                <td class="px-6 py-4 text-center text-sm text-white">3</td>
+                <td class="px-6 py-4 text-center text-sm text-white bg-blue-600/10">10</td>
+                <td class="px-6 py-4 text-center text-sm text-white">Illimité</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="testimonials" class="py-20 md:py-28">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-5xl font-black text-white mb-4">
+            Ils nous font <span class="text-orange-500">confiance</span>
+          </h2>
+          <p class="text-lg text-gray-300 max-w-2xl mx-auto">
+            Découvrez comment GarbaKing POS transforme les opérations de restaurants à travers l'Afrique de l'Ouest.
+          </p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-8">
+          <!-- Testimonial 1 -->
+          <figure class="testimonial-card bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div class="flex items-center gap-4 mb-6">
+              <img src="https://i.pravatar.cc/80?img=12" 
+                   alt="Photo de Awa K." 
+                   class="w-16 h-16 rounded-full border-2 border-orange-500/50" 
+                   loading="lazy" />
+              <figcaption>
+                <div class="font-bold text-white text-lg">Awa K.</div>
+                <div class="text-sm text-gray-400">Propriétaire</div>
+                <div class="text-xs text-gray-500">Restaurant Le Savoureux • Ouagadougou</div>
+              </figcaption>
+            </div>
+            <div class="flex gap-1 mb-4">
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+            </div>
+            <blockquote class="text-gray-200 leading-relaxed">
+              "GarbaKing POS a complètement éliminé nos erreurs de caisse et accéléré notre service de 30%. 
+              Même pendant les coupures de courant ou d'Internet, nous continuons à vendre normalement. 
+              <strong class="text-white">Un investissement rentabilisé en 2 mois !</strong>"
+            </blockquote>
+          </figure>
+          
+          <!-- Testimonial 2 -->
+          <figure class="testimonial-card bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div class="flex items-center gap-4 mb-6">
+              <img src="https://i.pravatar.cc/80?img=32" 
+                   alt="Photo de Idriss T." 
+                   class="w-16 h-16 rounded-full border-2 border-blue-500/50" 
+                   loading="lazy" />
+              <figcaption>
+                <div class="font-bold text-white text-lg">Idriss T.</div>
+                <div class="text-sm text-gray-400">Gérant</div>
+                <div class="text-xs text-gray-500">Boulangerie Pâtisserie Moderne • Koudougou</div>
+              </figcaption>
+            </div>
+            <div class="flex gap-1 mb-4">
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+            </div>
+            <blockquote class="text-gray-200 leading-relaxed">
+              "Le KDS avec timers de commande nous a fait gagner <strong class="text-white">15 minutes en moyenne</strong> 
+              aux heures de pointe. L'intégration avec Wave et Orange Money est parfaite. 
+              Le support local répond en moins de 30 minutes, c'est exceptionnel !"
+            </blockquote>
+          </figure>
+          
+          <!-- Testimonial 3 -->
+          <figure class="testimonial-card bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl p-8 border border-white/10 backdrop-blur-sm">
+            <div class="flex items-center gap-4 mb-6">
+              <img src="https://i.pravatar.cc/80?img=5" 
+                   alt="Photo de Wang Z." 
+                   class="w-16 h-16 rounded-full border-2 border-emerald-500/50" 
+                   loading="lazy" />
+              <figcaption>
+                <div class="font-bold text-white text-lg">Wang Z.</div>
+                <div class="text-sm text-gray-400">Directeur Opérations</div>
+                <div class="text-xs text-gray-500">Chaîne Fast Food (5 sites) • Bobo-Dioulasso</div>
+              </figcaption>
+            </div>
+            <div class="flex gap-1 mb-4">
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+              <span class="text-yellow-400">★</span>
+            </div>
+            <blockquote class="text-gray-200 leading-relaxed">
+              "Avec le plan Premium et la gestion multi-sites, j'ai enfin <strong class="text-white">une visibilité centralisée</strong> 
+              sur tous nos établissements. Les rapports consolidés et les prévisions IA nous aident à optimiser nos stocks 
+              et réduire le gaspillage de 40%."
+            </blockquote>
+          </figure>
+        </div>
+        
+        <!-- Trust badges -->
+        <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center opacity-60">
+          <div class="text-center">
+            <div class="text-2xl font-black text-white mb-1">200+</div>
+            <div class="text-xs text-gray-400">Clients actifs</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-black text-white mb-1">4.9/5</div>
+            <div class="text-xs text-gray-400">Note moyenne</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-black text-white mb-1">99.9%</div>
+            <div class="text-xs text-gray-400">Uptime</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-black text-white mb-1">24/7</div>
+            <div class="text-xs text-gray-400">Support local</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-20 md:py-28 bg-gradient-to-b from-transparent to-gray-900/30">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-5xl font-black text-white mb-4">
+            Questions <span class="text-orange-500">Fréquentes</span>
+          </h2>
+          <p class="text-lg text-gray-300">
+            Tout ce que vous devez savoir sur GarbaKing POS
+          </p>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- FAQ Item 1 -->
+          <div class="faq-item bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
+            <button class="faq-button w-full px-6 py-5 flex items-center justify-between text-left transition-colors hover:bg-white/5"
+                    aria-expanded="false">
+              <span class="font-semibold text-white pr-4">
+                Comment GarbaKing POS fonctionne-t-il sans Internet ?
+              </span>
+              <span class="faq-icon text-orange-500 text-2xl font-bold flex-shrink-0">+</span>
+            </button>
+            <div class="faq-answer px-6 pb-5">
+              <p class="text-gray-200 leading-relaxed">
+                GarbaKing POS utilise un <strong class="text-white">serveur local Raspberry Pi</strong> qui héberge 
+                toute l'application en local. Vos données sont stockées localement et l'application fonctionne comme 
+                une PWA offline-first. Dès que la connexion Internet revient, une <strong class="text-white">synchronisation 
+                automatique et idempotente</strong> envoie toutes les transactions vers le cloud de manière sécurisée. 
+                Vous ne perdez jamais aucune vente !
+              </p>
+            </div>
+          </div>
+          
+          <!-- FAQ Item 2 -->
+          <div class="faq-item bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
+            <button class="faq-button w-full px-6 py-5 flex items-center justify-between text-left transition-colors hover:bg-white/5"
+                    aria-expanded="false">
+              <span class="font-semibold text-white pr-4">
+                Quels moyens de paiement sont pris en charge ?
+              </span>
+              <span class="faq-icon text-orange-500 text-2xl font-bold flex-shrink-0">+</span>
+            </button>
+            <div class="faq-answer px-6 pb-5">
+              <p class="text-gray-200 leading-relaxed">
+                Les plans <strong class="text-white">Pro et Premium</strong> incluent l'intégration native avec 
+                <strong class="text-white">Wave, Orange Money, MTN Money et Moov Money</strong> - les méthodes 
+                de paiement les plus utilisées en Afrique de l'Ouest. Tous les plans acceptent les paiements en 
+                espèces et les QR codes manuels. Stripe et Paystack sont disponibles en option pour les paiements 
+                par carte bancaire.
+              </p>
+            </div>
+          </div>
+          
+          <!-- FAQ Item 3 -->
+          <div class="faq-item bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
+            <button class="faq-button w-full px-6 py-5 flex items-center justify-between text-left transition-colors hover:bg-white/5"
+                    aria-expanded="false">
+              <span class="font-semibold text-white pr-4">
+                Le système est-il compatible avec mes imprimantes actuelles ?
+              </span>
+              <span class="faq-icon text-orange-500 text-2xl font-bold flex-shrink-0">+</span>
+            </button>
+            <div class="faq-answer px-6 pb-5">
+              <p class="text-gray-200 leading-relaxed">
+                Oui ! GarbaKing POS est compatible avec <strong class="text-white">la grande majorité des imprimantes 
+                thermiques ESC/POS</strong> (Epson, Star, Citizen, Bixolon, etc.) connectées en USB, LAN ou Bluetooth. 
+                Notre équipe technique vérifiera la compatibilité de votre matériel lors de l'installation et vous 
+                conseillera des alternatives si nécessaire.
+              </p>
+            </div>
+          </div>
+          
+          <!-- FAQ Item 4 -->
+          <div class="faq-item bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
+            <button class="faq-button w-full px-6 py-5 flex items-center justify-between text-left transition-colors hover:bg-white/5"
+                    aria-expanded="false">
+              <span class="font-semibold text-white pr-4">
+                Que comprend l'essai gratuit de 14 jours ?
+              </span>
+              <span class="faq-icon text-orange-500 text-2xl font-bold flex-shrink-0">+</span>
+            </button>
+            <div class="faq-answer px-6 pb-5">
+              <p class="text-gray-200 leading-relaxed">
+                L'essai gratuit vous donne <strong class="text-white">accès complet à toutes les fonctionnalités 
+                du plan Pro</strong> pendant 14 jours, sans avoir besoin de carte bancaire. Cela inclut : 
+                l'installation sur site, la formation de votre équipe, la migration de vos données existantes, 
+                et le support technique complet. À la fin de l'essai, vous pouvez choisir le plan qui vous convient 
+                ou ne rien payer du tout.
+              </p>
+            </div>
+          </div>
+          
+          <!-- FAQ Item 5 -->
+          <div class="faq-item bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
+            <button class="faq-button w-full px-6 py-5 flex items-center justify-between text-left transition-colors hover:bg-white/5"
+                    aria-expanded="false">
+              <span class="font-semibold text-white pr-4">
+                Puis-je gérer plusieurs restaurants avec un seul abonnement ?
+              </span>
+              <span class="faq-icon text-orange-500 text-2xl font-bold flex-shrink-0">+</span>
+            </button>
+            <div class="faq-answer px-6 pb-5">
+              <p class="text-gray-200 leading-relaxed">
+                Oui, le <strong class="text-white">plan Premium</strong> est spécialement conçu pour les chaînes et 
+                franchises. Il offre la <strong class="text-white">gestion multi-établissements</strong> avec un 
+                dashboard global centralisé, des rapports consolidés par établissement, une synchronisation intelligente 
+                entre tous vos sites, et une gestion unifiée des menus, stocks et employés. Parfait pour gérer 2 à 50+ 
+                restaurants depuis une seule interface.
+              </p>
+            </div>
+          </div>
+          
+          <!-- FAQ Item 6 -->
+          <div class="faq-item bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
+            <button class="faq-button w-full px-6 py-5 flex items-center justify-between text-left transition-colors hover:bg-white/5"
+                    aria-expanded="false">
+              <span class="font-semibold text-white pr-4">
+                Comment mes données sont-elles sécurisées ?
+              </span>
+              <span class="faq-icon text-orange-500 text-2xl font-bold flex-shrink-0">+</span>
+            </button>
+            <div class="faq-answer px-6 pb-5">
+              <p class="text-gray-200 leading-relaxed">
+                La sécurité est notre priorité absolue. Vos données sont protégées par : 
+                <strong class="text-white">chiffrement TLS/SSL</strong> pour toutes les communications, 
+                <strong class="text-white">sauvegardes automatiques</strong> locales et cloud, 
+                <strong class="text-white">authentification multi-facteurs (MFA)</strong> disponible sur tous les plans, 
+                et <strong class="text-white">contrôle d'accès basé sur les rôles (RBAC)</strong> pour limiter les 
+                permissions. Le plan Premium ajoute des logs d'audit complets et une conformité PCI-DSS en cours de 
+                certification.
+              </p>
+            </div>
+          </div>
+          
+          <!-- FAQ Item 7 -->
+          <div class="faq-item bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
+            <button class="faq-button w-full px-6 py-5 flex items-center justify-between text-left transition-colors hover:bg-white/5"
+                    aria-expanded="false">
+              <span class="font-semibold text-white pr-4">
+                Quel type de support technique proposez-vous ?
+              </span>
+              <span class="faq-icon text-orange-500 text-2xl font-bold flex-shrink-0">+</span>
+            </button>
+            <div class="faq-answer px-6 pb-5">
+              <p class="text-gray-200 leading-relaxed">
+                Notre équipe technique est <strong class="text-white">basée localement à Ouagadougou, Abidjan et 
+                Dakar</strong>. Le plan Basic inclut le support par email (réponse sous 24h). Le plan Pro ajoute 
+                le support téléphonique et WhatsApp (réponse sous 4h). Le plan Premium offre un 
+                <strong class="text-white">support prioritaire 24/7</strong> avec garantie de temps de réponse 
+                (SLA) et possibilité d'intervention sur site sous 24h. Tous les plans incluent l'assistance à 
+                l'installation et la formation initiale gratuite.
+              </p>
+            </div>
+          </div>
+          
+          <!-- FAQ Item 8 -->
+          <div class="faq-item bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl border border-white/10 backdrop-blur-sm overflow-hidden">
+            <button class="faq-button w-full px-6 py-5 flex items-center justify-between text-left transition-colors hover:bg-white/5"
+                    aria-expanded="false">
+              <span class="font-semibold text-white pr-4">
+                Puis-je changer de plan à tout moment ?
+              </span>
+              <span class="faq-icon text-orange-500 text-2xl font-bold flex-shrink-0">+</span>
+            </button>
+            <div class="faq-answer px-6 pb-5">
+              <p class="text-gray-200 leading-relaxed">
+                Absolument ! Vous pouvez <strong class="text-white">passer à un plan supérieur à tout moment</strong> 
+                et bénéficier immédiatement des nouvelles fonctionnalités. Pour un downgrade, il prendra effet à la 
+                fin de votre période de facturation actuelle. <strong class="text-white">Aucun frais caché</strong>, 
+                aucune pénalité, et vous pouvez annuler à tout moment avec un préavis de 30 jours. Nous croyons en 
+                la flexibilité totale pour nos clients.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section id="cta" class="py-24 md:py-32 relative overflow-hidden">
+      <div class="absolute inset-0 cta-gradient"></div>
+      
+      <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-5 py-2 mb-8">
+          <span class="text-2xl">🎁</span>
+          <span class="text-sm font-semibold">Offre de lancement</span>
+        </div>
+        
+        <h2 class="text-4xl md:text-6xl font-black text-white mb-6">
+          Prêt à transformer<br />votre restaurant ?
+        </h2>
+        
+        <p class="text-xl text-white/90 mb-10 max-w-2xl mx-auto leading-relaxed">
+          Essayez GarbaKing POS <strong>gratuitement pendant 14 jours</strong>. 
+          Aucune carte bancaire requise. Installation et formation incluses. 
+          Support technique local garanti.
+        </p>
+        
+        <!-- CTA Form -->
+        <form class="max-w-lg mx-auto" id="ctaForm">
+          <div class="flex flex-col sm:flex-row gap-4 mb-6">
+            <input 
+              type="email" 
+              name="email"
+              required 
+              placeholder="votre@email.com"
+              aria-label="Adresse email"
+              class="flex-1 px-6 py-4 rounded-xl text-gray-900 text-lg font-medium outline-none focus:ring-4 focus:ring-white/40 transition-shadow" 
+            />
+            <button 
+              type="submit"
+              class="bg-gradient-to-r from-gray-900 to-black hover:from-black hover:to-gray-900 text-white font-bold px-8 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl whitespace-nowrap">
+              Démarrer l'essai gratuit
+            </button>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-white/80">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-300" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <span>14 jours gratuits</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-300" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <span>Sans engagement</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-300" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <span>Installation gratuite</span>
+            </div>
+          </div>
+        </form>
+        
+        <p class="mt-8 text-xs text-white/60 max-w-md mx-auto">
+          En vous inscrivant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité. 
+          Vous pouvez vous désabonner à tout moment.
+        </p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 py-12 bg-gray-900/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid md:grid-cols-4 gap-8 mb-10">
+          <!-- Company -->
+          <div>
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
+                <span class="text-white text-xl font-bold">G</span>
+              </div>
+              <span class="text-lg font-bold">GarbaKing POS</span>
+            </div>
+            <p class="text-sm text-gray-400 leading-relaxed">
+              La solution de caisse offline-first conçue pour l'Afrique de l'Ouest.
+            </p>
+          </div>
+          
+          <!-- Product -->
+          <div>
+            <h4 class="font-semibold text-white mb-4">Produit</h4>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li><a href="#pricing" class="hover:text-white transition-colors">Tarifs</a></li>
+              <li><a href="#features" class="hover:text-white transition-colors">Fonctionnalités</a></li>
+              <li><a href="#comparison" class="hover:text-white transition-colors">Comparaison</a></li>
+              <li><a href="#cta" class="hover:text-white transition-colors">Essai gratuit</a></li>
+            </ul>
+          </div>
+          
+          <!-- Support -->
+          <div>
+            <h4 class="font-semibold text-white mb-4">Support</h4>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li><a href="#faq" class="hover:text-white transition-colors">FAQ</a></li>
+              <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+              <li><a href="#" class="hover:text-white transition-colors">Tutoriels</a></li>
+              <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+            </ul>
+          </div>
+          
+          <!-- Legal -->
+          <div>
+            <h4 class="font-semibold text-white mb-4">Légal</h4>
+            <ul class="space-y-2 text-sm text-gray-400">
+              <li><a href="#" class="hover:text-white transition-colors">Confidentialité</a></li>
+              <li><a href="#" class="hover:text-white transition-colors">CGU</a></li>
+              <li><a href="#" class="hover:text-white transition-colors">Mentions légales</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p class="text-sm text-gray-400">
+            © 2025 GarbaKing POS. Tous droits réservés.
+          </p>
+          <div class="flex items-center gap-4 text-sm text-gray-400">
+            <span>Fait avec ❤️ en Afrique de l'Ouest</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Floating WhatsApp Button -->
+    <a href="https://wa.me/22670000000?text=Bonjour%2C%20je%20souhaite%20en%20savoir%20plus%20sur%20GarbaKing%20POS" 
+       target="_blank" 
+       rel="noopener noreferrer"
+       class="floating-btn" 
+       aria-label="Contactez-nous sur WhatsApp">
+      💬
+    </a>
+
+    <!-- JavaScript -->
+    <script>
+      // Navbar scroll effect
+      const navbar = document.getElementById('navbar');
+      let lastScroll = 0;
+      
+      window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+        
+        if (currentScroll > 100) {
+          navbar.classList.add('scrolled');
+        } else {
+          navbar.classList.remove('scrolled');
+        }
+        
+        lastScroll = currentScroll;
+      });
+      
+      // Mobile menu toggle
+      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('open');
+      });
+      
+      // Close mobile menu when clicking on a link
+      const mobileLinks = mobileMenu.querySelectorAll('a');
+      mobileLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          mobileMenu.classList.remove('open');
+        });
+      });
+      
+      // Pricing toggle (monthly/annual)
+      const pricingToggle = document.getElementById('pricingToggle');
+      const prices = {
+        basic: document.getElementById('basicPrice'),
+        pro: document.getElementById('proPrice'),
+        premium: document.getElementById('premiumPrice'),
+      };
+      const periods = {
+        basic: document.getElementById('basicPeriod'),
+        pro: document.getElementById('proPeriod'),
+        premium: document.getElementById('premiumPeriod'),
+      };
+      const savings = {
+        basic: document.getElementById('basicSave'),
+        pro: document.getElementById('proSave'),
+        premium: document.getElementById('premiumSave'),
+      };
+      
+      const monthlyPrices = {
+        basic: "25 000",
+        pro: "50 000",
+        premium: "80 000"
+      };
+      
+      const yearlyPrices = {
+        basic: "250 000",
+        pro: "500 000",
+        premium: "800 000"
+      };
+      
+      function updatePricing(isYearly) {
+        const data = isYearly ? yearlyPrices : monthlyPrices;
+        const period = isYearly ? "/ an" : "/ mois";
+        const saveText = isYearly ? "Économisez 50 000 FCFA" : "";
+        
+        Object.keys(prices).forEach(plan => {
+          prices[plan].textContent = data[plan];
+          periods[plan].textContent = period;
+          if (savings[plan]) {
+            savings[plan].textContent = saveText;
+          }
+        });
+      }
+      
+      pricingToggle.addEventListener('change', () => {
+        updatePricing(pricingToggle.checked);
+      });
+      
+      // Initialize with monthly pricing
+      updatePricing(false);
+      
+      // Intersection Observer for pricing cards
+      const observerOptions = {
+        threshold: 0.2,
+        rootMargin: '0px 0px -50px 0px'
+      };
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => {
+              entry.target.classList.add('visible');
+            }, index * 150);
+            observer.unobserve(entry.target);
+          }
+        });
+      }, observerOptions);
+      
+      document.querySelectorAll('.pricing-card').forEach(card => {
+        observer.observe(card);
+      });
+      
+      // FAQ Accordion
+      const faqButtons = document.querySelectorAll('.faq-button');
+      
+      faqButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const item = button.closest('.faq-item');
+          const answer = item.querySelector('.faq-answer');
+          const icon = button.querySelector('.faq-icon');
+          const isOpen = answer.classList.contains('open');
+          
+          // Close all other items
+          document.querySelectorAll('.faq-answer').forEach(a => {
+            if (a !== answer) {
+              a.classList.remove('open');
+            }
+          });
+          document.querySelectorAll('.faq-icon').forEach(i => {
+            if (i !== icon) {
+              i.textContent = '+';
+              i.classList.remove('open');
+            }
+          });
+          document.querySelectorAll('.faq-button').forEach(b => {
+            if (b !== button) {
+              b.setAttribute('aria-expanded', 'false');
+            }
+          });
+          
+          // Toggle current item
+          answer.classList.toggle('open');
+          icon.classList.toggle('open');
+          icon.textContent = isOpen ? '+' : '−';
+          button.setAttribute('aria-expanded', !isOpen);
+        });
+      });
+      
+      // CTA Form submission
+      const ctaForm = document.getElementById('ctaForm');
+      
+      ctaForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = ctaForm.querySelector('input[name="email"]').value;
+        
+        // Here you would typically send this to your backend
+        console.log('Email submitted:', email);
+        
+        // Show success message (you can customize this)
+        alert('Merci ! Nous vous contacterons sous 24h pour planifier votre démo gratuite. 🎉');
+        
+        // Track with GTM
+        if (window.dataLayer) {
+          window.dataLayer.push({
+            'event': 'form_submission',
+            'form_name': 'cta_demo_request',
+            'form_email': email
+          });
+        }
+        
+        ctaForm.reset();
+      });
+      
+      // Smooth scroll for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+          const href = this.getAttribute('href');
+          if (href === '#') return;
+          
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            const offset = 100; // Account for sticky header
+            const targetPosition = target.offsetTop - offset;
+            
+            window.scrollTo({
+              top: targetPosition,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+      
+      // Animate stats on scroll
+      const stats = document.querySelectorAll('.stat-number');
+      const statsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const target = entry.target;
+            const text = target.textContent;
+            const hasPlus = text.includes('+');
+            const hasPercent = text.includes('%');
+            const number = parseFloat(text.replace(/[^0-9.]/g, ''));
+            
+            let current = 0;
+            const increment = number / 50;
+            const timer = setInterval(() => {
+              current += increment;
+              if (current >= number) {
+                current = number;
+                clearInterval(timer);
+              }
+              
+              let display = Math.floor(current).toLocaleString('fr-FR');
+              if (hasPlus) display += '+';
+              if (hasPercent) display += '%';
+              if (text.includes('/')) display += '/5';
+              
+              target.textContent = display;
+            }, 30);
+            
+            statsObserver.unobserve(target);
+          }
+        });
+      }, { threshold: 0.5 });
+      
+      stats.forEach(stat => statsObserver.observe(stat));
+      
+      // Track outbound links
+      document.querySelectorAll('a[target="_blank"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+          if (window.dataLayer) {
+            window.dataLayer.push({
+              'event': 'outbound_link_click',
+              'link_url': e.target.href,
+              'link_text': e.target.textContent
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

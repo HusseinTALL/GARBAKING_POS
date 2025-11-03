@@ -1,0 +1,49 @@
+dependencies {
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation project(':common-libs')
+
+    // Spring Cloud - COMMENTED OUT for standalone mode
+    // implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    // implementation 'org.springframework.cloud:spring-cloud-starter-config'
+
+    // Kafka - COMMENTED OUT for standalone mode
+    // implementation 'org.springframework.kafka:spring-kafka'
+
+    // Database
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.testcontainers:testcontainers:1.19.3'
+    testImplementation 'org.testcontainers:mysql:1.19.3'
+    testImplementation 'org.testcontainers:kafka:1.19.3'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
+}
+
+bootJar {
+    enabled = true
+}
+
+jar {
+    enabled = false
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

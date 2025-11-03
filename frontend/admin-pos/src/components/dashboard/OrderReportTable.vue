@@ -97,14 +97,14 @@ import { ref, computed } from 'vue'
 import { Eye, ShoppingBag } from 'lucide-vue-next'
 
 interface OrderItem {
-  menuItemId: number
+  menuItemId: string | number
   name: string
   quantity: number
-  unitPrice: number
+  unitPrice?: number
 }
 
 interface Order {
-  id: number
+  id: string
   orderNumber: string
   customerName: string
   customerPhone: string

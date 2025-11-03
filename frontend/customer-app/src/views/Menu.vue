@@ -227,6 +227,7 @@ import { useToast } from 'vue-toastification'
 import { useMenuStore } from '@/stores/menu'
 import { useCartStore } from '@/stores/cart'
 import { storeToRefs } from 'pinia'
+import { formatCurrency } from '@/utils/currency'
 import MenuItemCard from '@/components/MenuItemCard.vue'
 
 const router = useRouter()
@@ -288,6 +289,7 @@ const addToCart = (item: any) => {
     id: item.id,
     name: item.name,
     price: item.price,
+    sku: item.sku,
     imageUrl: item.imageUrl || item.image,
     category: typeof item.category === 'string' ? item.category : item.category?.name
   })
@@ -309,7 +311,7 @@ const goToCart = () => {
 }
 
 const formatPrice = (amount: number): string => {
-  return `${amount.toLocaleString()} FCFA`
+  return formatCurrency(amount)
 }
 
 // Auto-hide search when typing stops

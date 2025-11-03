@@ -5,7 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { receiptsApi, printersApi } from '@/services/api-spring'
 import type { Transaction } from './payment'
 import type { Order } from './orders'
 
@@ -102,10 +102,51 @@ export interface PrinterStatus {
   totalPrints: number
 }
 
+export interface Printer {
+  id: string
+  name: string
+  type: 'THERMAL' | 'RECEIPT' | 'KITCHEN' | 'BAR'
+  ipAddress?: string
+  port?: number
+  serialPort?: string
+  isDefault: boolean
+  isActive: boolean
+  assignedTo: 'ALL' | 'KITCHEN' | 'BAR' | 'REGISTER'
+  capabilities: {
+    cutter: boolean
+    drawer: boolean
+    barcode: boolean
+    qrCode: boolean
+    logo: boolean
+    maxWidth: number // characters
+  }
+  status: PrinterStatus
+  lastConnected?: string
+  createdAt: string
+}
+
+export interface ReceiptArchive {
+  id: string
+  receiptNumber: string
+  type: ReceiptType
+  orderId?: string
+  transactionId?: string
+  printedAt: string
+  printedBy: string
+  printerId: string
+  data: any
+  templateId: string
+  status: 'PRINTED' | 'REPRINTED' | 'ARCHIVED'
+  reprintCount: number
+  searchableText: string
+}
+
 export const useReceiptsStore = defineStore('receipts', () => {
   // State
   const templates = ref<ReceiptTemplate[]>([])
   const printQueue = ref<PrintJob[]>([])
+  const printers = ref<Printer[]>([])
+  const receiptArchive = ref<ReceiptArchive[]>([])
   const printerStatus = ref<PrinterStatus>({
     connected: false,
     name: '',
@@ -120,7 +161,9 @@ export const useReceiptsStore = defineStore('receipts', () => {
     printCustomerReceipt: true,
     defaultCopies: 1,
     paperWidth: 80, // mm
-    characterWidth: 48
+    characterWidth: 48,
+    archiveReceipts: true,
+    archiveRetentionDays: 90
   })
 
   // Computed
@@ -147,14 +190,9 @@ export const useReceiptsStore = defineStore('receipts', () => {
   // Actions
   const fetchTemplates = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/receipts/templates')
-
-      if (response.data.success) {
-        templates.value = response.data.data.templates || []
-        return true
-      }
-
-      throw new Error(response.data.error || 'Failed to fetch templates')
+      const data = await receiptsApi.getTemplates()
+      templates.value = data.templates || data || []
+      return true
     } catch (err: any) {
       console.error('Failed to fetch receipt templates:', err)
       return false
@@ -190,24 +228,20 @@ export const useReceiptsStore = defineStore('receipts', () => {
         maxAttempts: 3
       }
 
-      const response = await axios.post('/api/receipts/print', {
+      const data = await receiptsApi.printReceipt({
         ...printJob,
         copies: options.copies || template.config.formatting.copies,
         immediate: options.immediate || settings.value.autoPrint
       })
 
-      if (response.data.success) {
-        const job = response.data.data.job
-        printQueue.value.unshift(job)
+      const job = data.job || data
+      printQueue.value.unshift(job)
 
-        if (options.immediate && printerStatus.value.connected) {
-          await processQueue()
-        }
-
-        return job.id
+      if (options.immediate && printerStatus.value.connected) {
+        await processQueue()
       }
 
-      throw new Error(response.data.error || 'Failed to queue print job')
+      return job.id
     } catch (err: any) {
       console.error('Failed to print receipt:', err)
       return null
@@ -336,19 +370,15 @@ export const useReceiptsStore = defineStore('receipts', () => {
 
       const receiptContent = await generateReceiptContent(job.data, template)
 
-      const response = await axios.post('/api/receipts/print-direct', {
+      await receiptsApi.printDirect({
         content: receiptContent,
         config: template.config.formatting
       })
 
-      if (response.data.success) {
-        job.status = PrintJobStatus.COMPLETED
-        job.processedAt = new Date().toISOString()
-        printerStatus.value.totalPrints++
-        printerStatus.value.lastPrint = new Date().toISOString()
-      } else {
-        throw new Error(response.data.error || 'Print failed')
-      }
+      job.status = PrintJobStatus.COMPLETED
+      job.processedAt = new Date().toISOString()
+      printerStatus.value.totalPrints++
+      printerStatus.value.lastPrint = new Date().toISOString()
     } catch (err: any) {
       job.status = job.attempts >= job.maxAttempts
         ? PrintJobStatus.FAILED
@@ -542,14 +572,9 @@ export const useReceiptsStore = defineStore('receipts', () => {
 
   const checkPrinterStatus = async (): Promise<boolean> => {
     try {
-      const response = await axios.get('/api/receipts/printer/status')
-
-      if (response.data.success) {
-        printerStatus.value = response.data.data.status
-        return true
-      }
-
-      return false
+      const data = await receiptsApi.getPrinterStatus()
+      printerStatus.value = data.status || data
+      return true
     } catch (err) {
       printerStatus.value.connected = false
       return false
@@ -624,6 +649,256 @@ export const useReceiptsStore = defineStore('receipts', () => {
     return lines.join('\n')
   }
 
+  // Printer Management
+  const activePrinters = computed(() =>
+    printers.value.filter(p => p.isActive)
+  )
+
+  const defaultPrinter = computed(() =>
+    printers.value.find(p => p.isDefault)
+  )
+
+  const fetchPrinters = async (): Promise<boolean> => {
+    try {
+      const data = await printersApi.getAll()
+      printers.value = data.printers || data || []
+      return true
+    } catch (err: any) {
+      console.error('Failed to fetch printers:', err)
+      return false
+    }
+  }
+
+  const addPrinter = async (printer: Omit<Printer, 'id' | 'createdAt'>): Promise<Printer | null> => {
+    try {
+      const data = await printersApi.create(printer)
+      const newPrinter = data.printer || data
+      printers.value.push(newPrinter)
+      return newPrinter
+    } catch (err: any) {
+      console.error('Failed to add printer:', err)
+      return null
+    }
+  }
+
+  const updatePrinter = async (printerId: string, updates: Partial<Printer>): Promise<boolean> => {
+    try {
+      await printersApi.update(printerId, updates)
+      const index = printers.value.findIndex(p => p.id === printerId)
+      if (index !== -1) {
+        printers.value[index] = { ...printers.value[index], ...updates }
+      }
+      return true
+    } catch (err: any) {
+      console.error('Failed to update printer:', err)
+      return false
+    }
+  }
+
+  const deletePrinter = async (printerId: string): Promise<boolean> => {
+    try {
+      await printersApi.delete(printerId)
+      printers.value = printers.value.filter(p => p.id !== printerId)
+      return true
+    } catch (err: any) {
+      console.error('Failed to delete printer:', err)
+      return false
+    }
+  }
+
+  const testPrinter = async (printerId: string): Promise<boolean> => {
+    try {
+      await printersApi.test(printerId)
+      return true
+    } catch (err: any) {
+      console.error('Failed to test printer:', err)
+      return false
+    }
+  }
+
+  const selectPrinterForJob = (receiptType: ReceiptType): Printer | undefined => {
+    // Auto-select printer based on receipt type
+    const typeMapping = {
+      [ReceiptType.KITCHEN]: 'KITCHEN',
+      [ReceiptType.BAR]: 'BAR',
+      [ReceiptType.SALE]: 'REGISTER',
+      [ReceiptType.REFUND]: 'REGISTER',
+      [ReceiptType.REPRINT]: 'REGISTER',
+      [ReceiptType.CUSTOMER_COPY]: 'REGISTER',
+      [ReceiptType.MERCHANT_COPY]: 'REGISTER'
+    }
+
+    const assignment = typeMapping[receiptType]
+    const printer = activePrinters.value.find(p =>
+      p.assignedTo === assignment || p.assignedTo === 'ALL'
+    )
+
+    return printer || defaultPrinter.value
+  }
+
+  // Receipt Archival
+  const archiveReceipt = async (job: PrintJob): Promise<void> => {
+    if (!settings.value.archiveReceipts) return
+
+    try {
+      const searchableText = generateSearchableText(job.data)
+
+      const archive: ReceiptArchive = {
+        id: generateArchiveId(),
+        receiptNumber: job.data.receiptNumber || generateReceiptNumber(),
+        type: job.type,
+        orderId: job.data.order?.id,
+        transactionId: job.data.transaction?.id,
+        printedAt: new Date().toISOString(),
+        printedBy: 'Current User', // Get from auth store
+        printerId: job.data.printerId || '',
+        data: job.data,
+        templateId: job.templateId,
+        status: 'PRINTED',
+        reprintCount: 0,
+        searchableText
+      }
+
+      receiptArchive.value.unshift(archive)
+
+      // Send to backend for persistent storage
+      await receiptsApi.archiveReceipt(archive)
+
+      // Clean up old archives based on retention policy
+      await cleanupOldArchives()
+    } catch (err) {
+      console.error('Failed to archive receipt:', err)
+    }
+  }
+
+  const generateSearchableText = (data: any): string => {
+    const parts: string[] = []
+
+    if (data.receiptNumber) parts.push(data.receiptNumber)
+    if (data.order?.orderNumber) parts.push(data.order.orderNumber)
+    if (data.transaction?.reference) parts.push(data.transaction.reference)
+    if (data.cashier) parts.push(data.cashier)
+    if (data.items) {
+      data.items.forEach((item: any) => {
+        parts.push(item.name)
+      })
+    }
+
+    return parts.join(' ').toLowerCase()
+  }
+
+  const generateArchiveId = (): string => {
+    return `ARC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  const searchArchive = (query: string, filters?: {
+    type?: ReceiptType
+    startDate?: string
+    endDate?: string
+    printedBy?: string
+  }): ReceiptArchive[] => {
+    let results = receiptArchive.value
+
+    // Text search
+    if (query) {
+      const lowerQuery = query.toLowerCase()
+      results = results.filter(archive =>
+        archive.searchableText.includes(lowerQuery) ||
+        archive.receiptNumber.toLowerCase().includes(lowerQuery)
+      )
+    }
+
+    // Apply filters
+    if (filters) {
+      if (filters.type) {
+        results = results.filter(a => a.type === filters.type)
+      }
+
+      if (filters.startDate) {
+        results = results.filter(a => a.printedAt >= filters.startDate!)
+      }
+
+      if (filters.endDate) {
+        results = results.filter(a => a.printedAt <= filters.endDate!)
+      }
+
+      if (filters.printedBy) {
+        results = results.filter(a => a.printedBy === filters.printedBy)
+      }
+    }
+
+    return results
+  }
+
+  const fetchArchive = async (filters?: {
+    startDate?: string
+    endDate?: string
+    type?: ReceiptType
+    limit?: number
+  }): Promise<boolean> => {
+    try {
+      const data = await receiptsApi.getArchive(filters)
+      receiptArchive.value = data.archive || data || []
+      return true
+    } catch (err: any) {
+      console.error('Failed to fetch archive:', err)
+      return false
+    }
+  }
+
+  const reprintFromArchive = async (archiveId: string): Promise<string | null> => {
+    try {
+      const archive = receiptArchive.value.find(a => a.id === archiveId)
+      if (!archive) {
+        throw new Error('Archive entry not found')
+      }
+
+      // Increment reprint count
+      archive.reprintCount++
+      archive.status = 'REPRINTED'
+
+      // Create new print job
+      const jobId = await printReceipt(
+        ReceiptType.REPRINT,
+        archive.data,
+        archive.templateId,
+        { immediate: true }
+      )
+
+      return jobId
+    } catch (err: any) {
+      console.error('Failed to reprint from archive:', err)
+      return null
+    }
+  }
+
+  const cleanupOldArchives = async (): Promise<void> => {
+    const retentionDate = new Date()
+    retentionDate.setDate(retentionDate.getDate() - settings.value.archiveRetentionDays)
+
+    receiptArchive.value = receiptArchive.value.filter(archive =>
+      new Date(archive.printedAt) >= retentionDate
+    )
+  }
+
+  const exportArchive = (archives: ReceiptArchive[]): string => {
+    const headers = ['Receipt #', 'Type', 'Order ID', 'Printed At', 'Printed By', 'Status', 'Reprint Count']
+    const rows = archives.map(archive => [
+      archive.receiptNumber,
+      archive.type,
+      archive.orderId || '',
+      new Date(archive.printedAt).toLocaleString(),
+      archive.printedBy,
+      archive.status,
+      archive.reprintCount
+    ])
+
+    return [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+  }
+
   // Auto-process queue
   setInterval(() => {
     if (!isProcessingQueue.value && queuedJobs.value.length > 0) {
@@ -635,6 +910,8 @@ export const useReceiptsStore = defineStore('receipts', () => {
     // State
     templates,
     printQueue,
+    printers,
+    receiptArchive,
     printerStatus,
     settings,
     isProcessingQueue,
@@ -644,9 +921,13 @@ export const useReceiptsStore = defineStore('receipts', () => {
     queuedJobs,
     failedJobs,
     completedJobsToday,
+    activePrinters,
+    defaultPrinter,
 
-    // Actions
+    // Actions - Templates
     fetchTemplates,
+
+    // Actions - Printing
     printReceipt,
     printSaleReceipt,
     printKitchenOrder,
@@ -656,6 +937,21 @@ export const useReceiptsStore = defineStore('receipts', () => {
     checkPrinterStatus,
     retryFailedJobs,
     cancelJob,
-    clearQueue
+    clearQueue,
+
+    // Actions - Printer Management
+    fetchPrinters,
+    addPrinter,
+    updatePrinter,
+    deletePrinter,
+    testPrinter,
+    selectPrinterForJob,
+
+    // Actions - Archival
+    archiveReceipt,
+    searchArchive,
+    fetchArchive,
+    reprintFromArchive,
+    exportArchive
   }
 })

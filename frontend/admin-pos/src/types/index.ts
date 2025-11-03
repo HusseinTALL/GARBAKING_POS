@@ -24,7 +24,7 @@ export enum UserRole {
 
 // Menu types
 export interface Category {
-  id: string
+  id: number
   name: string
   description?: string
   imageUrl?: string
@@ -34,14 +34,14 @@ export interface Category {
 }
 
 export interface MenuItem {
-  id: string
+  id: number
   sku: string
   name: string
   description?: string
   price: number
   cost?: number
   imageUrl?: string
-  categoryId: string
+  categoryId: number
   category?: Category
   isAvailable: boolean
   isActive: boolean

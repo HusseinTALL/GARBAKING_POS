@@ -1,493 +1,358 @@
-<!--
-  Table management interface for restaurant floor plan and table operations
-  Visual floor plan with drag-and-drop, real-time status updates
--->
-
 <template>
   <div class="h-full flex flex-col overflow-hidden bg-gray-900 text-gray-100">
-    <!-- Header -->
     <div class="flex-none bg-gray-800 border-b border-gray-700 px-6 py-4 shadow-lg">
       <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-4">
+        <div>
           <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
             Gestion des Tables
           </h1>
-          <div class="flex items-center space-x-2">
-            <div :class="[
-              'w-3 h-3 rounded-full',
-              isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'
-            ]"></div>
-            <span class="text-sm text-gray-400">
-              {{ isConnected ? 'Temps réel' : 'Hors ligne' }}
-            </span>
-          </div>
+          <p class="text-sm text-gray-400 mt-1">
+            Synchronisé avec l'Operations Service
+          </p>
         </div>
-
         <div class="flex items-center space-x-3">
-          <!-- View Toggle -->
-          <div class="flex bg-gray-700 rounded-lg p-1">
-            <button
-              @click="currentView = 'floor'"
-              :class="[
-                'px-3 py-2 rounded-md text-sm font-medium transition-all duration-300',
-                currentView === 'floor'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-600'
-              ]"
-            >
-              <LayoutGrid class="w-4 h-4 mr-2 inline-block" />
-              Plan
-            </button>
-            <button
-              @click="currentView = 'list'"
-              :class="[
-                'px-3 py-2 rounded-md text-sm font-medium transition-all duration-300',
-                currentView === 'list'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-600'
-              ]"
-            >
-              <List class="w-4 h-4 mr-2 inline-block" />
-              Liste
-            </button>
-          </div>
-
-          <!-- Quick Actions -->
           <button
-            @click="showReservationModal = true"
-            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all duration-300 shadow-md hover:shadow-lg"
+            @click="handleRefresh"
+            class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-300 flex items-center space-x-2"
+            :disabled="isLoading"
           >
-            <CalendarPlus class="w-4 h-4 mr-2 inline-block" />
-            Réservation
+            <RefreshCcw class="w-4 h-4" />
+            <span>Actualiser</span>
           </button>
-
-          <!-- Settings -->
           <button
-            @click="showSettings = true"
-            class="p-2 rounded-lg bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white transition-all duration-300"
+            @click="openReservationModal()"
+            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2"
           >
-            <Settings class="w-4 h-4" />
+            <CalendarPlus class="w-4 h-4" />
+            <span>Nouvelle réservation</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Stats Bar -->
-    <div class="flex-none bg-gray-800 border-b border-gray-700 px-6 py-4">
-      <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-7 gap-4">
-        <div class="bg-gray-700 rounded-lg p-4 text-center border border-gray-600 hover:bg-gray-600 transition-all duration-300">
-          <div class="text-2xl font-bold text-blue-400">{{ tableStats.total }}</div>
-          <div class="text-sm text-gray-400">Total</div>
+    <div class="flex-1 overflow-auto p-6 space-y-6">
+      <div
+        v-if="error"
+        class="bg-red-900/40 border border-red-600 text-red-200 rounded-lg p-4 flex items-start justify-between"
+      >
+        <div>
+          <p class="font-medium">{{ error }}</p>
+          <p class="text-sm text-red-200/70 mt-1">
+            Vérifiez la connexion avec l'Operations Service puis réessayez.
+          </p>
         </div>
-        <div class="bg-gray-700 rounded-lg p-4 text-center border border-gray-600 hover:bg-gray-600 transition-all duration-300">
-          <div class="text-2xl font-bold text-green-400">{{ tableStats.available }}</div>
+        <button
+          @click="handleDismissError"
+          class="text-sm text-red-200 hover:text-white"
+        >
+          Fermer
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div class="text-sm text-gray-400">Tables</div>
+          <div class="mt-2 text-2xl font-semibold text-gray-100">{{ tableStats.total }}</div>
+        </div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
           <div class="text-sm text-gray-400">Disponibles</div>
+          <div class="mt-2 text-2xl font-semibold text-green-400">{{ tableStats.available }}</div>
         </div>
-        <div class="bg-gray-700 rounded-lg p-4 text-center border border-gray-600 hover:bg-gray-600 transition-all duration-300">
-          <div class="text-2xl font-bold text-red-400">{{ tableStats.occupied }}</div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
           <div class="text-sm text-gray-400">Occupées</div>
+          <div class="mt-2 text-2xl font-semibold text-red-400">{{ tableStats.occupied }}</div>
         </div>
-        <div class="bg-gray-700 rounded-lg p-4 text-center border border-gray-600 hover:bg-gray-600 transition-all duration-300">
-          <div class="text-2xl font-bold text-blue-400">{{ tableStats.reserved }}</div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
           <div class="text-sm text-gray-400">Réservées</div>
+          <div class="mt-2 text-2xl font-semibold text-blue-400">{{ tableStats.reserved }}</div>
         </div>
-        <div class="bg-gray-700 rounded-lg p-4 text-center border border-gray-600 hover:bg-gray-600 transition-all duration-300">
-          <div class="text-2xl font-bold text-yellow-400">{{ tableStats.needsCleaning }}</div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
           <div class="text-sm text-gray-400">À nettoyer</div>
-        </div>
-        <div class="bg-gray-700 rounded-lg p-4 text-center border border-gray-600 hover:bg-gray-600 transition-all duration-300">
-          <div class="text-2xl font-bold text-gray-400">{{ tableStats.outOfOrder }}</div>
-          <div class="text-sm text-gray-400">Hors service</div>
-        </div>
-        <div class="bg-gray-700 rounded-lg p-4 text-center border border-gray-600 hover:bg-gray-600 transition-all duration-300">
-          <div class="text-2xl font-bold text-purple-400">{{ tableStats.occupancyRate }}%</div>
-          <div class="text-sm text-gray-400">Taux d'occupation</div>
+          <div class="mt-2 text-2xl font-semibold text-yellow-400">{{ tableStats.dirty }}</div>
         </div>
       </div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="flex-1 overflow-hidden">
-      <!-- Floor Plan View -->
-      <div v-if="currentView === 'floor'" class="h-full flex">
-        <!-- Floor Plan Canvas -->
-        <div class="flex-1 relative bg-gray-800 overflow-auto" ref="floorPlanContainer">
-          <div
-            class="relative"
-            :style="{
-              width: floorPlanSize.width + 'px',
-              height: floorPlanSize.height + 'px',
-              minWidth: '100%',
-              minHeight: '100%',
-              background: 'linear-gradient(45deg, #1f2937, #111827)'
-            }"
-            @click="handleFloorClick"
-          >
-            <!-- Sections -->
-            <div
-              v-for="section in sectionsWithTables"
-              :key="section.id"
-              class="absolute border-2 border-dashed border-gray-600 rounded-lg transition-all duration-300 hover:border-gray-500"
-              :style="{
-                left: section.bounds.x + 'px',
-                top: section.bounds.y + 'px',
-                width: section.bounds.width + 'px',
-                height: section.bounds.height + 'px',
-                backgroundColor: section.color + '33'
-              }"
-            >
-              <div class="absolute top-2 left-2 text-sm font-medium text-gray-300">
-                {{ section.name }}
-              </div>
-            </div>
+      <div v-if="isLoading" class="flex justify-center py-12">
+        <Loader2 class="w-8 h-8 text-blue-400 animate-spin" />
+      </div>
 
-            <!-- Tables -->
-            <TableComponent
-              v-for="table in tables"
+      <div v-else class="space-y-6">
+        <section v-for="section in sectionsWithTables" :key="section.id" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-100 flex items-center space-x-2">
+              <LayoutGrid class="w-5 h-5 text-blue-400" />
+              <span>{{ section.name }}</span>
+            </h2>
+            <span class="text-sm text-gray-400">{{ section.tables.length }} tables</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <article
+              v-for="table in section.tables"
               :key="table.id"
-              :table="table"
-              :selected="selectedTable?.id === table.id"
-              :scale="floorPlanScale"
-              @click="selectTable"
-              @status-change="handleTableStatusChange"
-              @move="handleTableMove"
-              @assign-order="handleAssignOrder"
-              class="hover:shadow-lg transition-all duration-300"
+              class="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-4"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-sm text-gray-400">Table</div>
+                  <div class="text-xl font-semibold text-gray-100">{{ table.label }}</div>
+                </div>
+                <span :class="['px-3 py-1 rounded-full text-xs font-semibold', getStatusBadgeClass(table.status)]">
+                  {{ getStatusLabel(table.status) }}
+                </span>
+              </div>
+
+              <div class="flex items-center space-x-4 text-sm text-gray-300">
+                <div class="flex items-center space-x-2">
+                  <Users class="w-4 h-4 text-gray-400" />
+                  <span>{{ table.capacity }} couverts</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <MapPin class="w-4 h-4 text-gray-400" />
+                  <span>{{ table.sectionName }}</span>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-xs uppercase tracking-wide text-gray-400">Statut</label>
+                <select
+                  :value="table.status"
+                  @change="event => onStatusSelect(table.id, event)"
+                  class="w-full bg-gray-900 border border-gray-700 text-gray-100 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-sm text-gray-300">
+                  <span>Réservations</span>
+                  <button
+                    class="text-blue-400 hover:text-blue-300 text-xs"
+                    @click="openReservationModal(table.id)"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+                <div class="bg-gray-900 border border-gray-800 rounded-lg p-3 text-sm text-gray-300 space-y-2">
+                  <p v-if="tableReservations(table.id).length === 0" class="text-gray-500 text-sm">
+                    Aucune réservation future
+                  </p>
+                  <div
+                    v-for="reservation in tableReservations(table.id)"
+                    :key="reservation.id"
+                    class="flex items-center justify-between"
+                  >
+                    <div>
+                      <div class="font-medium text-gray-100">{{ reservation.customerName }}</div>
+                      <div class="text-xs text-gray-400">
+                        {{ formatTimeRange(reservation.startTime, reservation.endTime) }} · {{ reservation.partySize }} pers.
+                      </div>
+                    </div>
+                    <span class="text-xs text-gray-400">{{ getReservationStatusLabel(reservation.status) }}</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-100 flex items-center space-x-2">
+              <Calendar class="w-5 h-5 text-blue-400" />
+              <span>Réservations à venir</span>
+            </h2>
+            <span class="text-sm text-gray-400">{{ upcomingReservationsWithTable.length }} prochaines</span>
+          </div>
+
+          <div v-if="upcomingReservationsWithTable.length === 0" class="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+            <Calendar class="w-10 h-10 text-gray-600 mx-auto mb-3" />
+            <p class="text-gray-400">Aucune réservation confirmée pour les prochaines heures.</p>
+          </div>
+
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <ReservationCard
+              v-for="reservation in upcomingReservationsWithTable"
+              :key="reservation.id"
+              :reservation="reservation"
+              @seat="handleSeatReservation"
+              @cancel="handleCancelReservation"
             />
           </div>
-        </div>
-
-        <!-- Side Panel -->
-        <div class="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
-          <!-- Selected Table Details -->
-          <div v-if="selectedTable" class="flex-none p-6 border-b border-gray-700">
-            <h3 class="text-lg font-semibold text-gray-100 mb-4">
-              Table {{ selectedTable.number }}
-            </h3>
-
-            <TableDetailsPanel
-              :table="selectedTable"
-              @status-change="handleTableStatusChange"
-              @assign-order="handleAssignOrder"
-              @clear-table="handleClearTable"
-              @add-reservation="showReservationModal = true"
-              @close="selectedTable = null"
-            />
-          </div>
-
-          <!-- Upcoming Reservations -->
-          <div class="flex-1 overflow-auto p-6">
-            <h4 class="text-sm font-medium text-gray-300 mb-4">Réservations à venir</h4>
-
-            <div v-if="upcomingReservations.length === 0" class="text-center py-8">
-              <Calendar class="w-12 h-12 text-gray-500 mx-auto mb-2" />
-              <p class="text-gray-500">Aucune réservation</p>
-            </div>
-
-            <div v-else class="space-y-3">
-              <ReservationCard
-                v-for="reservation in upcomingReservations"
-                :key="reservation.id"
-                :reservation="reservation"
-                @seat="handleSeatReservation"
-                @edit="handleEditReservation"
-                @cancel="handleCancelReservation"
-                class="hover:bg-gray-700 transition-all duration-300 rounded-lg"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- List View -->
-      <div v-else class="h-full overflow-auto p-6 bg-gray-900">
-        <TableListView
-          :tables="tables"
-          :sections="floorPlan?.sections || []"
-          @select="selectTable"
-          @status-change="handleTableStatusChange"
-          @assign-order="handleAssignOrder"
-          @clear-table="handleClearTable"
-          @bulk-action="handleBulkAction"
-        />
+        </section>
       </div>
     </div>
 
-    <!-- Modals -->
     <ReservationModal
       v-if="showReservationModal"
-      :table="selectedTable"
       :tables="tables"
+      :selected-table-id="selectedTableId"
       @close="showReservationModal = false"
-      @created="handleReservationCreated"
-      class="bg-gray-800 text-gray-100"
-    />
-
-    <AssignOrderModal
-      v-if="showAssignOrderModal"
-      :table="assignOrderTable"
-      @close="showAssignOrderModal = false"
-      @assigned="handleOrderAssigned"
-      class="bg-gray-800 text-gray-100"
-    />
-
-    <TableSettingsModal
-      v-if="showSettings"
-      :settings="floorPlanSettings"
-      @close="showSettings = false"
-      @update="updateSettings"
-      class="bg-gray-800 text-gray-100"
+      @submit="handleReservationSubmit"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { useTablesStore, TableStatus, type Table, type Reservation } from '@/stores/tables'
-import { useAuthStore } from '@/stores/auth'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
-  LayoutGrid,
-  List,
+  useTablesStore,
+  TableStatus,
+  ReservationStatus,
+  type Table,
+  type Reservation,
+  type CreateReservationPayload
+} from '@/stores/tables'
+import ReservationModal from '@/components/tables/ReservationModal.vue'
+import ReservationCard from '@/components/tables/ReservationCard.vue'
+import {
+  Calendar,
   CalendarPlus,
-  Settings,
-  Calendar
+  LayoutGrid,
+  Loader2,
+  MapPin,
+  RefreshCcw,
+  Users
 } from 'lucide-vue-next'
 
-// Stores
 const tablesStore = useTablesStore()
-const authStore = useAuthStore()
-
-// Destructure store state
 const {
+  sections,
   tables,
-  floorPlan,
-  selectedTable,
-  isLoading,
   tableStats,
-  sectionsWithTables,
-  upcomingReservations
+  upcomingReservations,
+  isLoading,
+  error
 } = storeToRefs(tablesStore)
 
-// Local state
-const currentView = ref<'floor' | 'list'>('floor')
-const isConnected = ref(true)
 const showReservationModal = ref(false)
-const showAssignOrderModal = ref(false)
-const showSettings = ref(false)
-const assignOrderTable = ref<Table | null>(null)
+const selectedTableId = ref<number | null>(null)
 
-// Floor plan state
-const floorPlanContainer = ref<HTMLElement>()
-const floorPlanSize = ref({ width: 1200, height: 800 })
-const floorPlanScale = ref(1)
-
-// Floor plan settings
-const floorPlanSettings = ref({
-  gridSize: 20,
-  snapToGrid: true,
-  showGrid: false,
-  autoSave: true,
-  defaultTableSize: { width: 80, height: 80 }
+onMounted(() => {
+  tablesStore.fetchTables()
 })
 
-// Methods
-const selectTable = (table: Table) => {
-  selectedTable.value = table
-}
-
-const handleTableStatusChange = async (tableId: string, newStatus: TableStatus, notes?: string) => {
-  const success = await tablesStore.updateTableStatus(tableId, newStatus, notes)
-  if (success) {
-    console.log(`Table status updated: ${tableId} -> ${newStatus}`)
-  }
-}
-
-const handleAssignOrder = (table: Table) => {
-  assignOrderTable.value = table
-  showAssignOrderModal.value = true
-}
-
-const handleOrderAssigned = async (tableId: string, orderId: string) => {
-  const success = await tablesStore.assignOrderToTable(tableId, orderId)
-  if (success) {
-    showAssignOrderModal.value = false
-    assignOrderTable.value = null
-  }
-}
-
-const handleClearTable = async (tableId: string) => {
-  const success = await tablesStore.clearTable(tableId)
-  if (success) {
-    console.log(`Table cleared: ${tableId}`)
-  }
-}
-
-const handleTableMove = async (tableId: string, newPosition: { x: number; y: number }) => {
-  if (floorPlanSettings.value.snapToGrid) {
-    const gridSize = floorPlanSettings.value.gridSize
-    newPosition.x = Math.round(newPosition.x / gridSize) * gridSize
-    newPosition.y = Math.round(newPosition.y / gridSize) * gridSize
-  }
-
-  const success = await tablesStore.moveTable(tableId, newPosition)
-  if (!success) {
-    await tablesStore.fetchTables()
-  }
-}
-
-const handleSeatReservation = async (tableId: string, reservationId: string) => {
-  const success = await tablesStore.seatReservation(tableId, reservationId)
-  if (success) {
-    console.log(`Reservation seated: ${reservationId}`)
-  }
-}
-
-const handleEditReservation = (reservation: any) => {
-  console.log('Edit reservation:', reservation)
-}
-
-const handleCancelReservation = async (tableId: string, reservationId: string) => {
-  const success = await tablesStore.updateReservation(tableId, reservationId, {
-    status: 'CANCELLED'
+const sectionsWithTables = computed(() => {
+  const grouped = new Map<number, Table[]>()
+  tables.value.forEach(table => {
+    if (!grouped.has(table.sectionId)) {
+      grouped.set(table.sectionId, [])
+    }
+    grouped.get(table.sectionId)!.push(table)
   })
-  if (success) {
-    console.log(`Reservation cancelled: ${reservationId}`)
-  }
+
+  return sections.value.map(section => ({
+    ...section,
+    tables: grouped.get(section.id) ?? []
+  }))
+})
+
+const upcomingReservationsWithTable = computed(() =>
+  upcomingReservations.value.map(reservation => {
+    const table = tables.value.find(table => table.id === reservation.tableId)
+    return {
+      ...reservation,
+      tableLabel: table?.label ?? `Table ${reservation.tableId}`,
+      sectionName: table?.sectionName ?? ''
+    }
+  })
+)
+
+const statusOptions = [
+  { value: TableStatus.AVAILABLE, label: 'Disponible' },
+  { value: TableStatus.OCCUPIED, label: 'Occupée' },
+  { value: TableStatus.RESERVED, label: 'Réservée' },
+  { value: TableStatus.DIRTY, label: 'À nettoyer' }
+]
+
+const handleRefresh = () => {
+  tablesStore.fetchTables()
 }
 
-const handleReservationCreated = async (tableId: string, reservationData: any) => {
-  const success = await tablesStore.createReservation(tableId, reservationData)
+const openReservationModal = (tableId?: number) => {
+  selectedTableId.value = tableId ?? null
+  showReservationModal.value = true
+}
+
+const handleReservationSubmit = async (payload: CreateReservationPayload) => {
+  const success = await tablesStore.createReservation(payload)
   if (success) {
     showReservationModal.value = false
-    console.log('Reservation created')
   }
 }
 
-const handleBulkAction = async (tableIds: string[], action: string) => {
-  if (action === 'mark_available') {
-    await tablesStore.bulkUpdateStatus(tableIds, TableStatus.AVAILABLE)
-  } else if (action === 'mark_cleaning') {
-    await tablesStore.bulkUpdateStatus(tableIds, TableStatus.NEEDS_CLEANING)
+const handleStatusChange = async (tableId: number, status: TableStatus) => {
+  await tablesStore.updateTableStatus(tableId, status)
+}
+
+const onStatusSelect = (tableId: number, event: Event) => {
+  const target = event.target as HTMLSelectElement
+  handleStatusChange(tableId, target.value as TableStatus)
+}
+
+const handleSeatReservation = async (reservationId: number) => {
+  await tablesStore.updateReservationStatus(reservationId, ReservationStatus.CHECKED_IN)
+}
+
+const handleCancelReservation = async (reservationId: number) => {
+  await tablesStore.updateReservationStatus(reservationId, ReservationStatus.CANCELLED)
+}
+
+const handleDismissError = () => {
+  tablesStore.clearError()
+}
+
+const tableReservations = (tableId: number): Reservation[] => {
+  const now = new Date()
+  return tablesStore
+    .getReservationsForTable(tableId)
+    .filter(reservation => {
+      if (reservation.status === ReservationStatus.CANCELLED || reservation.status === ReservationStatus.COMPLETED) {
+        return false
+      }
+      return new Date(reservation.endTime) >= now
+    })
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+}
+
+const getStatusBadgeClass = (status: TableStatus): string => {
+  const classes: Record<TableStatus, string> = {
+    [TableStatus.AVAILABLE]: 'bg-green-500/20 text-green-300',
+    [TableStatus.OCCUPIED]: 'bg-red-500/20 text-red-300',
+    [TableStatus.RESERVED]: 'bg-blue-500/20 text-blue-300',
+    [TableStatus.DIRTY]: 'bg-yellow-500/20 text-yellow-300'
   }
+  return classes[status] || 'bg-gray-500/20 text-gray-300'
 }
 
-const handleFloorClick = (event: MouseEvent) => {
-  if (event.target === event.currentTarget) {
-    selectedTable.value = null
+const getStatusLabel = (status: TableStatus): string => {
+  const labels: Record<TableStatus, string> = {
+    [TableStatus.AVAILABLE]: 'Disponible',
+    [TableStatus.OCCUPIED]: 'Occupée',
+    [TableStatus.RESERVED]: 'Réservée',
+    [TableStatus.DIRTY]: 'À nettoyer'
   }
+  return labels[status] || status
 }
 
-const updateSettings = (newSettings: any) => {
-  floorPlanSettings.value = { ...floorPlanSettings.value, ...newSettings }
-  localStorage.setItem('pos-floorplan-settings', JSON.stringify(floorPlanSettings.value))
-}
-
-const adjustFloorPlanSize = () => {
-  if (!floorPlanContainer.value) return
-
-  const container = floorPlanContainer.value
-  const containerWidth = container.clientWidth
-  const containerHeight = container.clientHeight
-
-  const scaleX = containerWidth / floorPlanSize.value.width
-  const scaleY = containerHeight / floorPlanSize.value.height
-  floorPlanScale.value = Math.min(scaleX, scaleY, 1)
-}
-
-// Auto-refresh functionality
-let refreshInterval: ReturnType<typeof setInterval> | null = null
-
-const startAutoRefresh = () => {
-  refreshInterval = setInterval(async () => {
-    if (isConnected.value) {
-      await tablesStore.fetchTables()
-      tablesStore.checkReservationsStatus()
-    }
-  }, 30000)
-}
-
-const stopAutoRefresh = () => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-    refreshInterval = null
+const getReservationStatusLabel = (status: ReservationStatus): string => {
+  const labels: Record<ReservationStatus, string> = {
+    [ReservationStatus.REQUESTED]: 'Demandée',
+    [ReservationStatus.CONFIRMED]: 'Confirmée',
+    [ReservationStatus.CHECKED_IN]: 'Installée',
+    [ReservationStatus.COMPLETED]: 'Terminée',
+    [ReservationStatus.CANCELLED]: 'Annulée'
   }
+  return labels[status] || status
 }
 
-// Lifecycle
-onMounted(async () => {
-  const savedSettings = localStorage.getItem('pos-floorplan-settings')
-  if (savedSettings) {
-    floorPlanSettings.value = { ...floorPlanSettings.value, ...JSON.parse(savedSettings) }
-  }
-
-  await Promise.all([
-    tablesStore.fetchTables(),
-    tablesStore.fetchFloorPlan()
-  ])
-
-  await nextTick()
-  adjustFloorPlanSize()
-
-  startAutoRefresh()
-  window.addEventListener('resize', adjustFloorPlanSize)
-})
-
-onUnmounted(() => {
-  stopAutoRefresh()
-  window.removeEventListener('resize', adjustFloorPlanSize)
-})
+const formatTimeRange = (start: string, end: string): string => {
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  return `${startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+}
 </script>
-
-<style scoped>
-/* Floor plan grid */
-.floor-plan-grid {
-  background-image:
-    linear-gradient(to right, #374151 1px, transparent 1px),
-    linear-gradient(to bottom, #374151 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-/* Table drag styles */
-.table-dragging {
-  cursor: grabbing;
-  z-index: 1000;
-  transform: scale(1.05);
-}
-
-/* Selection styles */
-.table-selected {
-  box-shadow: 0 0 0 3px #60a5fa;
-}
-
-/* Smooth transitions */
-.table-transition {
-  transition: all 0.3s ease;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .w-80 {
-    @apply w-full max-w-[300px];
-  }
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1f2937;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
-</style>

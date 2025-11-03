@@ -1,0 +1,84 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+      - id: user-service
+        uri: lb://user-service
+        predicates:
+        - Path=/api/users/**, /api/auth/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: order-service
+        uri: lb://order-service
+        predicates:
+        - Path=/api/orders/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: operations-service
+        uri: lb://operations-service
+        predicates:
+        - Path=/api/loyalty/**, /api/tables/**, /api/receipts/**, /api/printers/**,
+          /api/payments/**, /api/operations/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: analytics-service
+        uri: lb://analytics-service
+        predicates:
+        - Path=/api/analytics/cross-cutting/**, /api/recommendations/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: order-analytics
+        uri: lb://order-service
+        predicates:
+        - Path=/api/analytics/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+      - id: inventory-service
+        uri: lb://inventory-service
+        predicates:
+        - Path=/api/categories/**, /api/menu-items/**, /api/menu/public, /api/menu/**
+        filters:
+        - RewritePath=/api/(?<segment>.*), /${segment}
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,prometheus
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 0.3
+    propagation:
+      type: B3,W3C
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+logging:
+  config: classpath:logback-structured.xml
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty: INFO
+garbaking:
+  observability:
+    environment: edge

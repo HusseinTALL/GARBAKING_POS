@@ -24,6 +24,24 @@
         </div>
 
         <div class="flex items-center space-x-3">
+          <!-- Archive Search -->
+          <button
+            @click="showArchiveSearch = true"
+            class="bg-gray-700 hover:bg-gray-600 text-gray-100 px-4 py-2 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
+          >
+            <FileSearch class="w-4 h-4 mr-2 inline-block" />
+            Archive
+          </button>
+
+          <!-- Printer Management -->
+          <button
+            @click="showPrinterManagement = true"
+            class="bg-gray-700 hover:bg-gray-600 text-gray-100 px-4 py-2 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
+          >
+            <Printer class="w-4 h-4 mr-2 inline-block" />
+            Printers
+          </button>
+
           <!-- Print Queue Actions -->
           <button
             v-if="queuedJobs.length > 0"
@@ -259,6 +277,16 @@
     @print="performTestPrint"
     class="bg-gray-800 text-gray-100"
   />
+
+  <PrinterManagementModal
+    v-if="showPrinterManagement"
+    @close="showPrinterManagement = false"
+  />
+
+  <ReceiptArchiveSearch
+    v-if="showArchiveSearch"
+    @close="showArchiveSearch = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -272,8 +300,11 @@ import {
   RotateCw,
   Printer,
   RefreshCw,
-  Plus
+  Plus,
+  FileSearch
 } from 'lucide-vue-next'
+import PrinterManagementModal from '@/components/PrinterManagementModal.vue'
+import ReceiptArchiveSearch from '@/components/ReceiptArchiveSearch.vue'
 
 // Store
 const receiptsStore = useReceiptsStore()
@@ -298,6 +329,8 @@ const testingTemplate = ref<ReceiptTemplate | null>(null)
 const showTemplateEditor = ref(false)
 const showSettings = ref(false)
 const showTestPrint = ref(false)
+const showPrinterManagement = ref(false)
+const showArchiveSearch = ref(false)
 
 // Computed
 const filteredQueue = computed(() => {

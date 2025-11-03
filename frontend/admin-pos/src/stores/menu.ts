@@ -1,15 +1,17 @@
 /**
  * Menu management store for categories and menu items
  * Handles CRUD operations, real-time updates, and menu state management
+ * Updated to use Spring Boot microservices backend
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiService } from '@/services/api'
+import { categoriesApi, menuItemsApi } from '@/services/api-spring'
+import { toNumericId } from '@/utils/identifiers'
 
 // Types
 export interface MenuCategory {
-  id: string
+  id: number
   name: string
   description: string
   imageUrl?: string
@@ -24,14 +26,14 @@ export interface MenuCategory {
 }
 
 export interface MenuItem {
-  id: string
+  id: number
   sku: string
   name: string
   description: string
   price: number
   cost?: number
   imageUrl?: string
-  categoryId: string
+  categoryId: number
   isAvailable: boolean
   isActive: boolean
   createdAt: string
@@ -45,7 +47,7 @@ export interface MenuItemForm {
   description: string
   price: number
   cost?: number
-  categoryId: string
+  categoryId: number
   imageUrl?: string
   isAvailable: boolean
 }
@@ -58,12 +60,55 @@ export interface CategoryForm {
 }
 
 export const useMenuStore = defineStore('menu', () => {
+  function normalizeMenuItem(item: any): MenuItem {
+    const id = toNumericId(item?.id) ?? 0
+    const categoryId = toNumericId(item?.categoryId ?? item?.category?.id) ?? 0
+
+    return {
+      id,
+      sku: item?.sku ?? '',
+      name: item?.name ?? '',
+      description: item?.description ?? '',
+      price: Number(item?.price ?? 0),
+      cost: item?.cost != null ? Number(item.cost) : undefined,
+      imageUrl: item?.imageUrl ?? undefined,
+      categoryId,
+      isAvailable: Boolean(item?.isAvailable ?? item?.available ?? true),
+      isActive: Boolean(item?.isActive ?? item?.active ?? true),
+      createdAt: item?.createdAt ?? '',
+      updatedAt: item?.updatedAt ?? '',
+      category: item?.category ? normalizeCategory(item.category, false) : undefined
+    }
+  }
+
+  function normalizeCategory(category: any, includeItems = true): MenuCategory {
+    const id = toNumericId(category?.id) ?? 0
+
+    const normalized: MenuCategory = {
+      id,
+      name: category?.name ?? '',
+      description: category?.description ?? '',
+      imageUrl: category?.imageUrl ?? undefined,
+      sortOrder: Number(category?.sortOrder ?? 0),
+      isActive: Boolean(category?.isActive ?? true),
+      createdAt: category?.createdAt ?? '',
+      updatedAt: category?.updatedAt ?? '',
+      _count: category?._count
+    }
+
+    if (includeItems && Array.isArray(category?.menuItems)) {
+      normalized.menuItems = category.menuItems.map((item: any) => normalizeMenuItem(item))
+    }
+
+    return normalized
+  }
+
   // State
   const categories = ref<MenuCategory[]>([])
   const menuItems = ref<MenuItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
-  const selectedCategory = ref<string | null>(null)
+  const selectedCategory = ref<number | null>(null)
 
   // Computed
   const categoriesWithCounts = computed(() => {
@@ -101,8 +146,9 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.categories()
-      categories.value = response.data.categories || []
+      const data = await categoriesApi.getAll()
+      const rawCategories = Array.isArray(data) ? data : data?.categories || []
+      categories.value = rawCategories.map((category: any) => normalizeCategory(category))
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch categories'
       console.error('Error fetching categories:', err)
@@ -115,8 +161,9 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.items(params)
-      menuItems.value = response.data.menuItems || []
+      const data = await menuItemsApi.getAll(params)
+      const rawItems = Array.isArray(data) ? data : data?.menuItems || []
+      menuItems.value = rawItems.map((item: any) => normalizeMenuItem(item))
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch menu items'
       console.error('Error fetching menu items:', err)
@@ -129,26 +176,13 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.public()
+      const data = await menuItemsApi.getPublic()
 
       // Extract categories and items from public menu response
-      const publicCategories = response.data.categories || []
-      categories.value = publicCategories
+      const publicCategories = Array.isArray(data) ? data : data?.categories || []
+      categories.value = publicCategories.map((category: any) => normalizeCategory(category))
 
-      // Flatten menu items from all categories
-      const allItems: MenuItem[] = []
-      publicCategories.forEach((category: any) => {
-        if (category.menuItems) {
-          category.menuItems.forEach((item: any) => {
-            allItems.push({
-              ...item,
-              categoryId: category.id,
-              category: category
-            })
-          })
-        }
-      })
-      menuItems.value = allItems
+      menuItems.value = categories.value.flatMap(category => category.menuItems || [])
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch public menu'
       console.error('Error fetching public menu:', err)
@@ -161,8 +195,8 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.createCategory(categoryData)
-      const newCategory = response.data.category
+      const data = await categoriesApi.create(categoryData)
+      const newCategory = normalizeCategory(data)
       categories.value.push(newCategory)
       return newCategory
     } catch (err: any) {
@@ -174,14 +208,18 @@ export const useMenuStore = defineStore('menu', () => {
     }
   }
 
-  const updateCategory = async (id: string, categoryData: Partial<CategoryForm>) => {
+  const updateCategory = async (id: number | string, categoryData: Partial<CategoryForm>) => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.updateCategory(id, categoryData)
-      const updatedCategory = response.data.category
+      const numericId = toNumericId(id)
+      if (numericId === null) {
+        throw new Error('Invalid category id')
+      }
+      const data = await categoriesApi.update(numericId, categoryData)
+      const updatedCategory = normalizeCategory(data)
 
-      const index = categories.value.findIndex(cat => cat.id === id)
+      const index = categories.value.findIndex(cat => cat.id === numericId)
       if (index !== -1) {
         categories.value[index] = updatedCategory
       }
@@ -195,12 +233,16 @@ export const useMenuStore = defineStore('menu', () => {
     }
   }
 
-  const deleteCategory = async (id: string) => {
+  const deleteCategory = async (id: number | string) => {
     try {
       loading.value = true
       error.value = null
-      await apiService.menu.deleteCategory(id)
-      categories.value = categories.value.filter(cat => cat.id !== id)
+      const numericId = toNumericId(id)
+      if (numericId === null) {
+        throw new Error('Invalid category id')
+      }
+      await categoriesApi.delete(numericId)
+      categories.value = categories.value.filter(cat => cat.id !== numericId)
     } catch (err: any) {
       error.value = err.message || 'Failed to delete category'
       console.error('Error deleting category:', err)
@@ -214,8 +256,8 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.createItem(itemData)
-      const newItem = response.data.menuItem
+      const data = await menuItemsApi.create(itemData)
+      const newItem = normalizeMenuItem(data)
       menuItems.value.push(newItem)
       return newItem
     } catch (err: any) {
@@ -233,14 +275,18 @@ export const useMenuStore = defineStore('menu', () => {
     }
   }
 
-  const updateMenuItem = async (id: string, itemData: Partial<MenuItemForm>) => {
+  const updateMenuItem = async (id: number | string, itemData: Partial<MenuItemForm>) => {
     try {
       loading.value = true
       error.value = null
-      const response = await apiService.menu.updateItem(id, itemData)
-      const updatedItem = response.data.menuItem
+      const numericId = toNumericId(id)
+      if (numericId === null) {
+        throw new Error('Invalid menu item id')
+      }
+      const data = await menuItemsApi.update(numericId, itemData)
+      const updatedItem = normalizeMenuItem(data)
 
-      const index = menuItems.value.findIndex(item => item.id === id)
+      const index = menuItems.value.findIndex(item => item.id === numericId)
       if (index !== -1) {
         menuItems.value[index] = updatedItem
       }
@@ -260,12 +306,16 @@ export const useMenuStore = defineStore('menu', () => {
     }
   }
 
-  const deleteMenuItem = async (id: string) => {
+  const deleteMenuItem = async (id: number | string) => {
     try {
       loading.value = true
       error.value = null
-      await apiService.menu.deleteItem(id)
-      menuItems.value = menuItems.value.filter(item => item.id !== id)
+      const numericId = toNumericId(id)
+      if (numericId === null) {
+        throw new Error('Invalid menu item id')
+      }
+      await menuItemsApi.delete(numericId)
+      menuItems.value = menuItems.value.filter(item => item.id !== numericId)
     } catch (err: any) {
       error.value = err.message || 'Failed to delete menu item'
       console.error('Error deleting menu item:', err)
@@ -275,12 +325,16 @@ export const useMenuStore = defineStore('menu', () => {
     }
   }
 
-  const toggleItemAvailability = async (id: string, isAvailable: boolean) => {
+  const toggleItemAvailability = async (id: number | string, isAvailable: boolean) => {
     try {
-      const response = await apiService.menu.updateAvailability(id, isAvailable)
-      const updatedItem = response.data.menuItem
+      const numericId = toNumericId(id)
+      if (numericId === null) {
+        throw new Error('Invalid menu item id')
+      }
+      const data = await menuItemsApi.update(numericId, { isAvailable })
+      const updatedItem = normalizeMenuItem(data)
 
-      const index = menuItems.value.findIndex(item => item.id === id)
+      const index = menuItems.value.findIndex(item => item.id === numericId)
       if (index !== -1) {
         menuItems.value[index] = updatedItem
       }
@@ -298,16 +352,20 @@ export const useMenuStore = defineStore('menu', () => {
     }
   }
 
-  const setSelectedCategory = (categoryId: string | null) => {
-    selectedCategory.value = categoryId
+  const setSelectedCategory = (categoryId: number | string | null) => {
+    selectedCategory.value = categoryId === null ? null : toNumericId(categoryId)
   }
 
-  const getItemById = (id: string) => {
-    return menuItems.value.find(item => item.id === id)
+  const getItemById = (id: number | string) => {
+    const numericId = toNumericId(id)
+    if (numericId === null) return null
+    return menuItems.value.find(item => item.id === numericId) || null
   }
 
-  const getCategoryById = (id: string) => {
-    return categories.value.find(cat => cat.id === id)
+  const getCategoryById = (id: number | string) => {
+    const numericId = toNumericId(id)
+    if (numericId === null) return null
+    return categories.value.find(cat => cat.id === numericId) || null
   }
 
   const clearError = () => {

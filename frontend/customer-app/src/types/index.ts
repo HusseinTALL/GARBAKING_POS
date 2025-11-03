@@ -40,6 +40,7 @@ export interface CartItem {
   notes?: string
   imageUrl?: string
   category?: string
+  sku?: string
 }
 
 export interface CustomerInfo {

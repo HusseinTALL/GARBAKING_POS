@@ -8,6 +8,9 @@ export default {
   theme: {
     extend: {
       colors: {
+        boxShadow: {
+        '3xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      },
         // Modern green food delivery theme
         primary: {
           50: '#e8f9ed',
@@ -25,6 +28,7 @@ export default {
           DEFAULT: '#FFFFFF', // Pure white
           gray: '#F8F8F8', // Very light gray for subtle backgrounds
         },
+        
         text: {
           DEFAULT: '#1C1C1E', // Near black - primary text
           secondary: '#8E8E93', // Gray - secondary text
@@ -94,6 +98,9 @@ export default {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'scale-in': 'scaleIn 0.2s ease-out',
         'pulse-soft': 'pulseSoft 2s infinite',
+        'float': 'float 6s ease-in-out infinite',
+        'float-delayed': 'float-delayed 8s ease-in-out infinite',
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         bounceIn: {
@@ -117,6 +124,14 @@ export default {
         pulseSoft: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.8' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0) translateX(0)' },
+          '50%': { transform: 'translateY(-20px) translateX(10px)' },
+        },
+        'float-delayed': {
+          '0%, 100%': { transform: 'translateY(0) translateX(0)' },
+          '50%': { transform: 'translateY(20px) translateX(-10px)' },
         },
       },
       screens: {

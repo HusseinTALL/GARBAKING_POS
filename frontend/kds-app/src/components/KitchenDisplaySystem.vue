@@ -367,6 +367,15 @@ import {
   X
 } from 'lucide-vue-next'
 
+const DEFAULT_GATEWAY_URL = 'http://localhost:8080'
+const configuredGatewayUrl =
+  import.meta.env.VITE_API_GATEWAY_URL ||
+  import.meta.env.VITE_API_URL ||
+  DEFAULT_GATEWAY_URL
+const normalizeBase = (url: string) => (url.endsWith('/') ? url.slice(0, -1) : url)
+const apiBaseUrl = `${normalizeBase(configuredGatewayUrl)}/api`
+const socketBaseUrl = normalizeBase(configuredGatewayUrl)
+
 // Types
 interface OrderItem {
   id: string
@@ -488,8 +497,8 @@ const selectOrder = (order: Order) => {
 
 const updateOrderStatus = async (orderId: string, newStatus: string) => {
   try {
-    const response = await fetch(`http://localhost:3001/api/orders/${orderId}/status`, {
-      method: 'PATCH',
+    const response = await fetch(`${apiBaseUrl}/orders/${orderId}/status`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -553,10 +562,18 @@ const updateDateTime = () => {
 
 const loadOrders = async () => {
   try {
-    const response = await fetch('http://localhost:3001/api/orders?limit=50')
+    const response = await fetch(`${apiBaseUrl}/orders`)
     if (response.ok) {
       const data = await response.json()
-      orders.value = data.data.orders
+      if (Array.isArray(data)) {
+        orders.value = data
+      } else if (Array.isArray(data?.orders)) {
+        orders.value = data.orders
+      } else if (Array.isArray(data?.data?.orders)) {
+        orders.value = data.data.orders
+      } else {
+        orders.value = []
+      }
     }
   } catch (error) {
     console.error('Failed to load orders:', error)
@@ -564,7 +581,7 @@ const loadOrders = async () => {
 }
 
 const initializeSocket = () => {
-  socket = io('http://localhost:3001')
+  socket = io(socketBaseUrl)
 
   socket.on('connect', () => {
     isConnected.value = true

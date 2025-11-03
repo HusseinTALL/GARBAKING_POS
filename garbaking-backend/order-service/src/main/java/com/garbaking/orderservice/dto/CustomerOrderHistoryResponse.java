@@ -1,0 +1,13 @@
+package com.garbaking.orderservice.dto;
+
+import java.util.List;
+import lombok.Builder;
+import lombok.Value;
+
+@Value
+@Builder
+public class CustomerOrderHistoryResponse {
+    List<OrderDTO> orders;
+    long count;
+}
+

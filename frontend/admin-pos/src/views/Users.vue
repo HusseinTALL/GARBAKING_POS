@@ -23,9 +23,65 @@
       </PermissionGuard>
     </div>
 
-    <!-- Filters and Search -->
-    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Tab Navigation -->
+    <div class="border-b border-slate-200">
+      <nav class="-mb-px flex space-x-8">
+        <button
+          @click="activeTab = 'users'"
+          :class="[
+            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
+            activeTab === 'users'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          ]"
+        >
+          <Users class="w-5 h-5 inline-block mr-2" />
+          Staff Directory
+        </button>
+        <button
+          @click="activeTab = 'clock'"
+          :class="[
+            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
+            activeTab === 'clock'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          ]"
+        >
+          <Clock class="w-5 h-5 inline-block mr-2" />
+          Time Tracking
+        </button>
+        <button
+          @click="activeTab = 'performance'"
+          :class="[
+            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
+            activeTab === 'performance'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          ]"
+        >
+          <TrendingUp class="w-5 h-5 inline-block mr-2" />
+          Performance
+        </button>
+        <button
+          @click="activeTab = 'audit'"
+          :class="[
+            'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
+            activeTab === 'audit'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          ]"
+        >
+          <Shield class="w-5 h-5 inline-block mr-2" />
+          Audit Logs
+        </button>
+      </nav>
+    </div>
+
+    <!-- Tab Content -->
+    <div v-show="activeTab === 'users'">
+      <!-- Filters and Search -->
+      <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-2">Search Users</label>
           <div class="relative">
@@ -203,6 +259,22 @@
         </button>
       </div>
     </div>
+    </div>
+
+    <!-- Clock In/Out Tab -->
+    <div v-show="activeTab === 'clock'">
+      <ClockInOutPanel />
+    </div>
+
+    <!-- Performance Tab -->
+    <div v-show="activeTab === 'performance'">
+      <StaffPerformanceDashboard />
+    </div>
+
+    <!-- Audit Logs Tab -->
+    <div v-show="activeTab === 'audit'">
+      <AuditLogsPanel />
+    </div>
   </div>
 
   <!-- Create/Edit User Modal -->
@@ -221,14 +293,26 @@
     @close="showDetailModal = false"
     @edit="editUser"
   />
+
+  <!-- Password Reset Modal -->
+  <PasswordResetModal
+    v-if="showPasswordResetModal"
+    :user="selectedUser"
+    @close="showPasswordResetModal = false"
+    @success="handlePasswordResetSuccess"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useUsersStore } from '@/stores/users'
 import { usePermissions } from '@/composables/usePermissions'
 import { getRoleColor, getRoleDisplayName } from '@/constants/permissions'
 import PermissionGuard from '@/components/PermissionGuard.vue'
+import ClockInOutPanel from '@/components/ClockInOutPanel.vue'
+import StaffPerformanceDashboard from '@/components/StaffPerformanceDashboard.vue'
+import AuditLogsPanel from '@/components/AuditLogsPanel.vue'
 import {
   Users,
   UserPlus,
@@ -236,12 +320,16 @@ import {
   Eye,
   Edit,
   Key,
-  Trash2
+  Trash2,
+  Clock,
+  TrendingUp,
+  Shield
 } from 'lucide-vue-next'
 
 // Lazy load modals
 const UserModal = defineAsyncComponent(() => import('@/components/UserModal.vue'))
 const UserDetailModal = defineAsyncComponent(() => import('@/components/UserDetailModal.vue'))
+const PasswordResetModal = defineAsyncComponent(() => import('@/components/PasswordResetModal.vue'))
 
 interface User {
   id: string
@@ -258,11 +346,15 @@ interface User {
 
 // State
 const authStore = useAuthStore()
+const usersStore = useUsersStore()
 const permissions = usePermissions()
 
 const users = ref<User[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+
+// Tab state
+const activeTab = ref('users')
 
 // Filters
 const searchQuery = ref('')
@@ -277,6 +369,7 @@ const itemsPerPage = ref(10)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
+const showPasswordResetModal = ref(false)
 const selectedUser = ref<User | null>(null)
 
 // Available roles for filtering
@@ -346,16 +439,13 @@ const editUser = (user: User) => {
 }
 
 const resetPassword = async (user: User) => {
-  if (!confirm(`Reset password for ${user.name}?`)) return
+  selectedUser.value = user
+  showPasswordResetModal.value = true
+}
 
-  try {
-    // Implementation would call API to reset password
-    console.log('Reset password for:', user.email)
-    alert('Password reset email sent!')
-  } catch (err) {
-    console.error('Failed to reset password:', err)
-    alert('Failed to reset password')
-  }
+const handlePasswordResetSuccess = () => {
+  showPasswordResetModal.value = false
+  selectedUser.value = null
 }
 
 const confirmDelete = async (user: User) => {

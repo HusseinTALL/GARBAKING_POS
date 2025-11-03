@@ -9,6 +9,18 @@ import { useOrdersStore } from '@/stores/orders'
 import { useTablesStore } from '@/stores/tables'
 import { usePaymentStore } from '@/stores/payment'
 
+const DEFAULT_GATEWAY_URL = 'http://localhost:8080'
+const configuredGatewayUrl =
+  import.meta.env.VITE_API_GATEWAY_URL ||
+  import.meta.env.VITE_API_URL ||
+  DEFAULT_GATEWAY_URL
+
+const toWebSocketUrl = (baseHttpUrl: string): string => {
+  const normalized = baseHttpUrl.replace(/\/$/, '')
+  const wsScheme = normalized.replace(/^http/, 'ws')
+  return `${wsScheme}/ws`
+}
+
 export interface WebSocketMessage {
   type: string
   event: string
@@ -39,7 +51,7 @@ export class WebSocketService {
   public messageQueue = ref<WebSocketMessage[]>([])
 
   private config: ConnectionConfig = {
-    url: process.env.VUE_APP_WS_URL || 'ws://localhost:3001/ws',
+    url: process.env.VUE_APP_WS_URL || toWebSocketUrl(configuredGatewayUrl),
     reconnectInterval: 3000,
     maxReconnectAttempts: 10,
     heartbeatInterval: 30000,

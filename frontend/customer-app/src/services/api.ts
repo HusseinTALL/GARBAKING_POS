@@ -6,15 +6,24 @@
 import axios, { AxiosResponse, AxiosError } from 'axios'
 import { useToast } from 'vue-toastification'
 import { useNetworkStore } from '@/stores/network'
+import { formatCurrency } from '@/utils/currency'
+import { useMenuStore } from '@/stores/menu'
 
 // API Configuration
-// Use relative URLs to leverage Vite proxy in development
-// Vite proxy forwards /api/* requests to backend (localhost:3001)
-const API_BASE_URL = ''
-const LOCAL_API_URL = ''
+const DEFAULT_GATEWAY_URL = 'http://localhost:8080'
+const normalizeBase = (url: string) => (url ? url.replace(/\/$/, '') : '')
+const LOCAL_API_URL = normalizeBase(
+  import.meta.env.VITE_API_GATEWAY_URL ||
+    import.meta.env.VITE_API_URL ||
+    DEFAULT_GATEWAY_URL
+)
+const CLOUD_API_URL = normalizeBase(
+  import.meta.env.VITE_API_CLOUD_URL || LOCAL_API_URL
+)
 
 // Create axios instance
 const apiClient = axios.create({
+  baseURL: LOCAL_API_URL || undefined,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -51,7 +60,7 @@ export interface ApiResponse<T = any> {
 
 // Helper function to determine API endpoint
 const getApiUrl = (endpoint: string, useLocal = true): string => {
-  const baseUrl = useLocal ? LOCAL_API_URL : API_BASE_URL
+  const baseUrl = useLocal ? LOCAL_API_URL : CLOUD_API_URL
   return `${baseUrl}${endpoint}`
 }
 
@@ -63,7 +72,13 @@ const makeRequest = async <T>(
 ): Promise<ApiResponse<T>> => {
   try {
     const url = getApiUrl(endpoint, useLocal)
-    const response = await apiClient({ url, ...options })
+    const response = await apiClient({
+      url,
+      method: options.method || 'GET',
+      params: options.params,
+      data: options.data,
+      headers: options.headers
+    })
     return response.data
   } catch (error: any) {
     // If local request fails, try cloud API as fallback
@@ -73,6 +88,26 @@ const makeRequest = async <T>(
     }
 
     throw error
+  }
+}
+
+const normalizeOrderResponse = (raw: any): ApiResponse<{ order: any }> => {
+  if (raw && typeof raw === 'object') {
+    if (typeof (raw as any).success === 'boolean') {
+      return raw as ApiResponse<{ order: any }>
+    }
+
+    return {
+      success: true,
+      data: {
+        order: raw
+      }
+    }
+  }
+
+  return {
+    success: false,
+    error: 'Réponse inattendue du serveur'
   }
 }
 
@@ -128,7 +163,102 @@ export const menuApi = {
   }
 }
 
+// Recommendations API
+export interface BudgetSuggestionRequest {
+  budget: number
+  preferences?: {
+    dietary?: string[]
+    timeOfDay?: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'
+    tags?: string[]
+  }
+  context?: {
+    customerId?: string
+    recentOrderIds?: string[]
+    locale?: string
+    partySize?: number
+  }
+}
+
+export interface BudgetSuggestionItem {
+  menuItemId: string
+  name: string
+  price: number
+  quantity: number
+  imageUrl?: string
+  categoryName?: string
+}
+
+export interface BudgetSuggestionBundle {
+  id: string
+  title: string
+  description?: string
+  total: number
+  savings?: number
+  highlight?: string
+  tags: string[]
+  items: BudgetSuggestionItem[]
+  source?: 'REMOTE' | 'LOCAL'
+}
+
+export interface BudgetSuggestionResponsePayload {
+  success?: boolean
+  generatedAt?: string
+  suggestions?: BudgetSuggestionBundle[]
+  message?: string
+  error?: string
+}
+
+export const recommendationsApi = {
+  /**
+   * Request budget-based menu suggestions from the backend recommender
+   */
+  async getBudgetSuggestions(
+    payload: BudgetSuggestionRequest
+  ): Promise<ApiResponse<{ suggestions: BudgetSuggestionBundle[]; generatedAt?: string; message?: string }>> {
+    try {
+      const raw = await makeRequest<BudgetSuggestionResponsePayload>('/api/recommendations/budget', {
+        method: 'POST',
+        data: payload
+      })
+
+      const suggestions = Array.isArray(raw?.suggestions) ? raw!.suggestions! : []
+      const success = typeof raw?.success === 'boolean' ? raw!.success! : suggestions.length > 0
+      const message = raw?.message
+
+      return {
+        success,
+        data: {
+          suggestions,
+          generatedAt: raw?.generatedAt,
+          message
+        },
+        message,
+        error: success ? undefined : raw?.error || message || 'Failed to load budget suggestions'
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Failed to load budget suggestions'
+      }
+    }
+  }
+}
+
 // Orders API
+const PAYMENT_METHOD_MAP: Record<string, string> = {
+  MOBILE: 'MOBILE_MONEY',
+  OTHER: 'ONLINE'
+}
+
+const getGuestUserId = (): number => {
+  const raw = Number(import.meta.env.VITE_GUEST_USER_ID ?? '4')
+  if (!Number.isNaN(raw) && raw > 0) {
+    return raw
+  }
+  // Fallback to seeded customer user (see mock-data.sql)
+  return 4
+}
+
 export const ordersApi = {
   /**
    * Create a new order
@@ -137,13 +267,20 @@ export const ordersApi = {
     customerName?: string
     customerPhone?: string
     customerEmail?: string
+    subtotal?: number
+    taxAmount?: number
+    discountAmount?: number
+    deliveryFee?: number
+    deliveryAddress?: string
+    deliveryInstructions?: string
+    scheduledFor?: string
     tableNumber?: string
     orderType: string
     items: Array<{
       menuItemId: string
       sku?: string
-      name?: string
-      price?: number
+      name: string
+      price: number
       quantity: number
       notes?: string
     }>
@@ -152,31 +289,132 @@ export const ordersApi = {
     paymentMethod?: string
   }): Promise<ApiResponse<{ order: any; orderNumber: string }>> {
     try {
-      // Transform items to orderItems format expected by backend
-      // Backend only needs: menuItemId, quantity, notes
-      const orderItems = orderData.items.map(item => ({
-        menuItemId: item.menuItemId,
-        quantity: item.quantity,
-        notes: item.notes || undefined
-      }))
-
-      // Prepare payload for public order endpoint
-      const payload = {
-        storeId: import.meta.env.VITE_STORE_ID || 'store_001',
-        customerName: orderData.customerName,
-        customerPhone: orderData.customerPhone,
-        tableNumber: orderData.tableNumber,
-        orderType: orderData.orderType,
-        orderItems, // Use transformed orderItems
-        notes: orderData.notes || orderData.specialRequests, // Combine notes
-        paymentMethod: orderData.paymentMethod || 'CASH'
+      const menuStore = useMenuStore()
+      if (!menuStore.menuItems.length) {
+        try {
+          await menuStore.fetchMenu()
+        } catch (error) {
+          console.warn('Unable to refresh menu items before order submission', error)
+        }
       }
 
-      // Call public order endpoint (no auth required)
-      return await makeRequest('/api/orders/public', {
+      const normalizedItems = new Map<number, {
+        menuItemId: number
+        menuItemName: string
+        menuItemSku?: string
+        quantity: number
+        unitPrice: number
+        specialInstructions?: string
+      }>()
+
+      for (const item of orderData.items) {
+        const rawId = String(item.menuItemId ?? '')
+        let numericId = Number(rawId)
+        let menuItem = menuStore.menuItems.find(menu => String(menu.id) === rawId)
+
+        if (Number.isNaN(numericId) || !menuItem) {
+          const fallbackMatch = menuStore.menuItems.find(menu =>
+            menu.sku?.toLowerCase() === rawId.toLowerCase() ||
+            menu.name.toLowerCase() === (item.name ?? '').toLowerCase()
+          )
+
+          if (fallbackMatch) {
+            menuItem = fallbackMatch
+            numericId = Number(fallbackMatch.id)
+          }
+        }
+
+        if (Number.isNaN(numericId)) {
+          return {
+            success: false,
+            error: `Article inconnu (${rawId})`
+          }
+        }
+
+        const unitPrice = menuItem?.price ?? item.price
+
+        if (typeof unitPrice !== 'number' || Number.isNaN(unitPrice)) {
+          return {
+            success: false,
+            error: `Prix manquant pour l'article ${menuItem?.name ?? item.name}`
+          }
+        }
+
+        const existing = normalizedItems.get(numericId)
+        if (existing) {
+          existing.quantity += item.quantity
+          if (item.notes) {
+            existing.specialInstructions = item.notes
+          }
+        } else {
+          normalizedItems.set(numericId, {
+            menuItemId: numericId,
+            menuItemName: menuItem?.name ?? item.name,
+            menuItemSku: menuItem?.sku ?? item.sku,
+            quantity: item.quantity,
+            unitPrice,
+            specialInstructions: item.notes
+          })
+        }
+      }
+
+      const paymentMethod = orderData.paymentMethod || 'CASH'
+
+      if (normalizedItems.size === 0) {
+        return {
+          success: false,
+          error: 'Aucun article valide dans le panier'
+        }
+      }
+
+      const payload = {
+        orderType: orderData.orderType,
+        userId: getGuestUserId(),
+        customerName: orderData.customerName,
+        customerPhone: orderData.customerPhone,
+        customerEmail: orderData.customerEmail,
+        items: Array.from(normalizedItems.values()).map(item => ({
+          menuItemId: item.menuItemId,
+          menuItemName: item.menuItemName,
+          menuItemSku: item.menuItemSku,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          specialInstructions: item.specialInstructions
+        })),
+        taxAmount: orderData.taxAmount ?? 0,
+        discountAmount: orderData.discountAmount ?? 0,
+        paymentMethod: PAYMENT_METHOD_MAP[paymentMethod] || paymentMethod,
+        deliveryAddress: orderData.deliveryAddress,
+        deliveryInstructions: orderData.deliveryInstructions,
+        deliveryFee: orderData.deliveryFee ?? 0,
+        notes: orderData.notes || orderData.specialRequests,
+        tableNumber: orderData.tableNumber,
+        scheduledFor: orderData.scheduledFor
+      }
+
+      const raw = await makeRequest<any>('/api/orders', {
         method: 'POST',
         data: payload
       })
+
+      if (raw && typeof raw === 'object' && (raw as any).success !== undefined) {
+        return raw
+      }
+
+      if (raw && typeof raw === 'object') {
+        return {
+          success: true,
+          data: {
+            order: raw,
+            orderNumber: raw.orderNumber
+          }
+        }
+      }
+
+      return {
+        success: false,
+        error: 'Réponse inattendue du serveur'
+      }
     } catch (error: any) {
       // Add to offline queue if request fails
       const networkStore = useNetworkStore()
@@ -195,9 +433,10 @@ export const ordersApi = {
    */
   async getOrderStatus(orderNumber: string): Promise<ApiResponse<{ order: any }>> {
     try {
-      return await makeRequest(`/api/orders/status/${orderNumber}`, {
+      const raw = await makeRequest(`/api/orders/track/${orderNumber}`, {
         method: 'GET'
       })
+      return normalizeOrderResponse(raw)
     } catch (error: any) {
       return {
         success: false,
@@ -211,9 +450,10 @@ export const ordersApi = {
    */
   async trackOrder(orderNumber: string): Promise<ApiResponse<{ order: any }>> {
     try {
-      return await makeRequest(`/api/orders/track/${orderNumber}`, {
+      const raw = await makeRequest(`/api/orders/track/${orderNumber}`, {
         method: 'GET'
       })
+      return normalizeOrderResponse(raw)
     } catch (error: any) {
       return {
         success: false,
@@ -224,13 +464,28 @@ export const ordersApi = {
 
   /**
    * Get customer order history by phone number
-   */
+  */
   async getCustomerOrderHistory(phone: string): Promise<ApiResponse<{ orders: any[]; count: number }>> {
     try {
-      return await makeRequest('/api/orders/customer/history', {
+      const raw = await makeRequest<{ orders?: any[]; count?: number }>('/api/orders/customer/history', {
         method: 'GET',
         params: { phone }
       })
+
+      if (raw && Array.isArray(raw.orders)) {
+        return {
+          success: true,
+          data: {
+            orders: raw.orders,
+            count: typeof raw.count === 'number' ? raw.count : raw.orders.length
+          }
+        }
+      }
+
+      return {
+        success: false,
+        error: 'Réponse inattendue du serveur'
+      }
     } catch (error: any) {
       return {
         success: false,
@@ -244,10 +499,27 @@ export const ordersApi = {
    */
   async cancelOrder(orderNumber: string, reason?: string): Promise<ApiResponse<{ order: any; message: string }>> {
     try {
-      return await makeRequest(`/api/orders/${orderNumber}/cancel`, {
+      const raw = await makeRequest(`/api/orders/number/${orderNumber}/cancel`, {
         method: 'POST',
-        data: { reason: reason || 'Cancelled by customer' }
+        params: reason ? { reason } : undefined
       })
+
+      const normalized = normalizeOrderResponse(raw)
+
+      if (normalized.success && normalized.data?.order) {
+        return {
+          success: true,
+          data: {
+            order: normalized.data.order,
+            message: 'Order cancelled successfully'
+          }
+        }
+      }
+
+      return {
+        success: false,
+        error: normalized.error || 'Failed to cancel order'
+      }
     } catch (error: any) {
       return {
         success: false,
@@ -309,7 +581,7 @@ export const apiUtils = {
    * Format price for display
    */
   formatPrice(amount: number): string {
-    return `${amount.toLocaleString()} FCFA`
+    return formatCurrency(amount)
   },
 
   /**

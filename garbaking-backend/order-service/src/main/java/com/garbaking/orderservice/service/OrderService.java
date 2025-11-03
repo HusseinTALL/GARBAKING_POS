@@ -1,0 +1,544 @@
+package com.garbaking.orderservice.service;
+
+import com.garbaking.orderservice.dto.*;
+import com.garbaking.orderservice.exception.InvalidOrderStateException;
+import com.garbaking.orderservice.exception.ResourceNotFoundException;
+import com.garbaking.orderservice.model.Order;
+import com.garbaking.orderservice.model.OrderItem;
+import com.garbaking.orderservice.repository.OrderItemRepository;
+import com.garbaking.orderservice.repository.OrderRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+
+/**
+ * Order Service
+ *
+ * Business logic for order management.
+ */
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class OrderService {
+
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final WebSocketService webSocketService;
+    private final QRTokenService qrTokenService;
+
+    private static final AtomicLong orderCounter = new AtomicLong(0);
+    private static final Map<Order.OrderStatus, List<Order.OrderStatus>> ALLOWED_STATUS_TRANSITIONS = Map.ofEntries(
+            Map.entry(Order.OrderStatus.PENDING, List.of(Order.OrderStatus.CONFIRMED, Order.OrderStatus.CANCELLED)),
+            Map.entry(Order.OrderStatus.CONFIRMED, List.of(Order.OrderStatus.PREPARING, Order.OrderStatus.CANCELLED)),
+            Map.entry(Order.OrderStatus.PREPARING, List.of(Order.OrderStatus.READY, Order.OrderStatus.CANCELLED)),
+            Map.entry(Order.OrderStatus.READY, List.of(Order.OrderStatus.OUT_FOR_DELIVERY, Order.OrderStatus.COMPLETED, Order.OrderStatus.CANCELLED)),
+            Map.entry(Order.OrderStatus.OUT_FOR_DELIVERY, List.of(Order.OrderStatus.COMPLETED, Order.OrderStatus.CANCELLED))
+    );
+
+    /**
+     * Create a new order
+     */
+    @Transactional
+    public OrderDTO createOrder(CreateOrderDTO createOrderDTO) {
+        log.info("Creating new order for user: {}", createOrderDTO.getUserId());
+
+        // Generate unique order number
+        String orderNumber = generateOrderNumber();
+
+        // Create order entity
+        Order order = Order.builder()
+                .orderNumber(orderNumber)
+                .status(Order.OrderStatus.PENDING)
+                .orderType(createOrderDTO.getOrderType())
+                .userId(createOrderDTO.getUserId())
+                .customerName(createOrderDTO.getCustomerName())
+                .customerPhone(createOrderDTO.getCustomerPhone())
+                .customerEmail(createOrderDTO.getCustomerEmail())
+                .taxAmount(createOrderDTO.getTaxAmount() != null ? createOrderDTO.getTaxAmount() : BigDecimal.ZERO)
+                .discountAmount(createOrderDTO.getDiscountAmount() != null ? createOrderDTO.getDiscountAmount() : BigDecimal.ZERO)
+                .paymentStatus(Order.PaymentStatus.PENDING)
+                .paymentMethod(createOrderDTO.getPaymentMethod())
+                .deliveryAddress(createOrderDTO.getDeliveryAddress())
+                .deliveryInstructions(createOrderDTO.getDeliveryInstructions())
+                .deliveryFee(createOrderDTO.getDeliveryFee())
+                .notes(createOrderDTO.getNotes())
+                .tableNumber(createOrderDTO.getTableNumber())
+                .scheduledFor(createOrderDTO.getScheduledFor())
+                .build();
+
+        // Add order items
+        for (OrderItemDTO itemDTO : createOrderDTO.getItems()) {
+            OrderItem orderItem = OrderItem.builder()
+                    .menuItemId(itemDTO.getMenuItemId())
+                    .menuItemName(itemDTO.getMenuItemName())
+                    .menuItemSku(itemDTO.getMenuItemSku())
+                    .quantity(itemDTO.getQuantity())
+                    .unitPrice(itemDTO.getUnitPrice())
+                    .specialInstructions(itemDTO.getSpecialInstructions())
+                    .status(OrderItem.ItemStatus.PENDING)
+                    .build();
+
+            orderItem.calculateSubtotal();
+            order.addItem(orderItem);
+        }
+
+        // Calculate totals
+        order.calculateTotals();
+
+        // Save order
+        Order savedOrder = orderRepository.save(order);
+        log.info("Order created successfully: {}", savedOrder.getOrderNumber());
+
+        // Generate QR payment token for the order
+        try {
+            QRTokenResponseDTO qrToken = qrTokenService.generateToken(savedOrder);
+            savedOrder.setQrTokenId(qrToken.getTokenId());
+            savedOrder = orderRepository.save(savedOrder);
+            log.info("QR payment token generated for order: {} (Token: {}, Short Code: {})",
+                    savedOrder.getOrderNumber(), qrToken.getTokenId(), qrToken.getShortCode());
+        } catch (Exception e) {
+            log.error("Failed to generate QR token for order {}: {}",
+                    savedOrder.getOrderNumber(), e.getMessage(), e);
+            // Don't fail order creation if QR generation fails
+        }
+
+        // Convert to DTO
+        OrderDTO orderDTO = convertToDTO(savedOrder);
+
+        // Publish order.created event to Kafka
+        publishOrderEvent("order.created", savedOrder);
+
+        // Broadcast via WebSocket for real-time updates
+        webSocketService.broadcastOrderCreated(orderDTO);
+        webSocketService.sendOrderToUser(savedOrder.getUserId(), orderDTO);
+
+        return orderDTO;
+    }
+
+    /**
+     * Get order by ID
+     */
+    @Transactional(readOnly = true)
+    public OrderDTO getOrderById(Long id) {
+        log.info("Fetching order with ID: {}", id);
+        Order order = orderRepository.findByIdWithItems(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        return convertToDTO(order);
+    }
+
+    /**
+     * Get order by order number
+     */
+    @Transactional(readOnly = true)
+    public OrderDTO getOrderByOrderNumber(String orderNumber) {
+        log.info("Fetching order with number: {}", orderNumber);
+        Order order = orderRepository.findByOrderNumberWithItems(orderNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with number: " + orderNumber));
+        return convertToDTO(order);
+    }
+
+    /**
+     * Get all orders
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getAllOrders() {
+        log.info("Fetching all orders");
+        return orderRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get orders by user ID
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getOrdersByUserId(Long userId) {
+        log.info("Fetching orders for user: {}", userId);
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get orders by customer phone
+     */
+    @Transactional(readOnly = true)
+    public CustomerOrderHistoryResponse getOrdersByCustomerPhone(String phone, int limit) {
+        log.info("Fetching orders for customer phone: {}", phone);
+        List<Order> orders = orderRepository.findByCustomerPhoneWithItems(phone);
+        long total = orders.size();
+
+        List<OrderDTO> orderDtos = orders.stream()
+                .limit(limit)
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        return CustomerOrderHistoryResponse
+                .builder()
+                .orders(orderDtos)
+                .count(total)
+                .build();
+    }
+
+    /**
+     * Get orders by status
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getOrdersByStatus(Order.OrderStatus status) {
+        log.info("Fetching orders with status: {}", status);
+        return orderRepository.findByStatusOrderByCreatedAtDesc(status).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get active orders
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getActiveOrders() {
+        log.info("Fetching active orders");
+        return orderRepository.findActiveOrders().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get today's orders
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getTodaysOrders() {
+        log.info("Fetching today's orders");
+        return orderRepository.findTodaysOrders().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Update order status
+     */
+    @Transactional
+    public OrderDTO updateOrderStatus(Long id, UpdateOrderStatusDTO statusDTO) {
+        log.info("Updating order {} status to: {}", id, statusDTO.getStatus());
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
+        if (order.getStatus() == statusDTO.getStatus()) {
+            log.info("Order {} already has status {}, skipping update", id, statusDTO.getStatus());
+            return convertToDTO(order);
+        }
+
+        // Validate status transition
+        validateStatusTransition(order, statusDTO.getStatus(), statusDTO.getReason());
+
+        Order.OrderStatus oldStatus = order.getStatus();
+        order.setStatus(statusDTO.getStatus());
+
+        // Update timestamps based on status
+        switch (statusDTO.getStatus()) {
+            case CONFIRMED:
+                order.setConfirmedAt(LocalDateTime.now());
+                break;
+            case COMPLETED:
+                order.setCompletedAt(LocalDateTime.now());
+                break;
+            case CANCELLED:
+                order.setCancelledAt(LocalDateTime.now());
+                order.setCancellationReason(statusDTO.getReason());
+                break;
+            }
+
+        Order updatedOrder = orderRepository.save(order);
+        log.info("Order status updated from {} to {}", oldStatus, statusDTO.getStatus());
+
+        // Convert to DTO
+        OrderDTO orderDTO = convertToDTO(updatedOrder);
+
+        // Publish status change event to Kafka
+        publishOrderEvent("order.status.changed", updatedOrder);
+
+        // Broadcast via WebSocket for real-time updates
+        webSocketService.broadcastOrderStatusChanged(orderDTO);
+        webSocketService.broadcastOrderUpdated(orderDTO);
+        webSocketService.sendOrderToUser(updatedOrder.getUserId(), orderDTO);
+
+        return orderDTO;
+    }
+
+    /**
+     * Update payment status
+     */
+    @Transactional
+    public OrderDTO updatePaymentStatus(Long id, UpdatePaymentDTO paymentDTO) {
+        log.info("Updating order {} payment status to: {}", id, paymentDTO.getPaymentStatus());
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
+        order.setPaymentStatus(paymentDTO.getPaymentStatus());
+        order.setTransactionId(paymentDTO.getTransactionId());
+
+        if (paymentDTO.getPaymentMethod() != null) {
+            order.setPaymentMethod(paymentDTO.getPaymentMethod());
+        }
+
+        if (paymentDTO.getPaymentStatus() == Order.PaymentStatus.PAID) {
+            order.setPaidAt(LocalDateTime.now());
+        }
+
+        Order updatedOrder = orderRepository.save(order);
+        log.info("Order payment status updated successfully");
+
+        // Convert to DTO
+        OrderDTO orderDTO = convertToDTO(updatedOrder);
+
+        // Publish payment event to Kafka
+        publishOrderEvent("order.payment.updated", updatedOrder);
+
+        // Broadcast via WebSocket for real-time updates
+        webSocketService.broadcastOrderUpdated(orderDTO);
+        webSocketService.sendOrderToUser(updatedOrder.getUserId(), orderDTO);
+
+        return orderDTO;
+    }
+
+    /**
+     * Cancel order
+     */
+    @Transactional
+    public OrderDTO cancelOrderByOrderNumber(String orderNumber, String reason) {
+        log.info("Cancelling order by number: {}", orderNumber);
+
+        Order order = orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with number: " + orderNumber));
+
+        return cancelOrder(order.getId(), reason);
+    }
+
+    /**
+     * Cancel order
+     */
+    @Transactional
+    public OrderDTO cancelOrder(Long id, String reason) {
+        log.info("Cancelling order: {}", id);
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
+        if (!order.canBeCancelled()) {
+            throw new InvalidOrderStateException(
+                    "Order cannot be cancelled in " + order.getStatus() + " status"
+            );
+        }
+
+        order.setStatus(Order.OrderStatus.CANCELLED);
+        order.setCancelledAt(LocalDateTime.now());
+        order.setCancellationReason(reason);
+
+        Order cancelledOrder = orderRepository.save(order);
+        log.info("Order cancelled successfully");
+
+        // Convert to DTO
+        OrderDTO orderDTO = convertToDTO(cancelledOrder);
+
+        // Publish cancellation event to Kafka
+        publishOrderEvent("order.cancelled", cancelledOrder);
+
+        // Broadcast via WebSocket for real-time updates
+        webSocketService.broadcastOrderCancelled(orderDTO);
+        webSocketService.sendOrderToUser(cancelledOrder.getUserId(), orderDTO);
+
+        return orderDTO;
+    }
+
+    /**
+     * Delete order (soft delete by cancelling)
+     */
+    @Transactional
+    public void deleteOrder(Long id) {
+        log.info("Deleting order: {}", id);
+        cancelOrder(id, "Order deleted");
+    }
+
+    /**
+     * Hard delete order (admin only)
+     */
+    @Transactional
+    public void hardDeleteOrder(Long id) {
+        log.info("Hard deleting order: {}", id);
+
+        if (!orderRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Order not found with id: " + id);
+        }
+
+        orderRepository.deleteById(id);
+        log.info("Order hard deleted successfully");
+    }
+
+    /**
+     * Generate unique order number
+     */
+    private String generateOrderNumber() {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String datePart = now.format(formatter);
+        long counter = orderCounter.incrementAndGet();
+        return String.format("ORD-%s-%04d", datePart, counter % 10000);
+    }
+
+    /**
+     * Validate status transition
+     */
+    private void validateStatusTransition(Order order, Order.OrderStatus newStatus, String reason) {
+        Order.OrderStatus currentStatus = order.getStatus();
+
+        // Can't change from terminal states
+        if (currentStatus == Order.OrderStatus.COMPLETED || currentStatus == Order.OrderStatus.CANCELLED) {
+            throw new InvalidOrderStateException(
+                    "Cannot change status from " + currentStatus
+            );
+        }
+
+        List<Order.OrderStatus> allowed = ALLOWED_STATUS_TRANSITIONS.getOrDefault(currentStatus, List.of());
+        if (!allowed.contains(newStatus)) {
+            throw new InvalidOrderStateException(
+                    String.format("Invalid transition from %s to %s", currentStatus, newStatus)
+            );
+        }
+
+        if (newStatus == Order.OrderStatus.CANCELLED && (reason == null || reason.isBlank())) {
+            throw new InvalidOrderStateException("Cancellation reason is required when cancelling an order");
+        }
+    }
+
+    /**
+     * Convert Order entity to OrderDTO
+     */
+    private OrderDTO convertToDTO(Order order) {
+        // Handle null items collection
+        List<OrderItemDTO> itemDTOs = (order.getItems() != null)
+                ? order.getItems().stream()
+                        .map(this::convertItemToDTO)
+                        .collect(Collectors.toList())
+                : new ArrayList<>();
+
+        return OrderDTO.builder()
+                .id(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .status(order.getStatus())
+                .orderType(order.getOrderType())
+                .userId(order.getUserId())
+                .customerName(order.getCustomerName())
+                .customerPhone(order.getCustomerPhone())
+                .customerEmail(order.getCustomerEmail())
+                .items(itemDTOs)
+                .subtotal(order.getSubtotal())
+                .taxAmount(order.getTaxAmount())
+                .discountAmount(order.getDiscountAmount())
+                .totalAmount(order.getTotalAmount())
+                .paymentStatus(order.getPaymentStatus())
+                .paymentMethod(order.getPaymentMethod())
+                .transactionId(order.getTransactionId())
+                .paidAt(order.getPaidAt())
+                .deliveryAddress(order.getDeliveryAddress())
+                .deliveryInstructions(order.getDeliveryInstructions())
+                .deliveryFee(order.getDeliveryFee())
+                .notes(order.getNotes())
+                .tableNumber(order.getTableNumber())
+                .estimatedPreparationTime(order.getEstimatedPreparationTime())
+                .scheduledFor(order.getScheduledFor())
+                .confirmedAt(order.getConfirmedAt())
+                .completedAt(order.getCompletedAt())
+                .cancelledAt(order.getCancelledAt())
+                .cancellationReason(order.getCancellationReason())
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * Convert OrderItem entity to OrderItemDTO
+     */
+    private OrderItemDTO convertItemToDTO(OrderItem item) {
+        return OrderItemDTO.builder()
+                .id(item.getId())
+                .orderId(item.getOrderId())
+                .menuItemId(item.getMenuItemId())
+                .menuItemName(item.getMenuItemName())
+                .menuItemSku(item.getMenuItemSku())
+                .quantity(item.getQuantity())
+                .unitPrice(item.getUnitPrice())
+                .subtotal(item.getSubtotal())
+                .specialInstructions(item.getSpecialInstructions())
+                .status(item.getStatus())
+                .createdAt(item.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * Publish order events to Kafka
+     */
+    private void publishOrderEvent(String topic, Order order) {
+        try {
+            OrderDTO orderDTO = convertToDTO(order);
+            kafkaTemplate.send(topic, order.getId().toString(), orderDTO);
+            log.info("Published event to topic {}: {}", topic, order.getOrderNumber());
+        } catch (Exception e) {
+            log.error("Failed to publish event to topic {}: {}", topic, e.getMessage());
+            // Don't throw exception - event publishing shouldn't fail the main operation
+        }
+    }
+
+    /**
+     * Public method to map Order entity to OrderDTO
+     * Used by QRPaymentService and other services
+     */
+    public OrderDTO mapToDTO(Order order) {
+        return convertToDTO(order);
+    }
+
+    /**
+     * Regenerate QR token for an order
+     * Used when token expires or needs to be refreshed
+     *
+     * @param orderId The order ID
+     * @return QRTokenResponseDTO with new token
+     */
+    @Transactional
+    public QRTokenResponseDTO regenerateQRToken(Long orderId) {
+        log.info("Regenerating QR token for order ID: {}", orderId);
+
+        // Get order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        // Verify order is not already paid
+        if (order.getPaymentStatus() == Order.PaymentStatus.PAID) {
+            throw new IllegalStateException("Cannot regenerate QR token for already paid order: " + order.getOrderNumber());
+        }
+
+        // Generate new token
+        QRTokenResponseDTO qrToken = qrTokenService.generateToken(order);
+
+        // Update order with new token ID
+        order.setQrTokenId(qrToken.getTokenId());
+        orderRepository.save(order);
+
+        log.info("QR token regenerated for order: {} (Token: {}, Short Code: {})",
+                order.getOrderNumber(), qrToken.getTokenId(), qrToken.getShortCode());
+
+        return qrToken;
+    }
+}
