@@ -33,10 +33,18 @@
     <!-- Product Image with Overlay -->
     <div class="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
       <img
-        :src="item.image"
+        v-if="item.image || item.imageUrl"
+        :src="item.image || item.imageUrl"
         :alt="item.name"
         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+        @error="handleImageError"
       />
+      <!-- Fallback placeholder for missing images -->
+      <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
+        <svg class="w-16 h-16 text-primary-300" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+        </svg>
+      </div>
       
       <!-- Gradient Overlay on hover -->
       <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -119,9 +127,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import type { MenuItem } from '@/services/mockApi'
 import { formatCurrency } from '@/utils/currency'
+import { useFavoritesStore } from '@/stores/favorites'
 
 interface Props {
   item: MenuItem
@@ -134,10 +143,11 @@ const emit = defineEmits<{
   'view-detail': [item: MenuItem]
 }>()
 
-// State
-const isFavorite = ref(false)
+// Store
+const favoritesStore = useFavoritesStore()
 
 // Computed
+const isFavorite = computed(() => favoritesStore.isFavorite(props.item.id || props.item.sku))
 const rating = computed(() => props.item.rating || 4.8)
 const calories = computed(() => props.item.calories || 44)
 const prepTime = computed(() => props.item.prepTime || '20 min')
@@ -155,8 +165,13 @@ const handleAddToCart = () => {
 }
 
 const toggleFavorite = () => {
-  isFavorite.value = !isFavorite.value
-  // Here you would typically call a store action to save the favorite
+  favoritesStore.toggleFavorite(props.item)
+}
+
+const handleImageError = (event: Event) => {
+  // Hide the broken image and show fallback
+  const img = event.target as HTMLImageElement
+  img.style.display = 'none'
 }
 </script>
 

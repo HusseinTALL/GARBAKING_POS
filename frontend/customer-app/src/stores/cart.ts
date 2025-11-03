@@ -7,6 +7,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useAppStore } from './app'
+import { useVoucherStore } from './vouchers'
 
 export interface CartItem {
   id: string
@@ -31,6 +32,7 @@ export interface CustomerInfo {
 export const useCartStore = defineStore('cart', () => {
   const toast = useToast()
   const appStore = useAppStore()
+  const voucherStore = useVoucherStore()
 
   // State
   const items = ref<CartItem[]>([])
@@ -92,11 +94,16 @@ export const useCartStore = defineStore('cart', () => {
   })
 
   const discount = computed(() => {
-    return 0
+    if (!voucherStore.appliedVoucher) return 0
+    return voucherStore.appliedVoucher.discountAmount
   })
 
   const total = computed(() => {
-    return subtotal.value + tax.value - discount.value
+    return Math.max(0, subtotal.value + tax.value - discount.value)
+  })
+
+  const appliedVoucherCode = computed(() => {
+    return voucherStore.appliedVoucher?.voucher.code || null
   })
 
   const isEmpty = computed(() => {
@@ -202,8 +209,26 @@ export const useCartStore = defineStore('cart', () => {
 
   const clearCart = () => {
     items.value = []
+    voucherStore.removeAppliedVoucher()
     saveCart()
     toast.info('Panier vidé')
+  }
+
+  // Apply voucher to cart
+  const applyVoucher = async (voucherCode: string) => {
+    const result = await voucherStore.applyVoucher(voucherCode, subtotal.value)
+    if (result.success) {
+      toast.success(result.message)
+    } else {
+      toast.error(result.message)
+    }
+    return result
+  }
+
+  // Remove applied voucher
+  const removeVoucher = () => {
+    voucherStore.removeAppliedVoucher()
+    toast.info('Voucher removed from cart')
   }
 
   const updateCustomerInfo = (info: Partial<CustomerInfo>) => {
@@ -222,6 +247,8 @@ export const useCartStore = defineStore('cart', () => {
       })),
       subtotal: subtotal.value,
       tax: tax.value,
+      discount: discount.value,
+      voucherCode: appliedVoucherCode.value,
       total: total.value
     }
   }
@@ -263,6 +290,7 @@ export const useCartStore = defineStore('cart', () => {
     discount,
     total,
     isEmpty,
+    appliedVoucherCode,
     getItemById,
     getItemByMenuItemId,
 
@@ -274,6 +302,8 @@ export const useCartStore = defineStore('cart', () => {
     decreaseQuantity,
     updateItemNotes,
     clearCart,
+    applyVoucher,
+    removeVoucher,
     updateCustomerInfo,
     getOrderData,
     validateCart,

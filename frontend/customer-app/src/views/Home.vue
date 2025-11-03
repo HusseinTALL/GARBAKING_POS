@@ -6,13 +6,13 @@
 <template>
   <div class="min-h-screen bg-white pb-20">
     <!-- Header -->
-    <header class="sticky top-0 z-20 bg-white border-b border-gray-100">
+    <header class="sticky top-0 z-20 bg-white border-b border-gray-100 shadow-sm">
       <div class="max-w-md mx-auto px-4 py-4">
         <div class="flex items-center justify-between mb-4">
           <!-- Greeting -->
           <div>
-            <h1 class="text-2xl font-bold text-text-DEFAULT">Hello 👋</h1>
-            <p class="text-sm text-text-secondary">What would you like to eat?</p>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ $t('home.greeting') }}</h1>
+            <p class="text-sm text-gray-600 mt-0.5">{{ $t('home.subtitle') }}</p>
           </div>
 
           <!-- Right icons -->
@@ -40,9 +40,9 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search for food..."
+            :placeholder="$t('home.search_placeholder')"
             @input="handleSearch"
-            class="w-full pl-10 pr-4 py-3 bg-background-gray rounded-2xl text-sm text-text-DEFAULT placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="w-full pl-11 pr-12 py-3.5 bg-gray-100 rounded-2xl text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"
           />
           <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -73,9 +73,9 @@
 
       <!-- Promo Banner -->
       <PromoBanner
-        title="Get 25% Discount"
-        description="On your first order"
-        cta-text="Order Now"
+        :title="$t('home.promo_title')"
+        :description="$t('home.promo_subtitle')"
+        :cta-text="$t('home.promo_button')"
         @click="handlePromoClick"
         class="mb-6"
       />
@@ -85,24 +85,27 @@
       <!-- Section heading -->
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-text-DEFAULT">
-          {{ searchQuery ? 'Search Results' : 'Best Sellers' }}
+          {{ searchQuery ? $t('home.search_results') : $t('home.best_sellers') }}
         </h2>
         <button
           @click="handleSeeAll"
           class="text-sm text-primary-500 font-semibold hover:text-primary-600 transition-colors"
         >
-          See All
+          {{ $t('home.see_all') }}
         </button>
       </div>
 
       <!-- Loading skeleton -->
       <div v-if="isLoadingMenu" class="grid grid-cols-2 gap-4">
-        <div v-for="i in 6" :key="i" class="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
-          <div class="aspect-square bg-gray-200"></div>
-          <div class="p-4 space-y-2">
-            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div class="h-6 bg-gray-200 rounded w-1/2"></div>
-            <div class="h-4 bg-gray-200 rounded w-full"></div>
+        <div v-for="i in 6" :key="i" class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse"></div>
+          <div class="p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <div class="h-6 bg-gray-200 rounded-full w-16 animate-pulse"></div>
+            </div>
+            <div class="h-5 bg-gray-200 rounded-lg w-3/4 animate-pulse"></div>
+            <div class="h-7 bg-gray-200 rounded-lg w-1/2 animate-pulse"></div>
+            <div class="h-11 bg-gray-200 rounded-2xl w-full animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -120,24 +123,24 @@
       </div>
 
       <!-- Empty state -->
-      <div v-else class="text-center py-12">
-        <div class="w-16 h-16 bg-background-gray rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      <div v-else class="text-center py-16">
+        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
         </div>
-        <p class="text-text-secondary text-base font-medium">
-          {{ searchQuery ? 'No items match your search' : 'No items found' }}
-        </p>
-        <p class="text-text-tertiary text-sm mt-2">
-          {{ searchQuery ? 'Try a different search term' : 'Try selecting a different category' }}
+        <h3 class="text-gray-900 text-lg font-bold mb-2">
+          {{ searchQuery ? $t('home.no_results') : $t('home.no_items') }}
+        </h3>
+        <p class="text-gray-500 text-sm mb-6 px-8">
+          {{ searchQuery ? $t('home.try_different_search') : $t('home.try_different_category') }}
         </p>
         <button
           v-if="searchQuery"
           @click="clearSearch"
-          class="mt-4 px-4 py-2 bg-primary-500 text-white rounded-full text-sm font-semibold hover:bg-primary-600 transition-colors"
+          class="px-6 py-3 bg-primary-500 text-white rounded-2xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all shadow-lg shadow-primary-500/30"
         >
-          Clear Search
+          {{ $t('home.clear_search') }}
         </button>
       </div>
     </main>

@@ -176,13 +176,22 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const data = await menuItemsApi.getPublic()
+      const response = await menuItemsApi.getPublic()
 
-      // Extract categories and items from public menu response
+      // Extract categories from the API response structure
+      // API returns: { success: true, data: { categories: [...] } }
+      const data = response?.data || response
       const publicCategories = Array.isArray(data) ? data : data?.categories || []
-      categories.value = publicCategories.map((category: any) => normalizeCategory(category))
 
+      categories.value = publicCategories.map((category: any) => normalizeCategory(category, true))
+
+      // Extract all menu items from all categories
       menuItems.value = categories.value.flatMap(category => category.menuItems || [])
+
+      console.log('Loaded menu:', {
+        categoriesCount: categories.value.length,
+        itemsCount: menuItems.value.length
+      })
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch public menu'
       console.error('Error fetching public menu:', err)

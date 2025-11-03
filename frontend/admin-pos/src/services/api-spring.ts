@@ -369,6 +369,11 @@ export const menuItemsApi = {
       reason
     })
     return response.data
+  },
+
+  async getPublic() {
+    const response = await apiClient.get('/api/menu/public')
+    return response.data || []
   }
 }
 

@@ -1,0 +1,306 @@
+{
+  "welcome": "Welcome to Garbaking",
+  "place_order": "Place Order",
+  "cart": "Your Cart",
+  "menu": "Menu",
+  "order_history": "Order History",
+  "order": "Order",
+  "order_items": "Order Items",
+  "total": "Total",
+  "subtotal": "Subtotal",
+  "add_to_cart": "Add to Cart",
+  "remove_from_cart": "Remove from Cart",
+  "table_number": "Table Number",
+  "customer_name": "Customer Name",
+  "order_submitted": "Order Submitted Successfully",
+  "order_accepted": "Order Accepted",
+  "order_preparing": "Order Being Prepared",
+  "order_ready": "Order Ready for Pickup",
+  "order_ready_pickup": "Your order is ready for pickup!",
+  "estimated_time": "Estimated time",
+  "minutes": "minutes",
+  "loading": "Loading...",
+  "no_orders": "No Orders Yet",
+  "no_orders_description": "Your order history will appear here",
+  "mark_collected": "Mark as Collected",
+  "retry_sync": "Retry Sync",
+  "syncing": "Syncing...",
+  "no_items": "No items in this category",
+  "cart_cleared": "Cart cleared",
+  "submitting_order": "Submitting order...",
+  "all": "All",
+
+  "home": {
+    "greeting": "Hello 👋",
+    "subtitle": "What would you like to eat?",
+    "search_placeholder": "Search for food...",
+    "search_results": "Search Results",
+    "best_sellers": "Best Sellers",
+    "see_all": "See All",
+    "clear_search": "Clear Search",
+    "no_results": "No items match your search",
+    "no_items": "No items found",
+    "try_different_search": "Try a different search term or browse our categories",
+    "try_different_category": "Try selecting a different category to see available items",
+    "promo_title": "Get 25% Discount",
+    "promo_subtitle": "On your first order",
+    "promo_button": "Order Now"
+  },
+
+  "favorites": {
+    "title": "Favorites ❤️",
+    "items_saved": "no items saved | {count} item saved | {count} items saved",
+    "switch_view": "Switch to {view} view",
+    "clear_all_label": "Clear all favorites",
+    "add_to_cart_label": "Add to cart",
+    "remove_label": "Remove from favorites",
+    "empty_title": "No Favorites Yet",
+    "empty_description": "Start adding your favorite dishes to quickly find them later",
+    "browse_menu": "Browse Menu",
+    "confirm_clear_title": "Clear All Favorites?",
+    "confirm_clear_message": "This will remove all {count} items from your favorites. This action cannot be undone.",
+    "cancel": "Cancel",
+    "clear_all": "Clear All"
+  },
+
+  "vouchers": {
+    "title": "My Vouchers",
+    "claimed_count": "My Claimed ({count})",
+    "claimed_section": "Claimed Vouchers",
+    "view_all": "View All",
+    "used_section": "Used Vouchers ({count})",
+    "empty_title": "No Vouchers Available",
+    "empty_description": "Check back later for exclusive deals and amazing discounts!",
+    "continue_shopping": "Continue Shopping",
+    "no_claimed_title": "No Claimed Vouchers",
+    "no_claimed_description": "Claim vouchers to save on your orders!",
+    "browse_vouchers": "Browse Vouchers",
+    "claimed_success": "{title} claimed successfully!",
+    "already_claimed": "Voucher already claimed",
+    "claim_now": "Claim Now",
+    "use_now": "Use Now",
+    "you_save": "You Save",
+    "min_order": "Min. Order",
+    "no_min": "No Min",
+    "promo_code": "Promo Code",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "valid_until": "Valid until {date}",
+    "details_title": "Voucher Details",
+    "discount_value": "Discount Value",
+    "valid_from": "Valid From",
+    "max_discount": "Maximum Discount",
+    "max_discount_desc": "You can save up to ${amount} with this voucher",
+    "terms_title": "Terms & Conditions",
+    "usage_limit": "Usage Limit",
+    "can_be_used": "Can be used {count} time | Can be used {count} times",
+    "close": "Close",
+    "claim_voucher": "Claim Voucher",
+    "use_in_cart": "Use in Cart",
+    "new_user": "New User",
+    "claimed": "Claimed",
+    "used": "Used",
+    "free_delivery": "FREE DELIVERY",
+    "bogo": "BOGO {value}%",
+    "categories": {
+      "all": "All",
+      "new_user": "New User",
+      "percentage": "Percentage Off",
+      "fixed": "Fixed Amount",
+      "delivery": "Free Delivery",
+      "bogo": "BOGO"
+    }
+  },
+
+  "profile": {
+    "title": "Profile",
+    "guest_user": "Guest User",
+    "no_phone": "No phone number",
+    "stats_orders": "Orders",
+    "stats_points": "Points",
+    "stats_vouchers": "Vouchers",
+    "new_order": "New Order",
+    "my_vouchers": "My Vouchers",
+    "order_history": "Order History",
+    "language_changed": "Language changed to {language}",
+    "settings": "Settings",
+    "account": "Account",
+    "preferences": "Preferences"
+  },
+
+  "cart": {
+    "title": "Cart",
+    "empty_title": "Your cart is empty",
+    "empty_description": "Discover our delicious menu and add your favorite dishes to your cart",
+    "discover_menu": "Discover Menu",
+    "your_orders": "Your orders",
+    "order_summary": "Order summary",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "discount": "Discount",
+    "total": "Total",
+    "customer_info": "Customer information",
+    "full_name": "Full name *",
+    "full_name_placeholder": "Your name",
+    "phone": "Phone",
+    "phone_placeholder": "Your phone number",
+    "order_type": "Order type *",
+    "dine_in": "Dine in",
+    "takeaway": "Takeaway",
+    "delivery": "Delivery",
+    "table_number": "Table number",
+    "table_placeholder": "Table number",
+    "special_notes": "Special notes",
+    "special_notes_placeholder": "Allergies, preferences, special instructions...",
+    "processing": "Processing...",
+    "order_button": "Order •",
+    "clear_confirm_title": "Empty cart?",
+    "clear_confirm_message": "This will remove all items from your cart",
+    "cancel": "Cancel",
+    "empty_action": "Empty",
+    "item_removed": "Item removed from cart",
+    "fill_required_fields": "Please fill all required fields",
+    "checkout_error": "Checkout error",
+    "voucher_code": "Voucher Code",
+    "apply_voucher": "Apply Voucher",
+    "remove_voucher": "Remove Voucher",
+    "voucher_applied": "Voucher applied successfully!",
+    "voucher_removed": "Voucher removed from cart",
+    "invalid_voucher": "Invalid voucher code"
+  },
+
+  "navigation": {
+    "home": "Home",
+    "favorites": "Favorites",
+    "cart": "Cart",
+    "voucher": "Voucher",
+    "profile": "Profile"
+  },
+
+  "menu_item": {
+    "add_to_favorites": "Add to favorites",
+    "remove_from_favorites": "Remove from favorites",
+    "add_to_cart": "Add {name} to cart",
+    "default_category": "Food",
+    "calories": "{count} cal",
+    "prep_time": "{time}",
+    "rating": "{rating}"
+  },
+
+  "order_history": {
+    "title": "Order History",
+    "loading": "Loading order history...",
+    "empty_title": "No orders yet",
+    "empty_description": "Your order history will appear here",
+    "start_ordering": "Start ordering",
+    "order_number": "Order #{number}",
+    "more_items": "+{count} more item | +{count} more items",
+    "total": "Total",
+    "reorder": "Reorder",
+    "details": "Details",
+    "refreshing": "Refreshing...",
+    "refresh": "Refresh orders",
+    "items_added": "{count} items added to cart!",
+    "load_failed": "Failed to load order history",
+    "refreshed": "Order history refreshed",
+    "view_receipt": "View Receipt",
+    "cancel_order": "Cancel Order"
+  },
+
+  "order_status": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "preparing": "Preparing",
+    "ready": "Ready",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+
+  "time": {
+    "just_now": "Just now",
+    "minutes_ago": "{count} minute ago | {count} minutes ago",
+    "hours_ago": "{count} hour ago | {count} hours ago",
+    "days_ago": "{count} day ago | {count} days ago",
+    "yesterday": "Yesterday"
+  },
+
+  "categories": {
+    "all": "All",
+    "mains": "Main Dishes",
+    "drinks": "Beverages",
+    "desserts": "Desserts",
+    "appetizers": "Appetizers"
+  },
+
+  "dietary_tags": {
+    "vegetarian": "Vegetarian",
+    "vegan": "Vegan",
+    "gluten_free": "Gluten Free",
+    "spicy": "Spicy",
+    "dairy_free": "Dairy Free"
+  },
+
+  "status": {
+    "queued": "Queued",
+    "synced": "Synced"
+  },
+
+  "notifications": {
+    "item_added": "Item added to cart",
+    "item_removed": "Item removed from cart",
+    "order_queued": "Order queued for sync",
+    "order_synced": "Order synced successfully",
+    "offline_mode": "You are currently offline",
+    "pending_sync": "Pending sync"
+  },
+
+  "buttons": {
+    "submit": "Submit Order",
+    "cancel": "Cancel",
+    "clear_cart": "Clear Cart",
+    "back": "Back",
+    "continue": "Continue",
+    "close": "Close",
+    "refresh": "Refresh",
+    "switch_language": "Switch Language",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm"
+  },
+
+  "placeholders": {
+    "enter_table": "Enter table number (1-20)",
+    "enter_name": "Enter your name",
+    "search": "Search...",
+    "enter_code": "Enter voucher code"
+  },
+
+  "errors": {
+    "table_required": "Table number is required",
+    "name_required": "Name is required",
+    "invalid_table": "Please enter a valid table number (1-20)",
+    "cart_empty": "Your cart is empty",
+    "generic_error": "An error occurred. Please try again."
+  },
+
+  "product_detail": {
+    "title": "Product Details",
+    "description": "Description",
+    "ingredients": "Ingredients",
+    "allergens": "Allergens",
+    "nutritional_info": "Nutritional Information",
+    "select_size": "Select Size",
+    "customize": "Customize",
+    "add_special_instructions": "Add special instructions",
+    "quantity": "Quantity",
+    "add_to_cart": "Add to Cart - ${price}"
+  },
+
+  "smart_suggest": {
+    "title": "Smart Suggestions",
+    "subtitle": "Based on your preferences",
+    "loading": "Loading suggestions...",
+    "error": "Failed to load suggestions"
+  }
+}
