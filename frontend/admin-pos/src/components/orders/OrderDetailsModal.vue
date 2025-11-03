@@ -377,9 +377,9 @@ interface Props {
   order: Order
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
   'status-change': [orderId: string, newStatus: string]
   'print-receipt': [order: Order]
@@ -392,7 +392,7 @@ const noteText = ref('')
 
 // Methods
 const getOrderTypeLabel = (type: string) => {
-  const labels = {
+  const labels: Record<string, string> = {
     'DINE_IN': 'Dine In',
     'TAKEAWAY': 'Takeaway',
     'DELIVERY': 'Delivery'
@@ -418,7 +418,7 @@ const formatTime = (timestamp: string) => {
 
 const addKitchenNote = () => {
   if (noteText.value.trim()) {
-    $emit('add-note', props.order.id, noteText.value.trim())
+    emit('add-note', props.order.id, noteText.value.trim())
     noteText.value = ''
     showNoteModal.value = false
   }

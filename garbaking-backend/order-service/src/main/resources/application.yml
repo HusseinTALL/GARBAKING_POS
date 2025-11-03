@@ -93,3 +93,23 @@ garbaking:
     alerts:
       order-backlog-threshold: 25
       evaluation-interval: PT2M
+
+# QR Payment Configuration
+qr:
+  token:
+    # IMPORTANT: Change this secret in production!
+    # Must be at least 32 characters for HS256
+    secret: ${QR_TOKEN_SECRET:garbaking-qr-payment-secret-key-change-in-production-min-32-chars}
+    expiry:
+      minutes: 5  # Token expires after 5 minutes
+    issuer: garbaking-pos
+    audience: payment-confirmation
+
+security:
+  rate-limit:
+    qr-scan:
+      requests: 10  # Max 10 scans per minute
+      per-seconds: 60
+    qr-confirm:
+      requests: 5  # Max 5 confirmations per minute
+      per-seconds: 60

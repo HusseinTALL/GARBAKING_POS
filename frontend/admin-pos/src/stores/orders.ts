@@ -161,73 +161,88 @@ export const useOrdersStore = defineStore('orders', () => {
     return Number.isFinite(parsed) ? parsed : fallback
   }
 
-  const transformBackendOrder = (backendOrder: any): Order => ({
-    id: backendOrder.id?.toString() ?? backendOrder.orderId?.toString(),
-    orderNumber: backendOrder.orderNumber || `ORD-${backendOrder.id ?? backendOrder.orderId ?? ''}`,
-    tableNumber: backendOrder.tableNumber ? parseInt(backendOrder.tableNumber, 10) : undefined,
-    customerName: backendOrder.customerName,
-    customerPhone: backendOrder.customerPhone,
-    items: (backendOrder.orderItems || backendOrder.items || []).map((orderItem: any) => {
-      const quantity = toNumber(orderItem.quantity, 1)
-      const unitPrice = toNumber(orderItem.unitPrice ?? orderItem.price)
-      const totalPrice = toNumber(orderItem.totalPrice ?? unitPrice * quantity)
+  const transformBackendOrder = (backendOrder: any): Order => {
+    // Map COMPLETED to SERVED for frontend compatibility
+    let status = backendOrder.status as OrderStatus
+    if (backendOrder.status === 'COMPLETED') {
+      status = OrderStatus.SERVED
+    }
 
-      return {
-        id: orderItem.id?.toString(),
-        menuItemId: orderItem.menuItemId?.toString?.() ?? orderItem.menuItemId,
-        name: orderItem.menuItem?.name || orderItem.name || 'Unknown Item',
-        price: unitPrice,
-        unitPrice,
-        totalPrice,
-        quantity,
-        specialInstructions: orderItem.notes || orderItem.specialInstructions,
-        notes: orderItem.notes,
-        customizations: orderItem.customizations || orderItem.options || [],
-        modifications: orderItem.modifications
-      }
-    }),
-    subtotal: toNumber(
-      backendOrder.subtotal ??
-      backendOrder.totalBeforeTax ??
-      backendOrder.totalAmount ??
-      backendOrder.total
-    ),
-    tax: toNumber(backendOrder.tax ?? backendOrder.taxAmount),
-    total: toNumber(
-      backendOrder.total ??
-      backendOrder.totalAmount ??
-      (backendOrder.subtotal ?? 0) + (backendOrder.tax ?? 0)
-    ),
-    status: backendOrder.status as OrderStatus,
-    paymentStatus: backendOrder.paymentStatus as PaymentStatus,
-    paymentMethod: backendOrder.paymentMethod,
-    kitchenNotes: backendOrder.kitchenNotes,
-    specialRequests: backendOrder.notes || backendOrder.specialRequests,
-    createdAt: backendOrder.createdAt,
-    updatedAt: backendOrder.updatedAt,
-    prepTime: backendOrder.estimatedTime || backendOrder.prepTime,
-    servedAt: backendOrder.completedAt || backendOrder.servedAt,
-    assignedStaff: backendOrder.user?.name || backendOrder.assignedStaff
-  })
+    return {
+      id: backendOrder.id?.toString() ?? backendOrder.orderId?.toString(),
+      orderNumber: backendOrder.orderNumber || `ORD-${backendOrder.id ?? backendOrder.orderId ?? ''}`,
+      tableNumber: backendOrder.tableNumber ? parseInt(backendOrder.tableNumber, 10) : undefined,
+      customerName: backendOrder.customerName,
+      customerPhone: backendOrder.customerPhone,
+      items: (backendOrder.orderItems || backendOrder.items || []).map((orderItem: any) => {
+        const quantity = toNumber(orderItem.quantity, 1)
+        const unitPrice = toNumber(orderItem.unitPrice ?? orderItem.price)
+        const totalPrice = toNumber(orderItem.totalPrice ?? unitPrice * quantity)
+
+        return {
+          id: orderItem.id?.toString(),
+          menuItemId: orderItem.menuItemId?.toString?.() ?? orderItem.menuItemId,
+          name: orderItem.menuItemName || orderItem.menuItem?.name || orderItem.name || 'Unknown Item',
+          price: unitPrice,
+          unitPrice,
+          totalPrice,
+          quantity,
+          specialInstructions: orderItem.notes || orderItem.specialInstructions,
+          notes: orderItem.notes,
+          customizations: orderItem.customizations || orderItem.options || [],
+          modifications: orderItem.modifications
+        }
+      }),
+      subtotal: toNumber(
+        backendOrder.subtotal ??
+        backendOrder.totalBeforeTax ??
+        backendOrder.totalAmount ??
+        backendOrder.total
+      ),
+      tax: toNumber(backendOrder.tax ?? backendOrder.taxAmount),
+      total: toNumber(
+        backendOrder.total ??
+        backendOrder.totalAmount ??
+        (backendOrder.subtotal ?? 0) + (backendOrder.tax ?? 0)
+      ),
+      status,
+      paymentStatus: backendOrder.paymentStatus as PaymentStatus,
+      paymentMethod: backendOrder.paymentMethod,
+      kitchenNotes: backendOrder.kitchenNotes,
+      specialRequests: backendOrder.notes || backendOrder.specialRequests,
+      createdAt: backendOrder.createdAt,
+      updatedAt: backendOrder.updatedAt,
+      prepTime: backendOrder.estimatedTime || backendOrder.prepTime,
+      servedAt: backendOrder.completedAt || backendOrder.servedAt,
+      assignedStaff: backendOrder.user?.name || backendOrder.assignedStaff
+    }
+  }
 
   const transformToBackendOrder = (orderData: any) => ({
+    // Required fields
+    userId: orderData.userId || authStore.user?.id || 1, // Default to logged-in user or ID 1
+    orderType: orderData.orderType || 'DINE_IN',
+    paymentMethod: orderData.paymentMethod || 'CASH',
+    items: orderData.items.map((item: any) => ({
+      menuItemId: item.menuItemId || item.id,
+      menuItemName: item.name,
+      quantity: item.quantity,
+      unitPrice: item.price || item.unitPrice || 0,
+      specialInstructions: item.specialInstructions || item.notes
+    })),
+
+    // Optional fields
     customerName: orderData.customerName,
     customerPhone: orderData.customerPhone,
+    customerEmail: orderData.customerEmail,
     tableNumber: orderData.tableNumber?.toString(),
-    orderType: orderData.orderType || 'DINE_IN',
-    notes: orderData.specialRequests || orderData.kitchenNotes,
-    paymentMethod: orderData.paymentMethod,
-    paymentStatus: orderData.paymentStatus,
-    orderItems: orderData.items.map((item: any) => ({
-      menuItemId: item.menuItemId,
-      quantity: item.quantity,
-      unitPrice: item.price,
-      notes: item.specialInstructions
-    })),
-    subtotal: orderData.subtotal,
-    tax: orderData.tax,
-    total: orderData.total,
-    status: orderData.status
+    notes: orderData.specialRequests || orderData.kitchenNotes || orderData.notes,
+    taxAmount: orderData.tax || orderData.taxAmount,
+    discountAmount: orderData.discount || orderData.discountAmount || 0,
+    deliveryAddress: orderData.deliveryAddress,
+    deliveryInstructions: orderData.deliveryInstructions,
+    deliveryFee: orderData.deliveryFee,
+    scheduledFor: orderData.scheduledFor
   })
 
   // Actions
@@ -266,7 +281,10 @@ export const useOrdersStore = defineStore('orders', () => {
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus, notes?: string) => {
     try {
-      await ordersApi.updateStatus(parseInt(orderId), status, notes)
+      // Map SERVED to COMPLETED for backend compatibility
+      const backendStatus = status === OrderStatus.SERVED ? 'COMPLETED' : status
+
+      await ordersApi.updateStatus(parseInt(orderId), backendStatus, notes)
 
       // Optimistic update
       const orderIndex = orders.value.findIndex(order => order.id === orderId)
@@ -283,6 +301,27 @@ export const useOrdersStore = defineStore('orders', () => {
     } catch (error) {
       console.error('Error updating order status:', error)
       notification.error('Error', 'Failed to update order status')
+      throw error
+    }
+  }
+
+  const addKitchenNote = async (orderId: string, note: string) => {
+    try {
+      // Add the note via API (using status update with note)
+      const order = orders.value.find(o => o.id === orderId)
+      if (!order) throw new Error('Order not found')
+
+      await ordersApi.updateStatus(parseInt(orderId), order.status, note)
+
+      // Optimistic update
+      const orderIndex = orders.value.findIndex(o => o.id === orderId)
+      if (orderIndex !== -1) {
+        orders.value[orderIndex].kitchenNotes = note
+        orders.value[orderIndex].updatedAt = new Date().toISOString()
+      }
+    } catch (error) {
+      console.error('Error adding kitchen note:', error)
+      notification.error('Error', 'Failed to add kitchen note')
       throw error
     }
   }
@@ -392,7 +431,7 @@ export const useOrdersStore = defineStore('orders', () => {
 
   const fetchOrderById = async (id: string) => {
     try {
-      const backendOrder = await ordersApi.getById(id)
+      const backendOrder = await ordersApi.getById(parseInt(id))
       if (!backendOrder) {
         return null
       }
@@ -436,6 +475,7 @@ export const useOrdersStore = defineStore('orders', () => {
     fetchOrders,
     createOrder,
     updateOrderStatus,
+    addKitchenNote,
     assignOrder,
     cancelOrder,
     printReceipt,

@@ -115,6 +115,9 @@
       v-if="showOrderModal && selectedOrderForModal"
       :order="selectedOrderForModal"
       @close="closeOrderModal"
+      @status-change="handleStatusChange"
+      @print-receipt="handlePrintReceipt"
+      @add-note="handleAddNote"
     />
   </div>
 </template>
@@ -324,6 +327,215 @@ const viewOrderDetails = async (orderSummary: any) => {
 const closeOrderModal = () => {
   showOrderModal.value = false
   selectedOrderForModal.value = null
+}
+
+const handleStatusChange = async (orderId: string, newStatus: string) => {
+  try {
+    await ordersStore.updateOrderStatus(orderId, newStatus)
+    notificationStore.success('Order Updated', `Order status changed to ${newStatus}`)
+
+    // Update the selected order in modal
+    if (selectedOrderForModal.value && selectedOrderForModal.value.id === orderId) {
+      const updatedOrder = ordersStore.getOrderById(orderId)
+      if (updatedOrder) {
+        selectedOrderForModal.value = updatedOrder
+      }
+    }
+  } catch (error) {
+    console.error('Error updating order status:', error)
+    notificationStore.error('Update Failed', 'Unable to update order status. Please try again.')
+  }
+}
+
+const handlePrintReceipt = (order: any) => {
+  try {
+    // Create a print-friendly version of the receipt
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      notificationStore.error('Print Failed', 'Please allow pop-ups to print receipts.')
+      return
+    }
+
+    // Format payment method for display
+    const formatPaymentMethod = (method: string) => {
+      const methods = {
+        'CASH': 'Cash',
+        'CARD': 'Card',
+        'MOBILE': 'Mobile Money',
+        'MOBILE_MONEY': 'Mobile Money'
+      }
+      return methods[method] || method
+    }
+
+    const receiptHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Receipt - ${order.orderNumber}</title>
+          <style>
+            body {
+              font-family: 'Courier New', monospace;
+              padding: 20px;
+              max-width: 300px;
+              margin: 0 auto;
+              font-size: 12px;
+            }
+            h1 {
+              text-align: center;
+              font-size: 20px;
+              margin-bottom: 5px;
+              font-weight: bold;
+            }
+            .subtitle {
+              text-align: center;
+              font-size: 11px;
+              margin-bottom: 10px;
+              color: #555;
+            }
+            .divider {
+              border-top: 1px dashed #000;
+              margin: 10px 0;
+            }
+            .thick-divider {
+              border-top: 2px solid #000;
+              margin: 10px 0;
+            }
+            .row {
+              display: flex;
+              justify-content: space-between;
+              margin: 5px 0;
+            }
+            .item-row {
+              margin: 8px 0;
+            }
+            .item-name {
+              font-weight: bold;
+            }
+            .item-details {
+              font-size: 11px;
+              color: #555;
+              margin-left: 10px;
+            }
+            .item-note {
+              font-size: 10px;
+              font-style: italic;
+              margin-left: 15px;
+              color: #666;
+            }
+            .total {
+              font-weight: bold;
+              font-size: 16px;
+              margin-top: 5px;
+            }
+            .center {
+              text-align: center;
+            }
+            .special-note {
+              background: #f5f5f5;
+              padding: 8px;
+              margin: 10px 0;
+              border: 1px dashed #999;
+              font-size: 11px;
+            }
+            @media print {
+              body { padding: 10px; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>GARBAKING POS</h1>
+          <div class="subtitle">Restaurant & Food Service</div>
+          <div class="center" style="font-weight: bold; margin: 10px 0;">Order #${order.orderNumber}</div>
+          <div class="center" style="font-size: 11px;">${new Date(order.createdAt).toLocaleString('en-US', {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+          })}</div>
+          <div class="divider"></div>
+
+          <div class="row"><span>Customer:</span><span>${order.customerName || 'Walk-in Customer'}</span></div>
+          ${order.customerPhone ? `<div class="row"><span>Phone:</span><span>${order.customerPhone}</span></div>` : ''}
+          ${order.tableNumber ? `<div class="row"><span>Table:</span><span>#${order.tableNumber}</span></div>` : ''}
+
+          <div class="thick-divider"></div>
+
+          ${order.items.map(item => `
+            <div class="item-row">
+              <div class="row">
+                <span class="item-name">${item.quantity}x ${item.name}</span>
+                <span>$${item.totalPrice.toFixed(2)}</span>
+              </div>
+              <div class="item-details">@ $${item.unitPrice.toFixed(2)} each</div>
+              ${item.notes || item.specialInstructions ? `<div class="item-note">Note: ${item.notes || item.specialInstructions}</div>` : ''}
+            </div>
+          `).join('')}
+
+          <div class="divider"></div>
+
+          <div class="row"><span>Subtotal:</span><span>$${order.subtotal.toFixed(2)}</span></div>
+          <div class="row"><span>Tax:</span><span>$${order.tax.toFixed(2)}</span></div>
+
+          <div class="thick-divider"></div>
+
+          <div class="row total"><span>TOTAL:</span><span>$${order.total.toFixed(2)}</span></div>
+
+          <div class="divider"></div>
+
+          <div class="row"><span>Payment Method:</span><span>${formatPaymentMethod(order.paymentMethod)}</span></div>
+          <div class="row"><span>Payment Status:</span><span>${order.paymentStatus}</span></div>
+
+          ${order.notes || order.specialRequests ? `
+            <div class="special-note">
+              <strong>Special Instructions:</strong><br/>
+              ${order.notes || order.specialRequests}
+            </div>
+          ` : ''}
+
+          <div class="divider"></div>
+
+          <div class="center" style="margin-top: 20px; font-size: 11px;">
+            Thank you for your order!<br/>
+            Visit us again soon!
+          </div>
+
+          <div class="center" style="margin-top: 10px; font-size: 9px; color: #999;">
+            Powered by Garbaking POS System
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() { window.close(); };
+            }
+          <\/script>
+        </body>
+      </html>
+    `
+
+    printWindow.document.write(receiptHTML)
+    printWindow.document.close()
+    notificationStore.success('Printing', 'Receipt sent to printer')
+  } catch (error) {
+    console.error('Error printing receipt:', error)
+    notificationStore.error('Print Failed', 'Unable to print receipt. Please try again.')
+  }
+}
+
+const handleAddNote = async (orderId: string, note: string) => {
+  try {
+    await ordersStore.addKitchenNote(orderId, note)
+    notificationStore.success('Note Added', 'Kitchen note has been added to the order')
+
+    // Update the selected order in modal
+    if (selectedOrderForModal.value && selectedOrderForModal.value.id === orderId) {
+      const updatedOrder = ordersStore.getOrderById(orderId)
+      if (updatedOrder) {
+        selectedOrderForModal.value = updatedOrder
+      }
+    }
+  } catch (error) {
+    console.error('Error adding kitchen note:', error)
+    notificationStore.error('Note Failed', 'Unable to add kitchen note. Please try again.')
+  }
 }
 
 const refreshData = async () => {

@@ -39,7 +39,6 @@ class RawOrderWebSocketHandlerTest {
     void forwardsMessagesToSimpDestination() throws Exception {
         WebSocketSession session = mock(WebSocketSession.class);
         when(session.getId()).thenReturn("abc");
-        when(session.isOpen()).thenReturn(true);
 
         handler.afterConnectionEstablished(session);
         handler.handleTextMessage(session, new TextMessage("{\"destination\":\"/topic/orders\",\"orderId\":1}"));

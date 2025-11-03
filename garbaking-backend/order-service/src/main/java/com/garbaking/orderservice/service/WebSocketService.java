@@ -1,9 +1,10 @@
 package com.garbaking.orderservice.service;
 
 import com.garbaking.orderservice.dto.OrderDTO;
+import com.garbaking.orderservice.model.Order;
 import com.garbaking.orderservice.websocket.RawOrderWebSocketHandler;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -15,11 +16,20 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class WebSocketService {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final RawOrderWebSocketHandler rawOrderWebSocketHandler;
+    private final OrderService orderService;
+
+    // Constructor with @Lazy to break circular dependency
+    public WebSocketService(SimpMessagingTemplate messagingTemplate,
+                           RawOrderWebSocketHandler rawOrderWebSocketHandler,
+                           @Lazy OrderService orderService) {
+        this.messagingTemplate = messagingTemplate;
+        this.rawOrderWebSocketHandler = rawOrderWebSocketHandler;
+        this.orderService = orderService;
+    }
 
     /**
      * Broadcast order created event to all subscribers
@@ -76,5 +86,27 @@ public class WebSocketService {
         log.info("Broadcasting active orders update");
         messagingTemplate.convertAndSend("/topic/orders/active", activeOrders);
         rawOrderWebSocketHandler.broadcast(activeOrders);
+    }
+
+    /**
+     * Broadcast order update (for QR payment confirmations and other updates)
+     * Accepts Order entity and converts to DTO before broadcasting
+     */
+    public void broadcastOrderUpdate(Order order) {
+        log.info("Broadcasting order update: {} (Status: {}, Payment: {})",
+                order.getOrderNumber(), order.getStatus(), order.getPaymentStatus());
+
+        OrderDTO orderDTO = orderService.mapToDTO(order);
+
+        // Broadcast to general order updates topic
+        messagingTemplate.convertAndSend("/topic/orders/updated", orderDTO);
+
+        // Also broadcast to payment-specific topic for QR payment confirmations
+        if (order.getPaymentStatus() == Order.PaymentStatus.PAID) {
+            messagingTemplate.convertAndSend("/topic/orders/payment", orderDTO);
+        }
+
+        // Broadcast via raw WebSocket handler
+        rawOrderWebSocketHandler.broadcast(orderDTO);
     }
 }

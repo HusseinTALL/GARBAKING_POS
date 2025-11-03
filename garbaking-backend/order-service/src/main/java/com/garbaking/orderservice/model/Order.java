@@ -128,6 +128,33 @@ public class Order {
     @Column(length = 500)
     private String cancellationReason;
 
+    // === QR Payment Fields ===
+
+    /**
+     * Current active QR token ID for this order
+     * References payment_qr_tokens.token_id
+     */
+    @Column(length = 50)
+    private String qrTokenId;
+
+    /**
+     * When payment was confirmed via QR code scan
+     */
+    private LocalDateTime qrPaymentConfirmedAt;
+
+    /**
+     * User who confirmed payment via QR
+     * References users.id
+     */
+    private Long qrConfirmedByUserId;
+
+    /**
+     * Device used for QR payment confirmation
+     * For audit trail and analytics
+     */
+    @Column(length = 100)
+    private String qrConfirmedByDeviceId;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

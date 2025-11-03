@@ -67,6 +67,17 @@ public class OrderController {
     }
 
     /**
+     * Track order by order number (customer-facing)
+     * GET /orders/track/{orderNumber}
+     */
+    @GetMapping("/track/{orderNumber}")
+    public ResponseEntity<OrderDTO> trackOrderByOrderNumber(@PathVariable String orderNumber) {
+        log.info("GET /orders/track/{}", orderNumber);
+        OrderDTO order = orderService.getOrderByOrderNumber(orderNumber);
+        return ResponseEntity.ok(order);
+    }
+
+    /**
      * Get all orders
      * GET /orders
      */
@@ -198,6 +209,20 @@ public class OrderController {
     ) {
         log.info("POST /orders/{}/cancel", id);
         OrderDTO cancelledOrder = orderService.cancelOrder(id, reason);
+        return ResponseEntity.ok(cancelledOrder);
+    }
+
+    /**
+     * Cancel order by order number (customer-facing)
+     * POST /orders/number/{orderNumber}/cancel
+     */
+    @PostMapping("/number/{orderNumber}/cancel")
+    public ResponseEntity<OrderDTO> cancelOrderByOrderNumber(
+            @PathVariable String orderNumber,
+            @RequestParam(required = false) String reason
+    ) {
+        log.info("POST /orders/number/{}/cancel", orderNumber);
+        OrderDTO cancelledOrder = orderService.cancelOrderByOrderNumber(orderNumber, reason);
         return ResponseEntity.ok(cancelledOrder);
     }
 

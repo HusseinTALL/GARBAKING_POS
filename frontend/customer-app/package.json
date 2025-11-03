@@ -23,6 +23,7 @@
     "idb": "^7.1.1",
     "localforage": "^1.10.0",
     "pinia": "^2.1.6",
+    "pinia-plugin-persistedstate": "^2.4.0",
     "qrcode": "^1.5.4",
     "socket.io-client": "^4.7.2",
     "sockjs-client": "^1.6.1",

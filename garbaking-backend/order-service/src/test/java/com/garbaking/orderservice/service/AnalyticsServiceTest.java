@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,6 +50,9 @@ class AnalyticsServiceTest {
         when(orderRepository.findByCreatedAtBetweenWithItems(ArgumentMatchers.any(), ArgumentMatchers.any())).thenAnswer(invocation -> {
             LocalDateTime start = invocation.getArgument(0);
             LocalDateTime end = invocation.getArgument(1);
+            if (start == null || end == null) {
+                return List.of();
+            }
             LocalDate startDate = start.toLocalDate();
             if (startDate.equals(LocalDate.of(2024, 1, 15))) {
                 return List.of(todayOrder);
@@ -59,10 +63,10 @@ class AnalyticsServiceTest {
             return List.of();
         });
 
-        when(orderRepository.findByStatusIn(ArgumentMatchers.any())).thenReturn(List.of(todayOrder));
-        when(orderRepository.countByStatus(Order.OrderStatus.PENDING)).thenReturn(0L);
-        when(orderRepository.countByStatus(Order.OrderStatus.PREPARING)).thenReturn(0L);
-        when(orderRepository.countByStatus(Order.OrderStatus.READY)).thenReturn(0L);
+        lenient().when(orderRepository.findByStatusIn(ArgumentMatchers.any())).thenReturn(List.of(todayOrder));
+        lenient().when(orderRepository.countByStatus(Order.OrderStatus.PENDING)).thenReturn(0L);
+        lenient().when(orderRepository.countByStatus(Order.OrderStatus.PREPARING)).thenReturn(0L);
+        lenient().when(orderRepository.countByStatus(Order.OrderStatus.READY)).thenReturn(0L);
     }
 
     @Test

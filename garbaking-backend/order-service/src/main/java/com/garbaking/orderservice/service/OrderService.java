@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,6 +36,7 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final WebSocketService webSocketService;
+    private final QRTokenService qrTokenService;
 
     private static final AtomicLong orderCounter = new AtomicLong(0);
     private static final Map<Order.OrderStatus, List<Order.OrderStatus>> ALLOWED_STATUS_TRANSITIONS = Map.ofEntries(
@@ -98,6 +100,19 @@ public class OrderService {
         // Save order
         Order savedOrder = orderRepository.save(order);
         log.info("Order created successfully: {}", savedOrder.getOrderNumber());
+
+        // Generate QR payment token for the order
+        try {
+            QRTokenResponseDTO qrToken = qrTokenService.generateToken(savedOrder);
+            savedOrder.setQrTokenId(qrToken.getTokenId());
+            savedOrder = orderRepository.save(savedOrder);
+            log.info("QR payment token generated for order: {} (Token: {}, Short Code: {})",
+                    savedOrder.getOrderNumber(), qrToken.getTokenId(), qrToken.getShortCode());
+        } catch (Exception e) {
+            log.error("Failed to generate QR token for order {}: {}",
+                    savedOrder.getOrderNumber(), e.getMessage(), e);
+            // Don't fail order creation if QR generation fails
+        }
 
         // Convert to DTO
         OrderDTO orderDTO = convertToDTO(savedOrder);
@@ -303,6 +318,19 @@ public class OrderService {
      * Cancel order
      */
     @Transactional
+    public OrderDTO cancelOrderByOrderNumber(String orderNumber, String reason) {
+        log.info("Cancelling order by number: {}", orderNumber);
+
+        Order order = orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with number: " + orderNumber));
+
+        return cancelOrder(order.getId(), reason);
+    }
+
+    /**
+     * Cancel order
+     */
+    @Transactional
     public OrderDTO cancelOrder(Long id, String reason) {
         log.info("Cancelling order: {}", id);
 
@@ -399,6 +427,13 @@ public class OrderService {
      * Convert Order entity to OrderDTO
      */
     private OrderDTO convertToDTO(Order order) {
+        // Handle null items collection
+        List<OrderItemDTO> itemDTOs = (order.getItems() != null)
+                ? order.getItems().stream()
+                        .map(this::convertItemToDTO)
+                        .collect(Collectors.toList())
+                : new ArrayList<>();
+
         return OrderDTO.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
@@ -408,9 +443,7 @@ public class OrderService {
                 .customerName(order.getCustomerName())
                 .customerPhone(order.getCustomerPhone())
                 .customerEmail(order.getCustomerEmail())
-                .items(order.getItems().stream()
-                        .map(this::convertItemToDTO)
-                        .collect(Collectors.toList()))
+                .items(itemDTOs)
                 .subtotal(order.getSubtotal())
                 .taxAmount(order.getTaxAmount())
                 .discountAmount(order.getDiscountAmount())
@@ -466,5 +499,46 @@ public class OrderService {
             log.error("Failed to publish event to topic {}: {}", topic, e.getMessage());
             // Don't throw exception - event publishing shouldn't fail the main operation
         }
+    }
+
+    /**
+     * Public method to map Order entity to OrderDTO
+     * Used by QRPaymentService and other services
+     */
+    public OrderDTO mapToDTO(Order order) {
+        return convertToDTO(order);
+    }
+
+    /**
+     * Regenerate QR token for an order
+     * Used when token expires or needs to be refreshed
+     *
+     * @param orderId The order ID
+     * @return QRTokenResponseDTO with new token
+     */
+    @Transactional
+    public QRTokenResponseDTO regenerateQRToken(Long orderId) {
+        log.info("Regenerating QR token for order ID: {}", orderId);
+
+        // Get order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        // Verify order is not already paid
+        if (order.getPaymentStatus() == Order.PaymentStatus.PAID) {
+            throw new IllegalStateException("Cannot regenerate QR token for already paid order: " + order.getOrderNumber());
+        }
+
+        // Generate new token
+        QRTokenResponseDTO qrToken = qrTokenService.generateToken(order);
+
+        // Update order with new token ID
+        order.setQrTokenId(qrToken.getTokenId());
+        orderRepository.save(order);
+
+        log.info("QR token regenerated for order: {} (Token: {}, Short Code: {})",
+                order.getOrderNumber(), qrToken.getTokenId(), qrToken.getShortCode());
+
+        return qrToken;
     }
 }

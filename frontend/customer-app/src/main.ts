@@ -8,6 +8,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from '@/router'
 import i18n from '@/plugins/i18n'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 // Styles
 import './style.css'
@@ -94,10 +95,11 @@ library.add(
 )
 
 const app = createApp(App)
-
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 app.use(router)
 app.use(i18n)
+pinia.use(piniaPluginPersistedstate)
 app.use(Toast, {
   position: POSITION.TOP_CENTER,
   timeout: 3000,
