@@ -101,3 +101,16 @@ garbaking:
     alerts:
       auth-failure-threshold: 10
       evaluation-interval: PT2M
+
+# Security Configuration
+security:
+  rate-limit:
+    login:
+      max-attempts: 5
+      window-minutes: 15
+    register:
+      max-attempts: 3
+      window-minutes: 60
+    refresh:
+      max-attempts: 10
+      window-minutes: 1

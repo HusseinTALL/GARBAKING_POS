@@ -55,4 +55,10 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
      */
     @Query("SELECT COUNT(rt) FROM RefreshToken rt WHERE rt.user = :user AND rt.revoked = false AND rt.expiryDate > :now")
     long countValidTokensByUser(@Param("user") User user, @Param("now") Instant now);
+
+    /**
+     * Count all active tokens (non-revoked, non-expired)
+     * Used for system-wide monitoring
+     */
+    long countByRevokedFalseAndExpiryDateAfter(Instant now);
 }

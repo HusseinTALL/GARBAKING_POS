@@ -128,4 +128,13 @@ public class RefreshTokenService {
         RefreshToken refreshToken = verifyRefreshToken(token);
         return refreshToken.getUser();
     }
+
+    /**
+     * Get count of active (non-revoked, non-expired) refresh tokens
+     * Used for monitoring and statistics
+     */
+    @Transactional(readOnly = true)
+    public long getActiveTokenCount() {
+        return refreshTokenRepository.countByRevokedFalseAndExpiryDateAfter(Instant.now());
+    }
 }
