@@ -1,8 +1,6 @@
 package com.garbaking.userservice.controller;
 
-import com.garbaking.userservice.dto.AuthResponse;
-import com.garbaking.userservice.dto.LoginRequest;
-import com.garbaking.userservice.dto.UserDTO;
+import com.garbaking.userservice.dto.*;
 import com.garbaking.userservice.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,10 +9,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * Authentication Controller
  *
- * REST endpoints for user authentication (login, register).
+ * REST endpoints for user authentication (login, register, refresh, logout).
  * Routes accessible at: /api/auth (for consistency with frontend expectations)
  */
 @RestController
@@ -45,6 +45,43 @@ public class AuthController {
         log.info("POST /auth/login - Email: {}", loginRequest.getEmail());
         AuthResponse response = userService.login(loginRequest);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Refresh access token using refresh token
+     * POST /auth/refresh
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        log.info("POST /auth/refresh");
+        AuthResponse response = userService.refreshAccessToken(request.getRefreshToken());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Logout user by revoking refresh token
+     * POST /auth/logout
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(@Valid @RequestBody LogoutRequest request) {
+        log.info("POST /auth/logout");
+        userService.logout(request.getRefreshToken());
+        return ResponseEntity.ok(Map.of(
+                "message", "Logged out successfully"
+        ));
+    }
+
+    /**
+     * Logout from all devices
+     * POST /auth/logout-all/{userId}
+     */
+    @PostMapping("/logout-all/{userId}")
+    public ResponseEntity<Map<String, String>> logoutAll(@PathVariable Long userId) {
+        log.info("POST /auth/logout-all/{}", userId);
+        userService.logoutAll(userId);
+        return ResponseEntity.ok(Map.of(
+                "message", "Logged out from all devices successfully"
+        ));
     }
 
     /**

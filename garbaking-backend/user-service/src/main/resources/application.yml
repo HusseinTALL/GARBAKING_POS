@@ -62,6 +62,9 @@ eureka:
 jwt:
   secret: your-256-bit-secret-key-for-jwt-signing-change-this-in-production
   expiration: 86400000  # 24 hours in milliseconds
+  refresh:
+    expiration: 604800000  # 7 days in milliseconds
+    max-per-user: 5  # Maximum active refresh tokens per user
 
 # Management Endpoints
 management:
