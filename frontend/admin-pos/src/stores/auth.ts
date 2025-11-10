@@ -196,7 +196,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (response && response.user && response.token) {
-        const { user, token: authToken } = response
+        const { user, token: authToken, refreshToken: authRefreshToken } = response
 
         // Set authentication data with backend permissions
         currentUser.value = {
@@ -238,17 +238,18 @@ export const useAuthStore = defineStore('auth', () => {
           createdAt: user.createdAt || new Date().toISOString()
         }
         token.value = authToken
-        refreshToken.value = authToken // Spring Boot returns same token for now
+        refreshToken.value = authRefreshToken || authToken
 
         // Store in localStorage for persistence (both formats for compatibility)
         localStorage.setItem('pos_auth_token', authToken)
-        localStorage.setItem('pos_refresh_token', authToken)
+        localStorage.setItem('pos_refresh_token', authRefreshToken || authToken)
         localStorage.setItem('pos_user', JSON.stringify(currentUser.value))
         localStorage.setItem('auth_token', authToken)
+        localStorage.setItem('refresh_token', authRefreshToken || authToken)
         localStorage.setItem('user', JSON.stringify(user))
 
-        // Set session timeout (15 minutes for access token)
-        setSessionTimeout(15 * 60 * 1000)
+        // Set session timeout (24 hours for access token - 5 minutes before expiry)
+        setSessionTimeout(24 * 60 * 60 * 1000)
 
         return true
       } else {
@@ -288,14 +289,15 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response && response.token) {
         token.value = response.token
-        refreshToken.value = response.token
+        refreshToken.value = response.refreshToken || response.token
 
         localStorage.setItem('pos_auth_token', response.token)
-        localStorage.setItem('pos_refresh_token', response.token)
+        localStorage.setItem('pos_refresh_token', response.refreshToken || response.token)
         localStorage.setItem('auth_token', response.token)
+        localStorage.setItem('refresh_token', response.refreshToken || response.token)
 
-        // Set session timeout for new access token (15 minutes)
-        setSessionTimeout(15 * 60 * 1000)
+        // Set session timeout for new access token (24 hours)
+        setSessionTimeout(24 * 60 * 60 * 1000)
 
         return true
       }

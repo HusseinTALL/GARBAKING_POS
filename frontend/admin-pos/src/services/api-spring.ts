@@ -124,24 +124,104 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor for error handling
+// Flag to prevent multiple refresh attempts
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (value?: any) => void
+  reject: (reason?: any) => void
+}> = []
+
+const processQueue = (error: any = null, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
+  failedQueue = []
+}
+
+// Response interceptor for error handling and automatic token refresh
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     const toast = useToast()
+    const originalRequest = error.config as any
 
     if (!error.response) {
       console.error('Network error:', error.message)
       toast.error('Network error. Please check your connection.')
-    } else {
-      console.error('API error:', error.response.status, error.response.data)
+      return Promise.reject(error)
+    }
 
-      if (error.response.status === 401) {
+    // Handle 401 errors (unauthorized - token expired)
+    if (error.response.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then(token => {
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token
+          }
+          return apiClient(originalRequest)
+        }).catch(err => {
+          return Promise.reject(err)
+        })
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      const refreshToken = localStorage.getItem('refresh_token')
+
+      if (!refreshToken) {
+        // No refresh token, redirect to login
         localStorage.removeItem('auth_token')
         toast.error('Session expired. Please log in again.')
         window.location.href = '/login'
+        return Promise.reject(error)
+      }
+
+      try {
+        // Attempt to refresh the token
+        const response = await apiClient.post('/api/auth/refresh', { refreshToken })
+        const { token: newAccessToken, refreshToken: newRefreshToken } = response.data
+
+        if (newAccessToken) {
+          localStorage.setItem('auth_token', newAccessToken)
+          if (newRefreshToken) {
+            localStorage.setItem('refresh_token', newRefreshToken)
+          }
+
+          // Update authorization header
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken
+          }
+          apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken
+
+          // Process queued requests
+          processQueue(null, newAccessToken)
+
+          // Retry original request
+          return apiClient(originalRequest)
+        }
+      } catch (refreshError) {
+        // Refresh failed, redirect to login
+        processQueue(refreshError, null)
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('refresh_token')
+        toast.error('Session expired. Please log in again.')
+        window.location.href = '/login'
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
       }
     }
+
+    // Handle other errors
+    console.error('API error:', error.response.status, error.response.data)
 
     return Promise.reject(error)
   }
@@ -151,9 +231,10 @@ apiClient.interceptors.response.use(
 export const authApi = {
   async login(credentials: { email: string; password: string }) {
     const response = await apiClient.post('/api/auth/login', credentials)
-    const { token, user } = response.data
+    const { token, refreshToken, user } = response.data
     if (token) {
       localStorage.setItem('auth_token', token)
+      localStorage.setItem('refresh_token', refreshToken || token)
       localStorage.setItem('user', JSON.stringify(user))
     }
     return response.data
@@ -161,9 +242,10 @@ export const authApi = {
 
   async register(userData: { name: string; email: string; password: string; phone?: string; role?: string }) {
     const response = await apiClient.post('/api/auth/register', userData)
-    const { token, user } = response.data
+    const { token, refreshToken, user } = response.data
     if (token) {
       localStorage.setItem('auth_token', token)
+      localStorage.setItem('refresh_token', refreshToken || token)
       localStorage.setItem('user', JSON.stringify(user))
     }
     return response.data
@@ -171,7 +253,10 @@ export const authApi = {
 
   async logout(reason?: string) {
     try {
-      await apiClient.post('/api/auth/logout', { reason })
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (refreshToken) {
+        await apiClient.post('/api/auth/logout', { refreshToken })
+      }
     } catch (error) {
       console.warn('Logout API call failed:', error)
     } finally {
@@ -187,9 +272,12 @@ export const authApi = {
 
   async refresh(refreshToken: string) {
     const response = await apiClient.post('/api/auth/refresh', { refreshToken })
-    const { token, user } = response.data
+    const { token, refreshToken: newRefreshToken, user } = response.data
     if (token) {
       localStorage.setItem('auth_token', token)
+      if (newRefreshToken) {
+        localStorage.setItem('refresh_token', newRefreshToken)
+      }
       localStorage.setItem('user', JSON.stringify(user))
     }
     return response.data
