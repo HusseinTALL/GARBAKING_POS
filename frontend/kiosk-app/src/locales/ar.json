@@ -1,0 +1,72 @@
+{
+  "welcome": {
+    "title": "مرحباً بكم في جاربيكنج",
+    "subtitle": "المس في أي مكان لبدء الطلب",
+    "touchToStart": "اضغط للبدء"
+  },
+  "mode": {
+    "title": "كيف تريد الاستمتاع بوجبتك؟",
+    "dineIn": "تناول الطعام هنا",
+    "takeaway": "طلبات خارجية",
+    "selectLanguage": "اختر اللغة",
+    "continue": "متابعة"
+  },
+  "menu": {
+    "title": "القائمة",
+    "viewCart": "عرض السلة",
+    "addToCart": "أضف إلى السلة",
+    "items": "عناصر",
+    "search": "البحث في القائمة...",
+    "noItems": "لا توجد عناصر متاحة",
+    "unavailable": "غير متوفر حالياً"
+  },
+  "customize": {
+    "title": "خصص طلبك",
+    "required": "مطلوب",
+    "optional": "اختياري",
+    "specialInstructions": "تعليمات خاصة",
+    "addToCart": "أضف إلى السلة",
+    "cancel": "إلغاء",
+    "quantity": "الكمية"
+  },
+  "cart": {
+    "title": "طلبك",
+    "empty": "سلتك فارغة",
+    "subtotal": "المجموع الفرعي",
+    "tax": "الضريبة",
+    "total": "الإجمالي",
+    "checkout": "الانتقال إلى الدفع",
+    "continueShopping": "متابعة التسوق",
+    "remove": "إزالة",
+    "edit": "تعديل"
+  },
+  "payment": {
+    "title": "اختر طريقة الدفع",
+    "card": "بطاقة ائتمان/خصم",
+    "mobileMoney": "الدفع عبر الهاتف",
+    "qrCode": "رمز الاستجابة السريعة",
+    "cash": "الدفع عند الاستلام",
+    "processing": "جاري معالجة الدفع...",
+    "cancel": "إلغاء"
+  },
+  "confirmation": {
+    "title": "تم تأكيد الطلب!",
+    "orderNumber": "رقم الطلب",
+    "thankYou": "شكراً لطلبك",
+    "pleaseWait": "يرجى الانتظار حتى يتم تحضير طلبك",
+    "estimatedTime": "الوقت المقدر",
+    "minutes": "دقائق",
+    "newOrder": "طلب جديد",
+    "dineInMessage": "يرجى إيجاد مقعد. سنحضر لك طلبك.",
+    "takeawayMessage": "يرجى الانتظار عند الكاونتر. سننادي على رقمك عندما يصبح جاهزاً."
+  },
+  "common": {
+    "back": "رجوع",
+    "next": "التالي",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "yes": "نعم",
+    "no": "لا",
+    "currency": "د.إ"
+  }
+}

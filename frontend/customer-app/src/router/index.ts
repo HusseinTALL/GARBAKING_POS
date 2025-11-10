@@ -18,6 +18,7 @@ import About from '@/views/About.vue'
 import Favorites from '@/views/Favorites.vue'
 import Profile from '@/views/Profile.vue'
 import Vouchers from '@/views/Vouchers.vue'
+import ComponentShowcase from '@/views/ComponentShowcase.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -136,6 +137,16 @@ const routes: RouteRecordRaw[] = [
     component: Profile,
     meta: {
       title: 'Profil',
+      showHeader: false,
+      transition: 'fade'
+    }
+  },
+  {
+    path: '/showcase',
+    name: 'ComponentShowcase',
+    component: ComponentShowcase,
+    meta: {
+      title: 'Component Showcase',
       showHeader: false,
       transition: 'fade'
     }

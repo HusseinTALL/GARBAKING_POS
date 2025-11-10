@@ -1,58 +1,63 @@
 <!--
-  Shopping cart page for customer app
-  Displays cart items, order summary, customer info form, and checkout functionality
+  Shopping Cart - Enhanced
+  Cart view with EmptyState, BaseChip for order type, BaseButton for checkout
+  Features: empty state, order type selection, price breakdown, checkout CTA
 -->
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
-    <div class="sticky top-0 bg-white shadow-sm z-40 safe-area-top">
+    <div class="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-40 safe-area-top">
       <div class="px-4 py-3">
         <div class="flex items-center justify-between">
           <button
             @click="$router.go(-1)"
-            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
-            <FontAwesomeIcon :icon="['fas', 'arrow-left']" class="text-xl text-gray-600" />
+            <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
           </button>
 
           <div class="flex items-center space-x-2">
-            <FontAwesomeIcon :icon="['fas', 'shopping-cart']" class="text-xl text-gray-600" />
-            <h1 class="text-xl font-bold text-gray-900">Panier</h1>
-            <span v-if="totalItems > 0" class="bg-primary-600 text-white text-sm font-bold px-2 py-1 rounded-full">
-              {{ totalItems }}
-            </span>
+            <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Panier</h1>
+            <BaseBadge
+              v-if="totalItems > 0"
+              :label="totalItems.toString()"
+              variant="primary"
+              size="sm"
+              rounded
+            />
           </div>
 
           <button
             v-if="items.length > 0"
             @click="showClearConfirm = true"
-            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
-            <FontAwesomeIcon :icon="['fas', 'trash']" class="text-xl text-red-500" />
+            <svg class="w-6 h-6 text-error-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
           </button>
           <div v-else class="w-10"></div>
         </div>
       </div>
     </div>
 
-    <!-- Empty cart state -->
-    <div v-if="items.length === 0" class="flex flex-col items-center justify-center py-20 px-6">
-      <div class="text-center">
-        <FontAwesomeIcon :icon="['fas', 'shopping-cart']" class="text-6xl text-gray-300 mb-6" />
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">Votre panier est vide</h2>
-        <p class="text-gray-600 mb-8 max-w-sm">ear
-          Découvrez notre délicieux menu et ajoutez vos plats préférés à votre panier.
-        </p>
-        <button
-          @click="$router.push('/')"
-          class="bg-primary-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-primary-700 transition-colors shadow-sm"
-        >
-          <FontAwesomeIcon :icon="['fas', 'utensils']" class="mr-2" />
-          Découvrir le Menu
-        </button>
-      </div>
-    </div>
+    <!-- Empty cart state with EmptyState component -->
+    <EmptyState
+      v-if="items.length === 0"
+      type="cart"
+      title="Votre panier est vide"
+      description="Découvrez notre délicieux menu et ajoutez vos plats préférés à votre panier."
+      actionText="Découvrir le Menu"
+      @action="$router.push('/')"
+      size="lg"
+      padding="xl"
+    />
 
     <!-- Cart content -->
     <div v-else class="pb-32">
@@ -129,24 +134,19 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Type de commande *
             </label>
-            <div class="grid grid-cols-3 gap-2">
-              <button
+            <div class="flex flex-wrap gap-2">
+              <BaseChip
                 v-for="type in orderTypes"
                 :key="type.value"
+                :label="`${type.emoji} ${type.label}`"
+                :selected="customerInfo.orderType === type.value"
                 @click="customerInfo.orderType = type.value"
-                :class="[
-                  'p-3 rounded-xl border-2 transition-all duration-200 text-center',
-                  customerInfo.orderType === type.value
-                    ? 'border-primary-600 bg-primary-50 text-primary-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                ]"
-              >
-                <FontAwesomeIcon :icon="type.icon" class="text-lg mb-1 block" />
-                <span class="text-sm font-medium">{{ type.label }}</span>
-              </button>
+                variant="primary"
+                size="lg"
+              />
             </div>
           </div>
 
@@ -180,59 +180,58 @@
     <!-- Floating checkout button -->
     <div
       v-if="items.length > 0"
-      class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 safe-area-bottom"
+      class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 safe-area-bottom"
     >
-      <button
+      <BaseButton
         @click="proceedToCheckout"
         :disabled="!canCheckout || isLoading"
-        class="w-full bg-primary-600 text-white font-bold py-4 px-6 rounded-2xl hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-floating"
+        :loading="isLoading"
+        variant="primary"
+        size="lg"
+        class="w-full"
       >
-        <FontAwesomeIcon
-          v-if="isLoading"
-          :icon="['fas', 'spinner']"
-          class="animate-spin mr-3"
-        />
-        <span v-else>
-          <FontAwesomeIcon :icon="['fas', 'credit-card']" class="mr-3" />
-        </span>
         {{ isLoading ? 'Traitement...' : `Commander • ${formatPrice(total)}` }}
-      </button>
+      </BaseButton>
     </div>
 
-    <!-- Clear cart confirmation -->
-    <div
-      v-if="showClearConfirm"
-      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      @click="showClearConfirm = false"
+    <!-- Clear cart confirmation modal -->
+    <BaseModal
+      v-model="showClearConfirm"
+      title="Vider le panier ?"
+      size="sm"
     >
-      <div
-        class="bg-white rounded-2xl p-6 max-w-sm w-full animate-scale-in"
-        @click.stop
-      >
-        <div class="text-center mb-6">
-          <FontAwesomeIcon :icon="['fas', 'trash']" class="text-4xl text-red-500 mb-4" />
-          <h3 class="text-lg font-bold text-gray-900 mb-2">Vider le panier ?</h3>
-          <p class="text-gray-600">
-            Cette action supprimera tous les articles de votre panier.
-          </p>
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-error-100 dark:bg-error-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-error-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
         </div>
+        <p class="text-gray-600 dark:text-gray-400">
+          Cette action supprimera tous les articles de votre panier.
+        </p>
+      </div>
 
+      <template #footer>
         <div class="flex space-x-3">
-          <button
+          <BaseButton
             @click="showClearConfirm = false"
-            class="flex-1 bg-gray-200 text-gray-800 font-medium py-3 rounded-xl hover:bg-gray-300 transition-colors"
+            variant="outline"
+            size="md"
+            class="flex-1"
           >
             Annuler
-          </button>
-          <button
+          </BaseButton>
+          <BaseButton
             @click="confirmClearCart"
-            class="flex-1 bg-red-500 text-white font-medium py-3 rounded-xl hover:bg-red-600 transition-colors"
+            variant="secondary"
+            size="md"
+            class="flex-1 !bg-error-500 !text-white hover:!bg-error-600"
           >
             Vider
-          </button>
+          </BaseButton>
         </div>
-      </div>
-    </div>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -246,6 +245,15 @@ import { storeToRefs } from 'pinia'
 import CartItemCard from '@/components/CartItemCard.vue'
 import { OrderType } from '@/types'
 import { formatCurrency } from '@/utils/currency'
+
+// Advanced Components
+import EmptyState from '@/components/advanced/EmptyState.vue'
+
+// Base Components
+import BaseChip from '@/components/base/BaseChip.vue'
+import BaseBadge from '@/components/base/BaseBadge.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseModal from '@/components/base/BaseModal.vue'
 
 const router = useRouter()
 const toast = useToast()
@@ -280,16 +288,19 @@ const orderTypes = computed(() => [
   {
     value: OrderType.DINE_IN,
     label: 'Sur place',
+    emoji: '🍽️',
     icon: ['fas', 'utensils']
   },
   {
     value: OrderType.TAKEAWAY,
     label: 'À emporter',
+    emoji: '🛍️',
     icon: ['fas', 'shopping-bag']
   },
   {
     value: OrderType.DELIVERY,
     label: 'Livraison',
+    emoji: '🏍️',
     icon: ['fas', 'motorcycle']
   }
 ])

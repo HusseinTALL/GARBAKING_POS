@@ -346,20 +346,22 @@ export const useOrdersStore = defineStore('orders', () => {
         notification.info('New Order', `Order #${data.order.orderNumber} received`)
         break
 
-      case 'ORDER_UPDATED':
+      case 'ORDER_UPDATED': {
         const index = orders.value.findIndex(order => order.id === data.order.id)
         if (index !== -1) {
           orders.value[index] = data.order
         }
         break
+      }
 
-      case 'ORDER_STATUS_CHANGED':
+      case 'ORDER_STATUS_CHANGED': {
         const orderIndex = orders.value.findIndex(order => order.id === data.orderId)
         if (orderIndex !== -1) {
           orders.value[orderIndex].status = data.status
           orders.value[orderIndex].updatedAt = new Date().toISOString()
         }
         break
+      }
     }
   }
 

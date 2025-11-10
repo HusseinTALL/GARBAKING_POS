@@ -1,18 +1,19 @@
 <!--
   Home View - Menu Browsing
-  Main menu interface with search, categories, and product grid
+  Enhanced menu browsing with advanced SearchBar, FilterPanel, ProductCard components
+  Features: real-time search, filters, favorites, restaurant cards, error/empty states
 -->
 
 <template>
-  <div class="min-h-screen bg-white pb-20">
+  <div class="min-h-screen bg-white dark:bg-gray-900 pb-20">
     <!-- Header -->
-    <header class="sticky top-0 z-20 bg-white border-b border-gray-100 shadow-sm">
+    <header class="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm">
       <div class="max-w-md mx-auto px-4 py-4">
         <div class="flex items-center justify-between mb-4">
           <!-- Greeting -->
           <div>
-            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ $t('home.greeting') }}</h1>
-            <p class="text-sm text-gray-600 mt-0.5">{{ $t('home.subtitle') }}</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{{ $t('home.greeting') }}</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ $t('home.subtitle') }}</p>
           </div>
 
           <!-- Right icons -->
@@ -20,56 +21,68 @@
             <!-- Language switcher -->
             <button
               @click="toggleLanguage"
-              class="w-10 h-10 rounded-full bg-background-gray flex items-center justify-center text-text-secondary hover:bg-gray-200 transition-colors"
+              class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               <span class="text-lg">{{ currentLocale === 'en' ? '🇺🇸' : '🇫🇷' }}</span>
             </button>
 
             <!-- Notification bell -->
-            <button class="w-10 h-10 rounded-full bg-background-gray flex items-center justify-center text-text-secondary hover:bg-gray-200 transition-colors relative">
+            <button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors relative">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
               </svg>
-              <span class="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full"></span>
+              <BaseBadge
+                v-if="notificationCount > 0"
+                :label="notificationCount.toString()"
+                variant="error"
+                size="xs"
+                rounded
+                class="absolute -top-1 -right-1"
+              />
             </button>
           </div>
         </div>
 
-        <!-- Search bar -->
-        <div class="relative">
-          <input
-            v-model="searchQuery"
-            type="text"
-            :placeholder="$t('home.search_placeholder')"
-            @input="handleSearch"
-            class="w-full pl-11 pr-12 py-3.5 bg-gray-100 rounded-2xl text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"
-          />
-          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <!-- Clear search button -->
-          <button
-            v-if="searchQuery"
-            @click="clearSearch"
-            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-white hover:bg-gray-400 transition-colors"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
+        <!-- Advanced Search Bar -->
+        <SearchBar
+          v-model="searchQuery"
+          :suggestions="searchSuggestions"
+          :isLoading="isSearching"
+          :placeholder="$t('home.search_placeholder')"
+          showFilterButton
+          :filterCount="activeFilterCount"
+          :debounceMs="300"
+          @search="handleSearch"
+          @select="handleSelectSuggestion"
+          @filter="showFilters = true"
+          @clear="clearSearch"
+        />
       </div>
     </header>
 
+    <!-- Filter Panel Modal -->
+    <FilterPanel
+      v-model="showFilters"
+      :minPrice="0"
+      :maxPrice="100"
+      currencySymbol="$"
+      @apply="handleApplyFilters"
+      @clear="clearFilters"
+    />
+
     <!-- Main content -->
     <main class="max-w-md mx-auto px-4 py-6">
-      <!-- Category Icons -->
-      <CategoryIcons
-        :categories="categories"
-        :selected-category="selectedCategory"
-        @select="handleCategorySelect"
-        class="mb-6"
-      />
+      <!-- Category Chips -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide mb-6">
+        <BaseChip
+          v-for="category in categories"
+          :key="category.id"
+          :label="`${category.emoji} ${category.name}`"
+          :selected="selectedCategory === category.id"
+          @click="handleCategorySelect(category.id)"
+          size="md"
+        />
+      </div>
 
       <!-- Promo Banner -->
       <PromoBanner
@@ -80,11 +93,11 @@
         class="mb-6"
       />
 
-      <SmartSuggestCard />
+      <SmartSuggestCard class="mb-6" />
 
       <!-- Section heading -->
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-text-DEFAULT">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">
           {{ searchQuery ? $t('home.search_results') : $t('home.best_sellers') }}
         </h2>
         <button
@@ -95,54 +108,54 @@
         </button>
       </div>
 
-      <!-- Loading skeleton -->
-      <div v-if="isLoadingMenu" class="grid grid-cols-2 gap-4">
-        <div v-for="i in 6" :key="i" class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <div class="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse"></div>
-          <div class="p-4 space-y-3">
-            <div class="flex items-center gap-2">
-              <div class="h-6 bg-gray-200 rounded-full w-16 animate-pulse"></div>
-            </div>
-            <div class="h-5 bg-gray-200 rounded-lg w-3/4 animate-pulse"></div>
-            <div class="h-7 bg-gray-200 rounded-lg w-1/2 animate-pulse"></div>
-            <div class="h-11 bg-gray-200 rounded-2xl w-full animate-pulse"></div>
-          </div>
-        </div>
-      </div>
+      <!-- Error State -->
+      <ErrorState
+        v-if="loadError"
+        type="server"
+        variant="inline"
+        :title="$t('home.error_title')"
+        :description="$t('home.error_description')"
+        showRetry
+        @retry="handleRetry"
+        class="mb-6"
+      />
 
-      <!-- Menu items grid -->
+      <!-- Loading State -->
+      <BaseLoader
+        v-if="isLoadingMenu"
+        variant="skeleton"
+        size="lg"
+        class="mb-6"
+      />
+
+      <!-- Menu items grid with ProductCard -->
       <div v-else-if="filteredMenuItems.length > 0" class="grid grid-cols-2 gap-4">
-        <MenuItemCard
+        <ProductCard
           v-for="item in filteredMenuItems"
           :key="item.sku"
-          :item="item"
-          @add-to-cart="addToCart"
-          @view-detail="showProductDetail(item)"
+          :product="transformToProduct(item)"
+          :quantity="getCartQuantity(item.id)"
+          :isFavorite="isFavorite(item.id)"
+          variant="grid"
+          showQuickAdd
+          @addToCart="addToCart(item)"
+          @favoriteToggle="toggleFavorite(item.id)"
+          @click="showProductDetail(item)"
+          @quantityChange="handleQuantityChange(item, $event)"
           class="animate-fade-in"
         />
       </div>
 
       <!-- Empty state -->
-      <div v-else class="text-center py-16">
-        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-        <h3 class="text-gray-900 text-lg font-bold mb-2">
-          {{ searchQuery ? $t('home.no_results') : $t('home.no_items') }}
-        </h3>
-        <p class="text-gray-500 text-sm mb-6 px-8">
-          {{ searchQuery ? $t('home.try_different_search') : $t('home.try_different_category') }}
-        </p>
-        <button
-          v-if="searchQuery"
-          @click="clearSearch"
-          class="px-6 py-3 bg-primary-500 text-white rounded-2xl text-sm font-semibold hover:bg-primary-600 active:scale-95 transition-all shadow-lg shadow-primary-500/30"
-        >
-          {{ $t('home.clear_search') }}
-        </button>
-      </div>
+      <EmptyState
+        v-else-if="!isLoadingMenu && !loadError"
+        :type="searchQuery ? 'search' : 'generic'"
+        :title="searchQuery ? $t('home.no_results') : $t('home.no_items')"
+        :description="searchQuery ? $t('home.try_different_search') : $t('home.try_different_category')"
+        :actionText="searchQuery ? $t('home.clear_search') : undefined"
+        @action="clearSearch"
+        size="md"
+      />
     </main>
 
     <!-- Product Detail Modal -->
@@ -167,8 +180,21 @@ import { setLocale, getCurrentLocale } from '@/plugins/i18n'
 import { mockApi, type MenuItem } from '@/services/mockApi'
 import { useCartStore } from '@/stores/cart'
 import { useMenuStore } from '@/stores/menu'
-import MenuItemCard from '@/components/MenuItemCard.vue'
-import CategoryIcons from '@/components/CategoryIcons.vue'
+import { useFavoritesStore } from '@/stores/favorites'
+
+// Advanced Components
+import SearchBar from '@/components/advanced/SearchBar.vue'
+import FilterPanel from '@/components/advanced/FilterPanel.vue'
+import ProductCard from '@/components/advanced/ProductCard.vue'
+import EmptyState from '@/components/advanced/EmptyState.vue'
+import ErrorState from '@/components/advanced/ErrorState.vue'
+
+// Base Components
+import BaseChip from '@/components/base/BaseChip.vue'
+import BaseBadge from '@/components/base/BaseBadge.vue'
+import BaseLoader from '@/components/base/BaseLoader.vue'
+
+// Existing Components
 import PromoBanner from '@/components/PromoBanner.vue'
 import SmartSuggestCard from '@/components/SmartSuggestCard.vue'
 import ProductDetail from '@/components/ProductDetail.vue'
@@ -178,6 +204,7 @@ const router = useRouter()
 const { t: $t } = useI18n()
 const cartStore = useCartStore()
 const menuStore = useMenuStore()
+const favoritesStore = useFavoritesStore()
 
 // State
 const selectedCategory = ref<string>('All')
@@ -185,6 +212,26 @@ const searchQuery = ref<string>('')
 const selectedProduct = ref<MenuItem | null>(null)
 const showProductDetailModal = ref(false)
 const isLoadingMenu = ref(true)
+const loadError = ref(false)
+const showFilters = ref(false)
+const isSearching = ref(false)
+const searchSuggestions = ref<Array<{
+  id: string | number
+  title: string
+  subtitle?: string
+  icon?: string
+  badge?: string
+}>>([])
+const notificationCount = ref(3)
+const appliedFilters = ref<any>({
+  cuisines: [],
+  priceRange: [0, 100],
+  ratings: [],
+  distance: 10,
+  dietary: [],
+  delivery: [],
+  sortBy: 'recommended'
+})
 
 // Helper function for category emojis
 const getCategoryEmoji = (category: string): string => {
@@ -239,20 +286,85 @@ const filteredMenuItems = computed(() => {
     )
   }
 
+  // Apply filters
+  if (appliedFilters.value.priceRange) {
+    const [min, max] = appliedFilters.value.priceRange
+    items = items.filter(item => item.price >= min && item.price <= max)
+  }
+
+  if (appliedFilters.value.ratings && appliedFilters.value.ratings.length > 0) {
+    items = items.filter(item => {
+      const rating = item.rating || 0
+      return appliedFilters.value.ratings.some((r: number) => rating >= r)
+    })
+  }
+
   return items
 })
 
 const currentLocale = computed(() => getCurrentLocale())
 
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (appliedFilters.value.cuisines?.length > 0) count++
+  if (appliedFilters.value.ratings?.length > 0) count++
+  if (appliedFilters.value.dietary?.length > 0) count++
+  if (appliedFilters.value.delivery?.length > 0) count++
+  if (appliedFilters.value.priceRange[0] !== 0 || appliedFilters.value.priceRange[1] !== 100) count++
+  return count
+})
+
 // Methods
 const loadMenu = async () => {
   isLoadingMenu.value = true
+  loadError.value = false
   try {
     await menuStore.fetchMenu()
   } catch (error) {
     console.error('Failed to load menu:', error)
+    loadError.value = true
   } finally {
     isLoadingMenu.value = false
+  }
+}
+
+const handleRetry = () => {
+  loadMenu()
+}
+
+const transformToProduct = (item: MenuItem) => {
+  return {
+    id: item.id,
+    name: item.name,
+    description: item.description || '',
+    price: item.price,
+    originalPrice: item.originalPrice,
+    image: item.imageUrl || item.image || '',
+    rating: item.rating || 4.5,
+    reviewCount: item.reviewCount || Math.floor(Math.random() * 500) + 50,
+    category: typeof item.category === 'string' ? item.category : item.category?.name || '',
+    prepTime: item.prepTime || '15-20 min',
+    discount: item.discount,
+    isNew: item.isNew || false,
+    inStock: item.available !== false,
+    tags: item.tags || [],
+    badge: item.badge
+  }
+}
+
+const getCartQuantity = (itemId: string | number) => {
+  const cartItem = cartStore.items.find(i => i.id === itemId)
+  return cartItem?.quantity || 0
+}
+
+const isFavorite = (itemId: string | number) => {
+  return favoritesStore.isFavorite(String(itemId))
+}
+
+const toggleFavorite = (itemId: string | number) => {
+  const item = menuStore.menuItems.find(i => i.id === itemId)
+  if (item) {
+    favoritesStore.toggleFavorite(item)
   }
 }
 
@@ -265,6 +377,24 @@ const addToCart = (item: MenuItem) => {
     imageUrl: item.imageUrl || item.image,
     category: typeof item.category === 'string' ? item.category : item.category?.name
   })
+}
+
+const handleQuantityChange = (item: MenuItem, quantity: number) => {
+  if (quantity === 0) {
+    cartStore.removeItem(item.id)
+  } else {
+    const currentQty = getCartQuantity(item.id)
+    const diff = quantity - currentQty
+    if (diff > 0) {
+      for (let i = 0; i < diff; i++) {
+        addToCart(item)
+      }
+    } else {
+      for (let i = 0; i < Math.abs(diff); i++) {
+        cartStore.decrementItem(item.id)
+      }
+    }
+  }
 }
 
 const showProductDetail = (item: MenuItem) => {
@@ -290,20 +420,70 @@ const addToCartFromDetail = (data: { item: MenuItem; quantity: number; size?: st
   closeProductDetail()
 }
 
-const handleSearch = () => {
-  if (searchQuery.value.trim()) {
-    selectedCategory.value = 'All'
+const handleSearch = async () => {
+  if (!searchQuery.value.trim()) {
+    searchSuggestions.value = []
+    return
   }
+
+  isSearching.value = true
+  selectedCategory.value = 'All'
+
+  // Simulate API call for suggestions
+  setTimeout(() => {
+    const query = searchQuery.value.toLowerCase()
+    const matches = menuStore.menuItems.filter(item =>
+      item.name.toLowerCase().includes(query) ||
+      item.description?.toLowerCase().includes(query)
+    ).slice(0, 5)
+
+    searchSuggestions.value = matches.map(item => ({
+      id: item.id,
+      title: item.name,
+      subtitle: item.description || '',
+      icon: '🍽️'
+    }))
+
+    isSearching.value = false
+  }, 300)
+}
+
+const handleSelectSuggestion = (suggestion: any) => {
+  const item = menuStore.menuItems.find(i => i.id === suggestion.id)
+  if (item) {
+    showProductDetail(item)
+  }
+  searchQuery.value = suggestion.title
+  searchSuggestions.value = []
 }
 
 const clearSearch = () => {
   searchQuery.value = ''
+  searchSuggestions.value = []
   selectedCategory.value = 'All'
+}
+
+const handleApplyFilters = (filters: any) => {
+  appliedFilters.value = { ...filters }
+  showFilters.value = false
+}
+
+const clearFilters = () => {
+  appliedFilters.value = {
+    cuisines: [],
+    priceRange: [0, 100],
+    ratings: [],
+    distance: 10,
+    dietary: [],
+    delivery: [],
+    sortBy: 'recommended'
+  }
 }
 
 const handleSeeAll = () => {
   searchQuery.value = ''
   selectedCategory.value = 'All'
+  clearFilters()
 }
 
 const handlePromoClick = () => {

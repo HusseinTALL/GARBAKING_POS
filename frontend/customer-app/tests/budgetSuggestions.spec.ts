@@ -31,7 +31,7 @@ vi.mock('vue-toastification', () => ({
 
 describe('budget suggestions store', () => {
   beforeEach(() => {
-    ;(globalThis as any).localStorage = createStorageMock()
+    (globalThis as any).localStorage = createStorageMock()
     ;(globalThis as any).navigator = { language: 'fr-FR' }
     setActivePinia(createPinia())
   })

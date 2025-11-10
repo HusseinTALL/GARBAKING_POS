@@ -1,0 +1,72 @@
+{
+  "welcome": {
+    "title": "Bienvenue chez Garbaking",
+    "subtitle": "Touchez n'importe où pour commencer votre commande",
+    "touchToStart": "Toucher pour Commencer"
+  },
+  "mode": {
+    "title": "Comment souhaitez-vous profiter de votre repas?",
+    "dineIn": "Sur Place",
+    "takeaway": "À Emporter",
+    "selectLanguage": "Choisir la Langue",
+    "continue": "Continuer"
+  },
+  "menu": {
+    "title": "Menu",
+    "viewCart": "Voir le Panier",
+    "addToCart": "Ajouter au Panier",
+    "items": "articles",
+    "search": "Rechercher dans le menu...",
+    "noItems": "Aucun article disponible",
+    "unavailable": "Actuellement Indisponible"
+  },
+  "customize": {
+    "title": "Personnalisez Votre Commande",
+    "required": "Obligatoire",
+    "optional": "Optionnel",
+    "specialInstructions": "Instructions Spéciales",
+    "addToCart": "Ajouter au Panier",
+    "cancel": "Annuler",
+    "quantity": "Quantité"
+  },
+  "cart": {
+    "title": "Votre Commande",
+    "empty": "Votre panier est vide",
+    "subtotal": "Sous-total",
+    "tax": "Taxe",
+    "total": "Total",
+    "checkout": "Procéder au Paiement",
+    "continueShopping": "Continuer les Achats",
+    "remove": "Retirer",
+    "edit": "Modifier"
+  },
+  "payment": {
+    "title": "Sélectionner le Mode de Paiement",
+    "card": "Carte Bancaire",
+    "mobileMoney": "Mobile Money",
+    "qrCode": "Code QR",
+    "cash": "Payer au Comptoir",
+    "processing": "Traitement du Paiement...",
+    "cancel": "Annuler"
+  },
+  "confirmation": {
+    "title": "Commande Confirmée!",
+    "orderNumber": "Numéro de Commande",
+    "thankYou": "Merci pour votre commande",
+    "pleaseWait": "Veuillez patienter pendant la préparation de votre commande",
+    "estimatedTime": "Temps estimé",
+    "minutes": "minutes",
+    "newOrder": "Nouvelle Commande",
+    "dineInMessage": "Veuillez trouver une place. Nous vous apporterons votre commande.",
+    "takeawayMessage": "Veuillez attendre au comptoir. Nous appellerons votre numéro quand c'est prêt."
+  },
+  "common": {
+    "back": "Retour",
+    "next": "Suivant",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non",
+    "currency": "€"
+  }
+}

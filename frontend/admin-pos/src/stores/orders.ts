@@ -246,7 +246,7 @@ export const useOrdersStore = defineStore('orders', () => {
   })
 
   // Actions
-  const fetchOrders = async (params?: { limit?: number; offset?: number }) => {
+  const fetchOrders = async () => {
     isLoading.value = true
     try {
       const data = await ordersApi.getAll()
@@ -343,7 +343,7 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  const cancelOrder = async (orderId: string, reason?: string) => {
+  const cancelOrder = async (orderId: string, _reason?: string) => {
     try {
       await ordersApi.cancel(parseInt(orderId))
 
@@ -361,7 +361,7 @@ export const useOrdersStore = defineStore('orders', () => {
     }
   }
 
-  const printReceipt = async (orderId: string) => {
+  const printReceipt = async (_orderId: string) => {
     try {
       // Note: Print endpoint may not exist in Spring Boot backend yet
       // This might need to be handled client-side or added to backend

@@ -472,7 +472,7 @@ import {
   RefreshCw,
   Loader2
 } from 'lucide-vue-next'
-import { type ReceiptTemplate, type ReceiptConfig, ReceiptType } from '@/stores/receipts'
+import { type ReceiptTemplate, ReceiptType } from '@/stores/receipts'
 
 interface Props {
   template?: ReceiptTemplate | null

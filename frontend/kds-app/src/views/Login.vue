@@ -176,7 +176,7 @@
       <div class="mt-6 text-center">
         <div class="inline-flex items-center space-x-2 text-white text-opacity-75 text-sm">
           <component
-            :is="systemStatus.online ? 'Wifi' : 'WifiOff'"
+            :is="systemStatus.online ? icons.Wifi : icons.WifiOff"
             :class="systemStatus.online ? 'text-green-300' : 'text-yellow-300'"
             class="w-4 h-4"
           />
@@ -253,6 +253,11 @@ import {
 const router = useRouter()
 const authStore = useAuthStore()
 const notification = useNotificationStore()
+
+const icons = {
+  Wifi,
+  WifiOff
+}
 
 // Reactive data
 const authMethod = ref<'password' | 'pin'>('password')

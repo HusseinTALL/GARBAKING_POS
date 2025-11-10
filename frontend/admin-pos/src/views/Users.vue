@@ -306,8 +306,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useUsersStore } from '@/stores/users'
-import { usePermissions } from '@/composables/usePermissions'
 import { getRoleColor, getRoleDisplayName } from '@/constants/permissions'
 import PermissionGuard from '@/components/PermissionGuard.vue'
 import ClockInOutPanel from '@/components/ClockInOutPanel.vue'
@@ -346,8 +344,6 @@ interface User {
 
 // State
 const authStore = useAuthStore()
-const usersStore = useUsersStore()
-const permissions = usePermissions()
 
 const users = ref<User[]>([])
 const isLoading = ref(false)

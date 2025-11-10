@@ -179,14 +179,14 @@ const categories = ref([
 const imageLoadError = ref<Record<string, boolean>>({})
 
 // Optional props for empty state (if using filters externally)
-const props = defineProps<{
+defineProps<{
   hasActiveFilters?: boolean
 }>()
 
 // Emits
 const emit = defineEmits<{
-  (e: 'add-item', item: any): void
-  (e: 'clear-filters'): void
+  'add-item': (_item: any) => void
+  'clear-filters': () => void
 }>()
 
 const clearFilters = () => emit('clear-filters')

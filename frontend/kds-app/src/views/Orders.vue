@@ -253,7 +253,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useOrdersStore, OrderStatus } from '@/stores/orders'
-import { useNotificationStore } from '@/stores/notification'
 import {
   RefreshCw,
   Volume2,
@@ -279,7 +278,6 @@ interface Notification {
 
 // Stores
 const ordersStore = useOrdersStore()
-const notificationStore = useNotificationStore()
 
 // State
 const soundEnabled = ref(true)

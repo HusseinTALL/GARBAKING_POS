@@ -217,7 +217,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissions } from '@/composables/usePermissions'
-import { UI_RESTRICTIONS, ROLES, type Role } from '@/constants/permissions'
+import { UI_RESTRICTIONS, type Role } from '@/constants/permissions'
 import { X } from 'lucide-vue-next'
 
 interface Props {

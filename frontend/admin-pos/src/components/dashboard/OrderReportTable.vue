@@ -152,7 +152,7 @@ const formatPrice = (amount: number): string => {
 }
 
 const emit = defineEmits<{
-  (e: 'view-order', order: Order): void
+  'view-order': (_order: Order) => void
 }>()
 
 const viewOrder = (order: Order) => {

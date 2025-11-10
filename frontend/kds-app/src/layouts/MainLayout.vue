@@ -262,7 +262,7 @@ const sidebarItems = computed(() => {
 
 // Computed properties
 const currentPageTitle = computed(() => {
-  const currentRoute = sidebarItems.find(item => item.path === route.path)
+  const currentRoute = sidebarItems.value.find(item => item.path === route.path)
   return currentRoute?.label || 'Dashboard'
 })
 

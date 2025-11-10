@@ -59,7 +59,7 @@
         <!-- Order items preview (show first 2 items) -->
         <div class="space-y-2 mb-3">
           <div
-            v-for="(item, index) in order.orderItems.slice(0, 2)"
+            v-for="item in order.orderItems.slice(0, 2)"
             :key="item.id"
             class="flex items-center gap-3"
           >

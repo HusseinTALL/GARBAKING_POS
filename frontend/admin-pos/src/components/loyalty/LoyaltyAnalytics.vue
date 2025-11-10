@@ -282,9 +282,6 @@ const analytics = computed(() => {
 const fetchAnalytics = async () => {
   isLoading.value = true
   try {
-    let startDate: string | undefined
-    let endDate: string | undefined
-
     const daysMap: Record<string, number> = {
       '7d': 7,
       '30d': 30,
@@ -296,8 +293,8 @@ const fetchAnalytics = async () => {
     const end = new Date()
     const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000)
 
-    startDate = start.toISOString().split('T')[0]
-    endDate = end.toISOString().split('T')[0]
+    const startDate = start.toISOString().split('T')[0]
+    const endDate = end.toISOString().split('T')[0]
 
     await loyaltyStore.fetchAnalytics(startDate, endDate)
   } finally {

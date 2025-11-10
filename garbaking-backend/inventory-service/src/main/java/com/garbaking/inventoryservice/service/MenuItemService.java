@@ -59,6 +59,7 @@ public class MenuItemService {
     private final InventoryAuditService inventoryAuditService;
     private final InventoryEventPublisher inventoryEventPublisher;
     private final ImageStorageService imageStorageService;
+    private final MinioImageStorageService minioImageStorageService;
 
     @Transactional
     public MenuItemDTO createMenuItem(MenuItemDTO menuItemDTO) {
@@ -271,7 +272,8 @@ public class MenuItemService {
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
 
-        ImageStorageService.ImageUploadResult uploadResult = imageStorageService.store(menuItemId, file);
+        // Use MinIO for image storage
+        MinioImageStorageService.ImageUploadResult uploadResult = minioImageStorageService.store(menuItemId, file);
 
         MenuItemImage image = MenuItemImage.builder()
                 .menuItem(menuItem)

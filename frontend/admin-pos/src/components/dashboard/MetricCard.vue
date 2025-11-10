@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ArrowUp, ArrowDown, DollarSign, ShoppingBag, Users } from 'lucide-vue-next'
+import { ArrowUp, ArrowDown, DollarSign } from 'lucide-vue-next'
 
 interface Props {
   label: string

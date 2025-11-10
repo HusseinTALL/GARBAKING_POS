@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { WifiOff, Wifi, RefreshCw, Clock } from 'lucide-vue-next'
 import { healthCheckService, type HealthStatus } from '@/services/healthCheckService'
 
@@ -117,7 +117,7 @@ const maxRetries = 10
 const retryProgress = ref(0)
 
 let unsubscribe: (() => void) | null = null
-let progressInterval: NodeJS.Timeout | null = null
+const progressInterval: NodeJS.Timeout | null = null
 
 // Watch for status changes
 onMounted(() => {

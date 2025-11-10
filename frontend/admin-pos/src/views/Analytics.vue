@@ -311,9 +311,6 @@ import {
 const analyticsStore = useAnalyticsStore()
 const {
   salesData,
-  topSellingProducts,
-  topPerformingStaff,
-  peakHours,
   salesTrend,
   kpiMetrics,
   selectedPeriod,

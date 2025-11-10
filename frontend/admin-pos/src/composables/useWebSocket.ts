@@ -189,7 +189,7 @@ export function useWebSocket() {
       const startTime = Date.now()
       socket.emit('ping')
 
-      socket.once('pong', (data: { timestamp: number }) => {
+      socket.once('pong', (_data: { timestamp: number }) => {
         const latency = Date.now() - startTime
         console.log(`WebSocket latency: ${latency}ms`)
       })

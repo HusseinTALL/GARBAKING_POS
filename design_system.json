@@ -1,0 +1,314 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/schema.json",
+  "designSystem": {
+    "meta": {
+      "name": "PizzaEats Kiosk UI",
+      "version": "1.4.0",
+      "description": "Enterprise, fluid, multi-brand design system for PizzaEats kiosks. W3C design tokens v1 compliant, responsive, accessible, and theme-extensible.",
+      "author": "PizzaEats Design & Engineering",
+      "lastUpdated": "2025-11-04",
+      "platforms": ["Web Kiosk", "Tablet", "PWA", "Native (planned)"],
+      "themes": ["light", "dark", "highContrast"],
+      "tokenFormat": "W3C Design Tokens Level 1",
+      "touchTargetMin": 48,
+      "grid": {
+        "columns": 12,
+        "gutter": 24,
+        "margin": 32,
+        "maxWidth": 1440,
+        "containerWidths": {
+          "sm": "100%",
+          "md": "720px",
+          "lg": "960px",
+          "xl": "1200px",
+          "2xl": "1440px"
+        },
+        "breakpoints": {
+          "xs": 360,
+          "sm": 480,
+          "md": 768,
+          "lg": 1024,
+          "xl": 1280,
+          "2xl": 1600
+        }
+      }
+    },
+
+    "//": "=== FOUNDATION TOKENS ===",
+
+    "foundation": {
+      "typography": {
+        "families": {
+          "brand": { "value": "'Poppins', 'SF Pro Display', -apple-system, sans-serif" },
+          "body": { "value": "'Inter', 'Helvetica Neue', Helvetica, sans-serif" },
+          "system": { "value": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
+          "mono": { "value": "'Roboto Mono', monospace" }
+        },
+        "weights": {
+          "thin": { "value": 200 },
+          "light": { "value": 300 },
+          "regular": { "value": 400 },
+          "medium": { "value": 500 },
+          "semibold": { "value": 600 },
+          "bold": { "value": 700 },
+          "extrabold": { "value": 800 }
+        },
+        "sizes": {
+          "xs": { "value": "12px" },
+          "sm": { "value": "14px" },
+          "base": { "value": "16px" },
+          "md": { "value": "18px" },
+          "lg": { "value": "20px" },
+          "xl": { "value": "24px" },
+          "2xl": { "value": "28px" },
+          "3xl": { "value": "32px" },
+          "4xl": { "value": "40px" },
+          "5xl": { "value": "48px" },
+          "6xl": { "value": "56px" },
+          "7xl": { "value": "64px" }
+        },
+        "lineHeights": {
+          "tight": { "value": 1.1 },
+          "snug": { "value": 1.25 },
+          "normal": { "value": 1.5 },
+          "relaxed": { "value": 1.65 },
+          "loose": { "value": 1.8 }
+        },
+        "letterSpacings": {
+          "tight": { "value": "-0.02em" },
+          "normal": { "value": "0em" },
+          "wide": { "value": "0.03em" }
+        },
+        "fluid": {
+          "clamp": {
+            "body": { "value": "clamp(14px, 1.5vw, 20px)" },
+            "heading": { "value": "clamp(24px, 5vw, 48px)" },
+            "display": { "value": "clamp(32px, 6vw, 72px)" }
+          }
+        }
+      },
+
+      "color": {
+        "brand": {
+          "50": { "value": "#FFF9E8", "dark": "#2B1F00" },
+          "100": { "value": "#FFEFC1", "dark": "#4A3A00" },
+          "200": { "value": "#FFD97B", "dark": "#6B5700" },
+          "300": { "value": "#FFC33A", "dark": "#8C7400" },
+          "400": { "value": "#FFB300", "dark": "#AD9100" },
+          "500": { "value": "#F5A300", "dark": "#CEAE00" },
+          "600": { "value": "#E59400", "dark": "#EFC800" },
+          "700": { "value": "#CC8000", "dark": "#FFD700" },
+          "800": { "value": "#A86800", "dark": "#FFE680" },
+          "900": { "value": "#704600", "dark": "#FFF4C2" }
+        },
+        "accent": {
+          "success": { "value": "#3BB273", "dark": "#66BB6A" },
+          "error": { "value": "#E94E3A", "dark": "#F44336" },
+          "warning": { "value": "#FFC107", "dark": "#FFB300" },
+          "info": { "value": "#1E88E5", "dark": "#42A5F5" }
+        },
+        "neutral": {
+          "white": { "value": "#FFFFFF" },
+          "50": { "value": "#FAFAFA", "dark": "#1A1A1A" },
+          "100": { "value": "#F5F5F5", "dark": "#2C2C2C" },
+          "200": { "value": "#EEEEEE", "dark": "#3A3A3A" },
+          "300": { "value": "#E0E0E0", "dark": "#4A4A4A" },
+          "400": { "value": "#BDBDBD", "dark": "#6E6E6E" },
+          "500": { "value": "#9E9E9E", "dark": "#9E9E9E" },
+          "600": { "value": "#757575", "dark": "#BDBDBD" },
+          "700": { "value": "#616161", "dark": "#E0E0E0" },
+          "800": { "value": "#424242", "dark": "#EEEEEE" },
+          "900": { "value": "#212121", "dark": "#FAFAFA" },
+          "black": { "value": "#000000" }
+        },
+        "elevation": {
+          "surface1": { "value": "rgba(255,255,255,0.06)" },
+          "surface2": { "value": "rgba(255,255,255,0.1)" },
+          "surface3": { "value": "rgba(255,255,255,0.14)" }
+        }
+      },
+
+      "spacing": {
+        "scale": {
+          "0": { "value": "0px" },
+          "1": { "value": "4px" },
+          "2": { "value": "8px" },
+          "3": { "value": "12px" },
+          "4": { "value": "16px" },
+          "5": { "value": "20px" },
+          "6": { "value": "24px" },
+          "8": { "value": "32px" },
+          "10": { "value": "40px" },
+          "12": { "value": "48px" },
+          "14": { "value": "56px" },
+          "16": { "value": "64px" },
+          "20": { "value": "80px" },
+          "24": { "value": "96px" },
+          "32": { "value": "128px" }
+        },
+        "aliases": {
+          "none": { "value": "{foundation.spacing.scale.0}" },
+          "xs": { "value": "{foundation.spacing.scale.1}" },
+          "sm": { "value": "{foundation.spacing.scale.2}" },
+          "md": { "value": "{foundation.spacing.scale.4}" },
+          "lg": { "value": "{foundation.spacing.scale.6}" },
+          "xl": { "value": "{foundation.spacing.scale.8}" },
+          "xxl": { "value": "{foundation.spacing.scale.12}" },
+          "section": { "value": "{foundation.spacing.scale.16}" }
+        }
+      },
+
+      "radius": {
+        "none": { "value": "0px" },
+        "sm": { "value": "6px" },
+        "md": { "value": "12px" },
+        "lg": { "value": "16px" },
+        "xl": { "value": "24px" },
+        "2xl": { "value": "32px" },
+        "full": { "value": "9999px" }
+      },
+
+      "shadow": {
+        "elevations": {
+          "0": { "value": "none" },
+          "1": { "value": "0px 1px 3px rgba(0,0,0,0.1)" },
+          "2": { "value": "0px 4px 8px rgba(0,0,0,0.08)" },
+          "3": { "value": "0px 8px 16px rgba(0,0,0,0.12)" },
+          "4": { "value": "0px 16px 24px rgba(0,0,0,0.14)" },
+          "focus": { "value": "0 0 0 3px {foundation.color.brand.200}" }
+        }
+      },
+
+      "motion": {
+        "duration": {
+          "instant": { "value": "0.05s" },
+          "fast": { "value": "0.15s" },
+          "normal": { "value": "0.25s" },
+          "slow": { "value": "0.4s" }
+        },
+        "easing": {
+          "standard": { "value": "cubic-bezier(0.4, 0, 0.2, 1)" },
+          "accelerate": { "value": "cubic-bezier(0.4, 0, 1, 1)" },
+          "decelerate": { "value": "cubic-bezier(0, 0, 0.2, 1)" },
+          "spring": { "value": "cubic-bezier(0.25, 1, 0.5, 1)" }
+        }
+      }
+    },
+
+    "//": "=== ENHANCED COMPONENT TOKENS ===",
+
+    "components": {
+      "button": {
+        "base": {
+          "height": { "value": "56px" },
+          "minWidth": { "value": "64px" },
+          "paddingX": { "value": "{foundation.spacing.aliases.lg}" },
+          "radius": { "value": "{foundation.radius.md}" },
+          "font": {
+            "size": { "value": "{foundation.typography.sizes.lg}" },
+            "weight": { "value": "{foundation.typography.weights.semibold}" }
+          },
+          "transition": { "value": "all {foundation.motion.duration.normal} {foundation.motion.easing.standard}" },
+          "states": {
+            "hover": { "value": "opacity: 0.9" },
+            "focus": { "value": "{foundation.shadow.elevations.focus}" },
+            "pressed": { "value": "scale(0.97)" }
+          }
+        },
+        "variants": {
+          "primary": {
+            "bg": { "value": "{foundation.color.brand.400}" },
+            "color": { "value": "{foundation.color.neutral.white}" },
+            "hoverBg": { "value": "{foundation.color.brand.300}" },
+            "activeBg": { "value": "{foundation.color.brand.600}" },
+            "shadow": { "value": "{foundation.shadow.elevations.2}" }
+          },
+          "outline": {
+            "bg": { "value": "transparent" },
+            "color": { "value": "{foundation.color.brand.500}" },
+            "border": { "value": "2px solid {foundation.color.brand.500}" },
+            "hoverBg": { "value": "{foundation.color.brand.50}" }
+          },
+          "cta": {
+            "height": { "value": "64px" },
+            "bg": { "value": "linear-gradient(90deg, {foundation.color.brand.300}, {foundation.color.brand.500})" },
+            "shadow": { "value": "{foundation.shadow.elevations.3}" },
+            "radius": { "value": "{foundation.radius.lg}" },
+            "fontWeight": { "value": "{foundation.typography.weights.bold}" }
+          }
+        }
+      },
+
+      "card": {
+        "menu": {
+          "bg": { "value": "{foundation.color.neutral.white}" },
+          "radius": { "value": "{foundation.radius.lg}" },
+          "shadow": { "value": "{foundation.shadow.elevations.2}" },
+          "hover": { "value": "transform: translateY(-4px); box-shadow: {foundation.shadow.elevations.3}" },
+          "padding": { "value": "{foundation.spacing.aliases.md}" }
+        },
+        "info": {
+          "border": { "value": "1px solid {foundation.color.neutral.200}" },
+          "padding": { "value": "{foundation.spacing.aliases.sm}" }
+        }
+      },
+
+      "modal": {
+        "overlay": { "value": "rgba(0,0,0,0.5)" },
+        "radius": { "value": "{foundation.radius.xl}" },
+        "shadow": { "value": "{foundation.shadow.elevations.4}" },
+        "padding": { "value": "{foundation.spacing.aliases.xl}" },
+        "animation": { "value": "fadeIn {foundation.motion.duration.normal}" }
+      },
+
+      "toast": {
+        "radius": { "value": "{foundation.radius.md}" },
+        "shadow": { "value": "{foundation.shadow.elevations.3}" },
+        "transition": { "value": "all {foundation.motion.duration.fast} ease-out" },
+        "positions": {
+          "topRight": { "value": "top: 24px; right: 24px" },
+          "bottomCenter": { "value": "bottom: 24px; left: 50%; transform: translateX(-50%)" }
+        }
+      },
+
+      "tooltip": {
+        "bg": { "value": "{foundation.color.neutral.900}" },
+        "color": { "value": "{foundation.color.neutral.white}" },
+        "radius": { "value": "{foundation.radius.sm}" },
+        "shadow": { "value": "{foundation.shadow.elevations.2}" },
+        "padding": { "value": "6px 10px" },
+        "fontSize": { "value": "{foundation.typography.sizes.sm}" }
+      },
+
+      "progressBar": {
+        "height": { "value": "8px" },
+        "radius": { "value": "{foundation.radius.full}" },
+        "track": { "value": "{foundation.color.neutral.200}" },
+        "indicator": { "value": "{foundation.color.brand.400}" },
+        "animation": { "value": "width 0.3s {foundation.motion.easing.standard}" }
+      },
+
+      "skeleton": {
+        "baseColor": { "value": "{foundation.color.neutral.200}" },
+        "highlightColor": { "value": "rgba(255,255,255,0.5)" },
+        "animation": { "value": "shimmer 1.5s infinite linear" }
+      }
+    },
+
+    "//": "=== ACCESSIBILITY ===",
+
+    "a11y": {
+      "focusRing": { "value": "0 0 0 3px {foundation.color.brand.200}" },
+      "contrast": {
+        "minTextContrast": { "value": "4.5:1" },
+        "uiContrast": { "value": "3:1" }
+      },
+      "touchTarget": { "min": 48, "recommended": 56 },
+      "reducedMotion": { "value": "{foundation.motion.reduced}" },
+      "keyboard": {
+        "outlineColor": { "value": "{foundation.color.brand.300}" },
+        "focusTransition": { "value": "outline-offset 0.15s ease" }
+      }
+    }
+  }
+}

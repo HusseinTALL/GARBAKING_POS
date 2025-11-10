@@ -371,7 +371,7 @@ const performanceData = ref<StaffPerformance[]>([])
 
 // Computed
 const sortedPerformance = computed(() => {
-  return performanceData.value.sort((a, b) => b.metrics.totalSales - a.metrics.totalSales)
+  return [...performanceData.value].sort((a, b) => b.metrics.totalSales - a.metrics.totalSales)
 })
 
 const topPerformers = computed(() => {
@@ -398,7 +398,7 @@ const fetchPerformanceData = async () => {
 const getPeriodDates = (): { start: string; end: string } => {
   const now = new Date()
   const end = now.toISOString()
-  let start = new Date()
+  const start = new Date()
 
   switch (selectedPeriod.value) {
     case 'today':

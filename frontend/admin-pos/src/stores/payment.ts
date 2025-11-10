@@ -268,7 +268,7 @@ export const usePaymentStore = defineStore('payment', () => {
     reason: string
   ): Promise<boolean> => {
     try {
-      const data = await paymentApi.refundPayment(transactionId, amount, reason)
+      await paymentApi.refundPayment(transactionId, amount, reason)
 
       // Update transaction status
       const transactionIndex = recentTransactions.value.findIndex(t => t.id === transactionId)
@@ -362,7 +362,7 @@ export const usePaymentStore = defineStore('payment', () => {
 
   const printReceipt = async (transactionId: string): Promise<boolean> => {
     try {
-      const data = await paymentApi.printReceipt(transactionId)
+      await paymentApi.printReceipt(transactionId)
 
       return true
     } catch (err: any) {

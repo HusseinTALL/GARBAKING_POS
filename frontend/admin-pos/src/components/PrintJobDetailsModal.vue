@@ -254,7 +254,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import {
   X,
   RotateCcw,
@@ -273,8 +272,8 @@ interface Emits {
   (e: 'reprint', jobId: string): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+defineProps<Props>()
+defineEmits<Emits>()
 
 // Methods
 const getStatusLabel = (status: PrintJobStatus): string => {

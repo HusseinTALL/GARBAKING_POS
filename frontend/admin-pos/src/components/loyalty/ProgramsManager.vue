@@ -279,11 +279,11 @@ const toggleProgramStatus = async (program: LoyaltyProgram) => {
   }
 }
 
-const handleProgramCreated = async (programId: string) => {
+const handleProgramCreated = async (_programId: string) => {
   await loadPrograms()
 }
 
-const handleProgramUpdated = async (programId: string) => {
+const handleProgramUpdated = async (_programId: string) => {
   await loadPrograms()
 }
 

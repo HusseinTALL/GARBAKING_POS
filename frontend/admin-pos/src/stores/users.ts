@@ -609,7 +609,7 @@ export const useUsersStore = defineStore('users', () => {
   // Permission Management
   const updateUserPermissions = async (userId: string, permissions: string[]): Promise<boolean> => {
     try {
-      const data = await usersApi.updatePermissions(userId, permissions)
+      await usersApi.updatePermissions(userId, permissions)
 
       const user = users.value.find(u => u.id === userId)
       if (user) {

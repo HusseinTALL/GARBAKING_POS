@@ -50,6 +50,7 @@ export interface MenuItemForm {
   categoryId: number
   imageUrl?: string
   isAvailable: boolean
+  imageFile?: File
 }
 
 export interface CategoryForm {
@@ -265,8 +266,28 @@ export const useMenuStore = defineStore('menu', () => {
     try {
       loading.value = true
       error.value = null
-      const data = await menuItemsApi.create(itemData)
+
+      // Extract image file before creating item
+      const imageFile = itemData.imageFile
+      const itemDataWithoutFile = { ...itemData }
+      delete itemDataWithoutFile.imageFile
+
+      // Create menu item first
+      const data = await menuItemsApi.create(itemDataWithoutFile)
       const newItem = normalizeMenuItem(data)
+
+      // Upload image if provided
+      if (imageFile && newItem.id) {
+        try {
+          const uploadResult = await menuItemsApi.uploadImage(newItem.id, imageFile, true)
+          newItem.imageUrl = uploadResult.imageUrl || uploadResult.publicUrl
+          console.log('Image uploaded successfully:', uploadResult)
+        } catch (imgErr) {
+          console.error('Failed to upload image:', imgErr)
+          // Don't fail the whole operation if image upload fails
+        }
+      }
+
       menuItems.value.push(newItem)
       return newItem
     } catch (err: any) {
@@ -292,8 +313,27 @@ export const useMenuStore = defineStore('menu', () => {
       if (numericId === null) {
         throw new Error('Invalid menu item id')
       }
-      const data = await menuItemsApi.update(numericId, itemData)
+
+      // Extract image file before updating item
+      const imageFile = itemData.imageFile
+      const itemDataWithoutFile = { ...itemData }
+      delete itemDataWithoutFile.imageFile
+
+      // Update menu item data
+      const data = await menuItemsApi.update(numericId, itemDataWithoutFile)
       const updatedItem = normalizeMenuItem(data)
+
+      // Upload new image if provided
+      if (imageFile) {
+        try {
+          const uploadResult = await menuItemsApi.uploadImage(numericId, imageFile, true)
+          updatedItem.imageUrl = uploadResult.imageUrl || uploadResult.publicUrl
+          console.log('Image uploaded successfully:', uploadResult)
+        } catch (imgErr) {
+          console.error('Failed to upload image:', imgErr)
+          // Don't fail the whole operation if image upload fails
+        }
+      }
 
       const index = menuItems.value.findIndex(item => item.id === numericId)
       if (index !== -1) {

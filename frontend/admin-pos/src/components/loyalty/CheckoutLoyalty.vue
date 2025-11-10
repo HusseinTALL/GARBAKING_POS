@@ -137,7 +137,10 @@
             :style="{ width: `${tierProgress}%` }"
           ></div>
         </div>
-        <div class="text-xs text-gray-600 mt-1">{{ formatCurrency(customer.totalSpent || 0)} / {{ formatCurrency(nextTierThreshold) }} to next tier</div>
+        <div class="text-xs text-gray-600 mt-1">
+          {{ formatCurrency(customer.totalSpent || 0) }} /
+          {{ formatCurrency(nextTierThreshold) }} to next tier
+        </div>
       </div>
     </div>
   </div>
@@ -154,9 +157,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'points-applied', data: { points: number, discount: number }): void
-  (e: 'points-removed'): void
-  (e: 'customer-selected', customerId: string): void
+  'points-applied': (_data: { points: number; discount: number }) => void
+  'points-removed': () => void
+  'customer-selected': (_customerId: string) => void
 }>()
 
 const loyaltyStore = useLoyaltyStore()

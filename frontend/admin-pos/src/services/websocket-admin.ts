@@ -17,7 +17,7 @@ export class AdminWebSocketService {
   private maxReconnectAttempts = 10 // More attempts for admin
   private reconnectDelay = 1000
   private toast = useToast()
-  private onOrderUpdateCallbacks: Set<(order: any) => void> = new Set()
+  private onOrderUpdateCallbacks: Set<(_order: any) => void> = new Set()
 
   /**
    * Connect to WebSocket server

@@ -295,9 +295,10 @@ class VoucherService {
    */
   calculateDiscount(voucher: Voucher, orderAmount: number): number {
     switch (voucher.type) {
-      case VoucherType.PERCENTAGE:
+      case VoucherType.PERCENTAGE: {
         const percentDiscount = (orderAmount * voucher.discountValue) / 100
         return voucher.maxDiscount ? Math.min(percentDiscount, voucher.maxDiscount) : percentDiscount
+      }
 
       case VoucherType.FIXED_AMOUNT:
         return Math.min(voucher.discountValue, orderAmount)

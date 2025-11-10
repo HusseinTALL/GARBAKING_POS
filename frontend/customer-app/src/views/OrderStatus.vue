@@ -1,25 +1,28 @@
 <!--
-  Order status tracking page for customer app
-  Real-time order status updates with beautiful progress indicator
+  Order Status Tracking - Enhanced
+  Real-time order tracking with OrderTimeline, ErrorState, and BaseLoader
+  Features: visual timeline, estimated time, real-time updates, support contact
 -->
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
-    <div class="sticky top-0 bg-white shadow-sm z-40 safe-area-top">
+    <div class="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-40 safe-area-top">
       <div class="px-4 py-3">
         <div class="flex items-center justify-between">
           <button
             @click="$router.push('/')"
-            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
-            <FontAwesomeIcon :icon="['fas', 'arrow-left']" class="text-xl text-gray-600" />
+            <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
           </button>
 
           <div class="text-center">
-            <h1 class="text-xl font-bold text-gray-900">Suivi de commande</h1>
-            <div v-if="isConnected" class="flex items-center justify-center space-x-1 text-xs text-green-600">
-              <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">Suivi de commande</h1>
+            <div v-if="isConnected" class="flex items-center justify-center space-x-1 text-xs text-success-600">
+              <div class="w-2 h-2 bg-success-500 rounded-full animate-pulse"></div>
               <span>Temps réel</span>
             </div>
           </div>
@@ -27,107 +30,61 @@
           <button
             @click="refreshOrder"
             :disabled="isLoading"
-            class="p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+            class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
-            <FontAwesomeIcon
-              :icon="['fas', 'sync-alt']"
-              :class="['text-xl text-gray-600', { 'animate-spin': isLoading }]"
-            />
+            <svg
+              :class="['w-6 h-6 text-gray-600 dark:text-gray-300 transition-transform', { 'animate-spin': isLoading }]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
           </button>
         </div>
       </div>
     </div>
 
     <!-- Loading state -->
-    <div v-if="isLoading && !order" class="flex items-center justify-center py-20">
-      <div class="text-center">
-        <FontAwesomeIcon :icon="['fas', 'spinner']" class="animate-spin text-3xl text-primary-600 mb-4" />
-        <p class="text-gray-600">Chargement du statut...</p>
-      </div>
-    </div>
+    <BaseLoader
+      v-if="isLoading && !order"
+      variant="spinner"
+      size="lg"
+      label="Chargement du statut..."
+      class="py-20"
+    />
 
     <!-- Error state -->
-    <div v-else-if="error" class="flex items-center justify-center py-20">
-      <div class="text-center px-6">
-        <FontAwesomeIcon :icon="['fas', 'exclamation-triangle']" class="text-3xl text-red-500 mb-4" />
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Commande introuvable</h3>
-        <p class="text-gray-600 mb-6">{{ error }}</p>
-        <div class="space-y-3">
-          <button
-            @click="refreshOrder"
-            class="w-full bg-primary-600 text-white px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors"
-          >
-            Réessayer
-          </button>
-          <button
-            @click="$router.push('/')"
-            class="w-full bg-gray-200 text-gray-800 px-6 py-3 rounded-xl hover:bg-gray-300 transition-colors"
-          >
-            Retour à l'accueil
-          </button>
-        </div>
-      </div>
-    </div>
+    <ErrorState
+      v-else-if="error"
+      type="404"
+      title="Commande introuvable"
+      :description="error"
+      showRetry
+      showGoBack
+      @retry="refreshOrder"
+      @goBack="$router.push('/')"
+      padding="xl"
+    />
 
     <!-- Order content -->
     <div v-else-if="order" class="px-4 py-6">
       <!-- Order header -->
-      <div class="bg-white rounded-2xl p-6 shadow-sm mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm mb-6">
         <div class="text-center mb-6">
-          <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FontAwesomeIcon :icon="getStatusIcon(order.status)" class="text-2xl text-primary-600" />
-          </div>
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">Commande #{{ order.orderNumber }}</h2>
-          <p class="text-lg text-gray-600">{{ getStatusMessage(order.status) }}</p>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Commande #{{ order.orderNumber }}</h2>
+          <BaseBadge
+            :label="getStatusMessage(order.status)"
+            :variant="getStatusBadgeVariant(order.status)"
+            size="lg"
+          />
         </div>
 
-        <!-- Progress indicator -->
-        <div class="mb-6">
-          <div class="flex justify-between mb-2">
-            <span class="text-sm font-medium text-gray-700">Progression</span>
-            <span class="text-sm text-gray-500">{{ getProgressText(order.status) }}</span>
-          </div>
-          <div class="w-full bg-gray-200 rounded-full h-2">
-            <div
-              class="h-2 rounded-full transition-all duration-500"
-              :class="getProgressColor(order.status)"
-              :style="{ width: `${getProgressPercentage(order.status)}%` }"
-            ></div>
-          </div>
-        </div>
-
-        <!-- Status timeline -->
-        <div class="space-y-4">
-          <div
-            v-for="(status, index) in statusTimeline"
-            :key="status.value"
-            class="flex items-center space-x-4"
-          >
-            <div
-              :class="[
-                'w-8 h-8 rounded-full flex items-center justify-center',
-                getTimelineItemStatus(status.value, order.status)
-              ]"
-            >
-              <FontAwesomeIcon
-                :icon="status.icon"
-                class="text-sm"
-              />
-            </div>
-            <div class="flex-1">
-              <p :class="[
-                'font-medium',
-                isStatusCompleted(status.value, order.status) ? 'text-gray-900' : 'text-gray-500'
-              ]">
-                {{ status.label }}
-              </p>
-              <p class="text-sm text-gray-500">{{ status.description }}</p>
-            </div>
-            <div v-if="isStatusCompleted(status.value, order.status)" class="text-sm text-gray-500">
-              <FontAwesomeIcon :icon="['fas', 'check']" class="text-green-600" />
-            </div>
-          </div>
-        </div>
+        <!-- OrderTimeline Component -->
+        <OrderTimeline
+          :steps="timelineSteps"
+          showSummary
+        />
       </div>
 
       <!-- Estimated time -->
@@ -302,7 +259,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useAppStore } from '@/stores/app'
 import { ordersApi } from '@/services/api'
@@ -311,8 +268,15 @@ import { storeToRefs } from 'pinia'
 import { OrderStatus, OrderType, Order } from '@/types'
 import { formatCurrency } from '@/utils/currency'
 
+// Advanced Components
+import OrderTimeline from '@/components/advanced/OrderTimeline.vue'
+import ErrorState from '@/components/advanced/ErrorState.vue'
+
+// Base Components
+import BaseBadge from '@/components/base/BaseBadge.vue'
+import BaseLoader from '@/components/base/BaseLoader.vue'
+
 const route = useRoute()
-const router = useRouter()
 const toast = useToast()
 
 // Store
@@ -384,6 +348,51 @@ const statusTimeline = computed(() => [
     icon: ['fas', 'utensils']
   }
 ])
+
+// Timeline steps for OrderTimeline component
+const timelineSteps = computed(() => {
+  if (!order.value) return []
+
+  const statusOrder = [
+    OrderStatus.PENDING,
+    OrderStatus.CONFIRMED,
+    OrderStatus.PREPARING,
+    OrderStatus.READY,
+    OrderStatus.SERVED
+  ]
+
+  const currentIndex = statusOrder.indexOf(order.value.status)
+  const isCancelled = order.value.status === OrderStatus.CANCELLED
+
+  return statusTimeline.value.map((status, index) => ({
+    id: status.value,
+    title: status.label,
+    description: status.description,
+    status: isCancelled && index > currentIndex
+      ? 'failed'
+      : index < currentIndex
+      ? 'completed'
+      : index === currentIndex
+      ? 'in-progress'
+      : 'pending',
+    timestamp: index <= currentIndex ? new Date(order.value.createdAt) : undefined,
+    estimatedTime: index === currentIndex && remainingTime.value > 0
+      ? `${remainingTime.value} min`
+      : undefined
+  }))
+})
+
+const getStatusBadgeVariant = (status: OrderStatus) => {
+  const variants: Record<OrderStatus, 'primary' | 'success' | 'warning' | 'error' | 'info'> = {
+    [OrderStatus.PENDING]: 'warning',
+    [OrderStatus.CONFIRMED]: 'info',
+    [OrderStatus.PREPARING]: 'primary',
+    [OrderStatus.READY]: 'success',
+    [OrderStatus.SERVED]: 'success',
+    [OrderStatus.CANCELLED]: 'error'
+  }
+  return variants[status] || 'default'
+}
 
 // Methods
 const formatPrice = (amount: number): string => formatCurrency(amount)

@@ -343,7 +343,6 @@ import { useReceiptsStore, type Printer } from '@/stores/receipts'
 import {
   X,
   Plus,
-  Printer as PrinterIcon,
   Edit,
   TestTube,
   Scissors,

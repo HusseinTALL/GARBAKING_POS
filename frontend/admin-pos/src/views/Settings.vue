@@ -613,8 +613,6 @@ import {
   Upload,
   Trash2,
   RotateCcw,
-  Globe,
-  Clock,
   Smartphone,
   DollarSign,
   Banknote

@@ -5,7 +5,6 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import { authGuard, permissionGuard, roleRedirectGuard, storeAccessGuard } from './guards'
 
 // Import views
 import MainLayout from '@/layouts/MainLayout.vue'
@@ -19,7 +18,6 @@ import Tables from '@/views/Tables.vue'
 import Payment from '@/views/Payment.vue'
 import Receipts from '@/views/Receipts.vue'
 import Loyalty from '@/views/Loyalty.vue'
-import Login from '@/views/Login.vue'
 
 const routes: RouteRecordRaw[] = [
   {

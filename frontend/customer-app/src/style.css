@@ -177,6 +177,16 @@ textarea:focus {
   touch-action: pan-y;
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Category slider */
 .category-slider {
   scrollbar-width: none;

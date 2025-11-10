@@ -169,16 +169,6 @@ const ordersChange = computed(() => {
   return prevOrders !== 0 ? (change / prevOrders) * 100 : 0
 })
 
-const totalDishesOrdered = computed(() => {
-  // Calculate from menu performance or fall back to orders
-  if (analyticsStore.menuPerformanceItems.length > 0) {
-    return analyticsStore.menuPerformanceItems.reduce((sum, item) => sum + item.quantitySold, 0)
-  }
-  return ordersStore.orders.reduce((total, order) => {
-    return total + (order.orderItems?.length || order.items?.length || 0)
-  }, 0)
-})
-
 const totalCustomers = computed(() => {
   // Use customer insights if available
   if (analyticsStore.customerInsightsData) {
@@ -506,7 +496,7 @@ const handlePrintReceipt = (order: any) => {
               window.print();
               window.onafterprint = function() { window.close(); };
             }
-          <\/script>
+          </scr${'ipt'}>
         </body>
       </html>
     `

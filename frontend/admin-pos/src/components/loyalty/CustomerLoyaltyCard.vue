@@ -203,7 +203,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { CustomerLoyaltyProfile } from '@/services/loyalty'
 
 interface Props {
@@ -212,13 +211,13 @@ interface Props {
   error?: string | null
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   loyaltyProfile: null,
   loading: false,
   error: null
 })
 
-const emit = defineEmits<{
+defineEmits<{
   'redeem-points': []
   'view-history': []
   'enroll-customer': []

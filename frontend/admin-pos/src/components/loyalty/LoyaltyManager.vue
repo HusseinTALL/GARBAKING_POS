@@ -334,7 +334,7 @@ const handlePointsRedemption = async (redemption: RedemptionRequest & { applyToO
   }
 }
 
-const handleCustomerEnrolled = async (programId: string) => {
+const handleCustomerEnrolled = async (_programId: string) => {
   showMessage('Customer enrolled successfully!', 'success')
   await loadCustomerLoyalty()
 }
@@ -350,7 +350,7 @@ const awardBonusPoints = async () => {
   try {
     // Note: This would need to be implemented in the backend API
     // For now, we'll simulate success
-    showMessage(`Awarded ${points} bonus points!`, 'success')
+    showMessage(`Awarded ${points} bonus points for ${reason}!`, 'success')
     await loadCustomerLoyalty()
   } catch (error) {
     showMessage('Failed to award bonus points', 'error')
@@ -365,7 +365,7 @@ const showMessage = (text: string, type: 'success' | 'error') => {
 }
 
 // Watch for order changes
-watch(() => props.orderId, (newOrderId) => {
+watch(() => props.orderId, (_newOrderId) => {
   // Could auto-load customer from order if needed
 })
 </script>

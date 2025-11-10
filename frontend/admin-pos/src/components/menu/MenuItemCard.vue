@@ -94,7 +94,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import {
   UtensilsCrossed,
   Star,
@@ -128,7 +127,7 @@ interface Props {
   item: MenuItem
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 defineEmits(['edit', 'delete', 'toggle-availability'])
 
 const menuStore = useMenuStore()
