@@ -7,141 +7,190 @@ import com.garbaking.operationsservice.model.PaymentMethod;
 import com.garbaking.operationsservice.model.PaymentMethodStatus;
 import com.garbaking.operationsservice.model.PaymentStatus;
 import com.garbaking.operationsservice.model.PaymentTransaction;
+import com.garbaking.operationsservice.repository.PaymentMethodRepository;
+import com.garbaking.operationsservice.repository.PaymentTransactionRepository;
+import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class PaymentService {
 
-    private final Map<String, PaymentMethod> methods = new ConcurrentHashMap<>();
-    private final Map<Long, PaymentTransaction> transactions = new ConcurrentHashMap<>();
-    private final AtomicLong transactionIdSequence = new AtomicLong(1);
+    private final PaymentTransactionRepository transactionRepository;
+    private final PaymentMethodRepository methodRepository;
 
-    public PaymentService() {
+    @PostConstruct
+    public void init() {
         registerDefaultMethods();
     }
 
+    @Transactional
     public PaymentTransaction charge(PaymentChargeRequest request) {
-        PaymentMethod method = requireMethod(request.getPaymentMethod());
+        PaymentMethod method = methodRepository.findById(request.getPaymentMethod())
+                .orElseThrow(() -> new IllegalArgumentException("Payment method not found: " + request.getPaymentMethod()));
+
         if (method.getStatus() != PaymentMethodStatus.ENABLED) {
-            throw new IllegalStateException("Payment method is disabled");
+            throw new IllegalStateException("Payment method is disabled: " + method.getDisplayName());
         }
-        PaymentTransaction transaction = PaymentTransaction
-            .builder()
-            .id(transactionIdSequence.getAndIncrement())
-            .orderId(request.getOrderId())
-            .amount(request.getAmount())
-            .paymentMethod(request.getPaymentMethod())
-            .status(PaymentStatus.CAPTURED)
-            .processedAt(Instant.now())
-            .tipAmount(request.getTipAmount())
-            .reference("PMT-" + Instant.now().toEpochMilli())
-            .build();
-        transactions.put(transaction.getId(), transaction);
+
+        PaymentTransaction transaction = PaymentTransaction.builder()
+                .orderId(request.getOrderId())
+                .amount(request.getAmount())
+                .paymentMethod(request.getPaymentMethod())
+                .status(PaymentStatus.CAPTURED)
+                .processedAt(Instant.now())
+                .tipAmount(request.getTipAmount() != null ? request.getTipAmount() : BigDecimal.ZERO)
+                .reference("PMT-" + Instant.now().toEpochMilli())
+                .cashDrawerSessionId(request.getCashDrawerSessionId())
+                .build();
+
+        transaction = transactionRepository.save(transaction);
+        log.info("Payment charged: {} for order: {} amount: {}",
+                transaction.getReference(), request.getOrderId(), request.getAmount());
+
         return transaction;
     }
 
+    @Transactional
     public PaymentTransaction refund(PaymentRefundRequest request) {
-        PaymentTransaction original = requireTransaction(request.getTransactionId());
+        PaymentTransaction original = transactionRepository.findById(request.getTransactionId())
+                .orElseThrow(() -> new IllegalArgumentException("Payment transaction not found: " + request.getTransactionId()));
+
         if (original.getAmount().compareTo(request.getAmount()) < 0) {
-            throw new IllegalArgumentException("Refund cannot exceed the original amount");
+            throw new IllegalArgumentException("Refund amount cannot exceed original payment amount");
         }
-        PaymentTransaction refund = PaymentTransaction
-            .builder()
-            .id(transactionIdSequence.getAndIncrement())
-            .orderId(original.getOrderId())
-            .amount(request.getAmount().negate())
-            .paymentMethod(original.getPaymentMethod())
-            .status(PaymentStatus.REFUNDED)
-            .processedAt(Instant.now())
-            .tipAmount(BigDecimal.ZERO)
-            .reference("RFND-" + Instant.now().toEpochMilli())
-            .build();
-        transactions.put(refund.getId(), refund);
+
+        PaymentTransaction refund = PaymentTransaction.builder()
+                .orderId(original.getOrderId())
+                .amount(request.getAmount().negate())
+                .paymentMethod(original.getPaymentMethod())
+                .status(PaymentStatus.REFUNDED)
+                .processedAt(Instant.now())
+                .tipAmount(BigDecimal.ZERO)
+                .reference("RFND-" + Instant.now().toEpochMilli())
+                .cashDrawerSessionId(original.getCashDrawerSessionId())
+                .build();
+
+        refund = transactionRepository.save(refund);
+
+        // Update original transaction status
         original.setStatus(PaymentStatus.REFUNDED);
+        transactionRepository.save(original);
+
+        log.info("Payment refunded: {} for original: {} amount: {}",
+                refund.getReference(), original.getReference(), request.getAmount());
+
         return refund;
     }
 
     public List<PaymentMethod> listMethods() {
-        return new ArrayList<>(methods.values());
+        return methodRepository.findAll();
     }
 
+    public PaymentMethod getMethod(String code) {
+        return methodRepository.findById(code)
+                .orElseThrow(() -> new IllegalArgumentException("Payment method not found: " + code));
+    }
+
+    @Transactional
     public PaymentMethod updateMethod(String methodCode, PaymentMethodUpdateRequest request) {
-        PaymentMethod method = requireMethod(methodCode);
+        PaymentMethod method = methodRepository.findById(methodCode)
+                .orElseThrow(() -> new IllegalArgumentException("Payment method not found: " + methodCode));
+
         method.setStatus(request.getStatus());
         if (request.getSupportsTips() != null) {
             method.setSupportsTips(request.getSupportsTips());
         }
+
+        method = methodRepository.save(method);
+        log.info("Payment method updated: {} status: {}", methodCode, request.getStatus());
+
         return method;
     }
 
     public List<PaymentTransaction> listTransactions() {
-        return new ArrayList<>(transactions.values());
+        return transactionRepository.findAll();
+    }
+
+    public PaymentTransaction getTransaction(Long id) {
+        return transactionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Payment transaction not found: " + id));
+    }
+
+    public PaymentTransaction getTransactionByReference(String reference) {
+        return transactionRepository.findByReference(reference)
+                .orElseThrow(() -> new IllegalArgumentException("Payment transaction not found with reference: " + reference));
+    }
+
+    public List<PaymentTransaction> getTransactionsByOrderId(String orderId) {
+        return transactionRepository.findByOrderId(orderId);
+    }
+
+    public List<PaymentTransaction> getTransactionsBySessionId(Long sessionId) {
+        return transactionRepository.findByCashDrawerSessionId(sessionId);
     }
 
     public Map<String, BigDecimal> calculatePaymentBreakdown() {
         Map<String, BigDecimal> breakdown = new HashMap<>();
-        for (PaymentTransaction transaction : transactions.values()) {
+        List<PaymentTransaction> transactions = transactionRepository.findAll();
+
+        for (PaymentTransaction transaction : transactions) {
             if (transaction.getStatus() == PaymentStatus.CAPTURED) {
                 breakdown.merge(transaction.getPaymentMethod(), transaction.getAmount(), BigDecimal::add);
             }
         }
+
+        return breakdown;
+    }
+
+    public Map<String, BigDecimal> calculatePaymentBreakdownForSession(Long sessionId) {
+        Map<String, BigDecimal> breakdown = new HashMap<>();
+        List<PaymentTransaction> transactions = transactionRepository.findByCashDrawerSessionId(sessionId);
+
+        for (PaymentTransaction transaction : transactions) {
+            if (transaction.getStatus() == PaymentStatus.CAPTURED) {
+                breakdown.merge(transaction.getPaymentMethod(), transaction.getAmount(), BigDecimal::add);
+            }
+        }
+
         return breakdown;
     }
 
     private void registerDefaultMethods() {
-        methods.put(
-            "CASH",
-            PaymentMethod
-                .builder()
-                .code("CASH")
-                .displayName("Cash")
-                .status(PaymentMethodStatus.ENABLED)
-                .supportsTips(true)
-                .build()
-        );
-        methods.put(
-            "CARD",
-            PaymentMethod
-                .builder()
-                .code("CARD")
-                .displayName("Credit/Debit Card")
-                .status(PaymentMethodStatus.ENABLED)
-                .supportsTips(true)
-                .build()
-        );
-        methods.put(
-            "WALLET",
-            PaymentMethod
-                .builder()
-                .code("WALLET")
-                .displayName("Digital Wallet")
-                .status(PaymentMethodStatus.ENABLED)
-                .supportsTips(false)
-                .build()
-        );
-    }
+        // Only create if they don't exist
+        if (methodRepository.count() == 0) {
+            methodRepository.save(PaymentMethod.builder()
+                    .code("CASH")
+                    .displayName("Cash")
+                    .status(PaymentMethodStatus.ENABLED)
+                    .supportsTips(true)
+                    .build());
 
-    private PaymentMethod requireMethod(String code) {
-        PaymentMethod method = methods.get(code);
-        if (method == null) {
-            throw new IllegalArgumentException("Payment method not found");
-        }
-        return method;
-    }
+            methodRepository.save(PaymentMethod.builder()
+                    .code("CARD")
+                    .displayName("Credit/Debit Card")
+                    .status(PaymentMethodStatus.ENABLED)
+                    .supportsTips(true)
+                    .build());
 
-    private PaymentTransaction requireTransaction(Long transactionId) {
-        PaymentTransaction transaction = transactions.get(transactionId);
-        if (transaction == null) {
-            throw new IllegalArgumentException("Payment transaction not found");
+            methodRepository.save(PaymentMethod.builder()
+                    .code("WALLET")
+                    .displayName("Digital Wallet")
+                    .status(PaymentMethodStatus.ENABLED)
+                    .supportsTips(false)
+                    .build());
+
+            log.info("Default payment methods registered");
         }
-        return transaction;
     }
 }
