@@ -59,7 +59,10 @@ public class MenuItemService {
     private final InventoryAuditService inventoryAuditService;
     private final InventoryEventPublisher inventoryEventPublisher;
     private final ImageStorageService imageStorageService;
-    private final MinioImageStorageService minioImageStorageService;
+
+    // MinIO is optional - if not available, falls back to local file storage
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private MinioImageStorageService minioImageStorageService;
 
     @Transactional
     public MenuItemDTO createMenuItem(MenuItemDTO menuItemDTO) {
@@ -272,14 +275,36 @@ public class MenuItemService {
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
 
-        // Use MinIO for image storage
-        MinioImageStorageService.ImageUploadResult uploadResult = minioImageStorageService.store(menuItemId, file);
+        // Try MinIO first, fall back to local storage if unavailable
+        String imageUrl, thumbnailUrl, storagePath;
+
+        if (minioImageStorageService != null) {
+            try {
+                log.debug("Using MinIO for image storage");
+                MinioImageStorageService.ImageUploadResult uploadResult = minioImageStorageService.store(menuItemId, file);
+                imageUrl = uploadResult.getCdnUrl();
+                thumbnailUrl = uploadResult.getPublicUrl();
+                storagePath = uploadResult.getStoragePath();
+            } catch (Exception e) {
+                log.warn("MinIO upload failed, falling back to local storage: {}", e.getMessage());
+                ImageStorageService.ImageUploadResult fallbackResult = imageStorageService.store(menuItemId, file);
+                imageUrl = fallbackResult.getCdnUrl();
+                thumbnailUrl = fallbackResult.getPublicUrl();
+                storagePath = fallbackResult.getStoragePath();
+            }
+        } else {
+            log.info("MinIO not available, using local file storage");
+            ImageStorageService.ImageUploadResult fallbackResult = imageStorageService.store(menuItemId, file);
+            imageUrl = fallbackResult.getCdnUrl();
+            thumbnailUrl = fallbackResult.getPublicUrl();
+            storagePath = fallbackResult.getStoragePath();
+        }
 
         MenuItemImage image = MenuItemImage.builder()
                 .menuItem(menuItem)
-                .imageUrl(uploadResult.getCdnUrl())
-                .thumbnailUrl(uploadResult.getPublicUrl())
-                .storagePath(uploadResult.getStoragePath())
+                .imageUrl(imageUrl)
+                .thumbnailUrl(thumbnailUrl)
+                .storagePath(storagePath)
                 .isPrimary(Boolean.TRUE.equals(primary))
                 .displayOrder(displayOrder != null ? displayOrder : (int) (menuItemImageRepository.countByMenuItemId(menuItemId) + 1))
                 .altText(altText)

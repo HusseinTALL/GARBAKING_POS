@@ -24,13 +24,20 @@ public class MinioConfig {
 
     /**
      * Creates MinIO client bean with configured credentials
+     * Bean is created lazily to avoid startup failures when MinIO is unavailable
      */
     @Bean
+    @org.springframework.context.annotation.Lazy
     public MinioClient minioClient() {
-        return MinioClient.builder()
-                .endpoint(minioProperties.getEndpoint())
-                .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
-                .build();
+        try {
+            return MinioClient.builder()
+                    .endpoint(minioProperties.getEndpoint())
+                    .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to create MinIO client - image uploads will be disabled: {}", e.getMessage());
+            throw e; // Re-throw to prevent bean creation
+        }
     }
 
     /**
