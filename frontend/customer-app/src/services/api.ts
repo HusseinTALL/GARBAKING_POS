@@ -118,7 +118,42 @@ export const menuApi = {
    */
   async getPublicMenu(): Promise<ApiResponse<{ categories: any[] }>> {
     try {
-      return await makeRequest('/api/menu/public', { method: 'GET' })
+      // Get categories from inventory service
+      const categoriesResponse = await makeRequest('/api/categories', { method: 'GET' })
+      const categories = Array.isArray(categoriesResponse)
+        ? categoriesResponse
+        : (categoriesResponse.data || categoriesResponse || [])
+
+      // Get all available menu items
+      const itemsResponse = await makeRequest('/api/menu-items?availableOnly=true', { method: 'GET' })
+      const allItems = Array.isArray(itemsResponse)
+        ? itemsResponse
+        : (itemsResponse.data || itemsResponse || [])
+
+      // Group items by category
+      const categoriesWithItems = categories.map((category: any) => ({
+        ...category,
+        id: String(category.id),
+        sortOrder: category.displayOrder || category.sortOrder || 0,
+        isActive: category.active !== undefined ? category.active : category.isActive !== false,
+        menuItems: allItems
+          .filter((item: any) => String(item.categoryId) === String(category.id))
+          .map((item: any) => ({
+            ...item,
+            id: String(item.id),
+            categoryId: String(item.categoryId),
+            isAvailable: item.available !== undefined ? item.available : item.isAvailable !== false,
+            isActive: item.active !== undefined ? item.active : item.isActive !== false,
+            price: typeof item.price === 'number' ? item.price : parseFloat(item.price || 0),
+          }))
+      }))
+
+      return {
+        success: true,
+        data: {
+          categories: categoriesWithItems
+        }
+      }
     } catch (error: any) {
       return {
         success: false,
