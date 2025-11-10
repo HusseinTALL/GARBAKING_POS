@@ -146,7 +146,7 @@
             <h4 class="text-md font-semibold text-gray-900 mb-4">Membership Tiers</h4>
             <div class="space-y-3">
               <div
-                v-for="(tier, index) in program.tiers"
+                v-for="tier in program.tiers"
                 :key="tier.id"
                 class="border border-gray-200 rounded-lg p-4"
               >

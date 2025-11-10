@@ -20,7 +20,7 @@ class HealthCheckService {
   private intervalId: NodeJS.Timeout | null = null
   private retryTimeoutId: NodeJS.Timeout | null = null
   private baseURL: string
-  private listeners: Array<(status: HealthStatus) => void> = []
+  private listeners: Array<(_status: HealthStatus) => void> = []
   private currentStatus: HealthStatus = {
     isHealthy: false,
     lastCheck: new Date(),

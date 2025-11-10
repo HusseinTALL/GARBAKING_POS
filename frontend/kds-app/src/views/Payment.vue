@@ -229,7 +229,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { usePaymentStore } from '@/stores/payment'
-import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
 import type { PaymentMethod, Transaction, CashTransaction } from '@/stores/payment'
 import {
@@ -242,11 +241,9 @@ import {
 
 // Stores
 const paymentStore = usePaymentStore()
-const authStore = useAuthStore()
 
 // Destructure store state
 const {
-  paymentMethods,
   enabledPaymentMethods,
   cashDrawer,
   recentTransactions,

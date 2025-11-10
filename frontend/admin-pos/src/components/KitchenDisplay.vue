@@ -369,7 +369,6 @@ import { useKitchenStore } from '@/stores/kitchen'
 import type { KitchenOrder, OrderItem, KitchenStation } from '@/stores/kitchen'
 import { audioService } from '@/utils/audioNotifications'
 import adminWsService from '@/services/websocket-admin'
-import { ordersApi } from '@/services/api-spring'
 
 // Store
 const kitchenStore = useKitchenStore()
@@ -399,15 +398,15 @@ const newMessage = ref({
 // Computed
 const connectionStatusClass = computed(() => ({
   'connected': isConnected.value,
-  'connecting': connectionStatus.connecting,
-  'disconnected': !isConnected.value && !connectionStatus.connecting,
-  'error': connectionStatus.error
+  'connecting': connectionStatus.value.connecting,
+  'disconnected': !isConnected.value && !connectionStatus.value.connecting,
+  'error': connectionStatus.value.error
 }))
 
 const connectionStatusText = computed(() => {
   if (isConnected.value) return 'Connected'
-  if (connectionStatus.connecting) return 'Connecting...'
-  if (connectionStatus.error) return 'Error'
+  if (connectionStatus.value.connecting) return 'Connecting...'
+  if (connectionStatus.value.error) return 'Error'
   return 'Disconnected'
 })
 

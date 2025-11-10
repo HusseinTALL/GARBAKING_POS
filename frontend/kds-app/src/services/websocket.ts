@@ -382,7 +382,7 @@ export class WebSocketService {
    * Handle payment updates
    */
   private handlePaymentUpdate(message: WebSocketMessage): void {
-    const { transactionId, status, paymentData } = message.data
+    const { transactionId, paymentData } = message.data
 
     switch (message.event) {
       case 'payment_processed':
@@ -405,14 +405,14 @@ export class WebSocketService {
    * Handle system notifications
    */
   private handleNotification(message: WebSocketMessage): void {
-    const { title, body, type, action } = message.data
-    this.showNotification(title, body, type, action)
+    const { title, body, type } = message.data
+    this.showNotification(title, body, type)
   }
 
   /**
    * Handle heartbeat messages
    */
-  private handleHeartbeat(message: WebSocketMessage): void {
+  private handleHeartbeat(_message: WebSocketMessage): void {
     // Respond to server heartbeat
     this.send({
       type: 'heartbeat',
@@ -537,7 +537,7 @@ export class WebSocketService {
   /**
    * Show notification to user
    */
-  private showNotification(title: string, body: string, type: 'info' | 'success' | 'warning' | 'error', action?: any): void {
+  private showNotification(title: string, body: string, type: 'info' | 'success' | 'warning' | 'error'): void {
     // This would integrate with a notification system
     console.log(`[${type.toUpperCase()}] ${title}: ${body}`)
 

@@ -94,6 +94,14 @@ logging:
     root: INFO
     com.garbaking: DEBUG
 
+# MinIO Configuration (custom properties)
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin123
+  bucket-name: product-images
+  base-url: http://localhost:9000/product-images
+
 # Image Upload Configuration (custom properties)
 image:
   upload:

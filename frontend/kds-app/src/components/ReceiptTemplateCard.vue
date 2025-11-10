@@ -143,7 +143,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import type { ReceiptTemplate } from '@/stores/receipts'
 import { Barcode, MoreVertical, Edit, Copy, Printer, Star, Download, Trash, ChevronUp, ChevronDown } from 'lucide-vue-next'
 

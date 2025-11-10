@@ -949,7 +949,7 @@ const profitMarginColor = computed(() => {
 const schedulePreview = computed(() => {
   if (!form.value.scheduling.enabled) return ''
 
-  const days = form.value.scheduling.days.sort().map(d => daysOfWeek[d].label).join(', ')
+  const days = [...form.value.scheduling.days].sort().map(d => daysOfWeek[d].label).join(', ')
   const from = form.value.scheduling.availableFrom || '00:00'
   const until = form.value.scheduling.availableUntil || '23:59'
 

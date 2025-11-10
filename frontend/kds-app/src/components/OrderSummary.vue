@@ -208,7 +208,7 @@ interface Props {
   isMobile?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isMobile: false
 })
 

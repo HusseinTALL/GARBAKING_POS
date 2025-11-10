@@ -1,0 +1,209 @@
+/**
+ * PizzaEats Kiosk - Global Styles
+ * Based on design_system.json v1.4.0
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body {
+    @apply h-full overflow-hidden font-body;
+  }
+
+  #app {
+    @apply h-full;
+  }
+
+  /* Disable text selection for kiosk */
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* Professional scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-neutral-100 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-brand-400 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-brand-500;
+  }
+
+  /* Accessibility focus */
+  *:focus-visible {
+    @apply outline-2 outline-brand-500 outline-offset-2;
+  }
+
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+@layer components {
+  /* Button System */
+  .btn-base {
+    @apply inline-flex items-center justify-center gap-2
+           font-semibold transition-all duration-normal
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-touch {
+    @apply btn-base min-h-touch px-8 py-4 rounded-lg text-base;
+  }
+
+  .btn-touch-lg {
+    @apply btn-base min-h-touch-lg px-10 py-5 rounded-lg text-lg;
+  }
+
+  .btn-primary {
+    @apply btn-touch bg-brand-400 text-white shadow-md
+           hover:bg-brand-500 hover:shadow-lg hover:scale-105
+           active:scale-95
+           focus-visible:ring-brand-500;
+  }
+
+  .btn-ghost {
+    @apply btn-touch bg-neutral-100 text-neutral-800 shadow
+           hover:bg-neutral-200 hover:shadow-md hover:scale-105
+           active:scale-95
+           focus-visible:ring-neutral-400;
+  }
+
+  .btn-danger {
+    @apply btn-touch bg-error-500 text-white shadow-md
+           hover:bg-error-600 hover:shadow-lg hover:scale-105
+           active:scale-95
+           focus-visible:ring-error-500;
+  }
+
+  /* Card Components */
+  .card {
+    @apply bg-white rounded-lg shadow-md transition-all duration-normal;
+  }
+
+  .card-hoverable {
+    @apply card hover:shadow-lg hover:-translate-y-1 cursor-pointer;
+  }
+
+  /* Input Components */
+  .input-base {
+    @apply w-full px-4 py-3 rounded-lg border-2 border-neutral-200
+           text-base text-neutral-700
+           transition-all duration-fast
+           placeholder:text-neutral-400
+           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none
+           disabled:bg-neutral-100 disabled:cursor-not-allowed;
+  }
+
+  /* Badge Components */
+  .badge {
+    @apply inline-flex items-center gap-1 px-3 py-1
+           text-xs font-semibold rounded-full;
+  }
+
+  .badge-primary {
+    @apply badge bg-brand-100 text-brand-700;
+  }
+
+  .badge-success {
+    @apply badge bg-success-50 text-success-700;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-50 text-warning-700;
+  }
+
+  .badge-error {
+    @apply badge bg-error-50 text-error-700;
+  }
+
+  .badge-neutral {
+    @apply badge bg-neutral-100 text-neutral-700;
+  }
+}
+
+@layer utilities {
+  /* Smooth Transitions */
+  .transition-smooth {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Scale utilities */
+  .scale-98 {
+    transform: scale(0.98);
+  }
+
+  .scale-102 {
+    transform: scale(1.02);
+  }
+
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Loading shimmer utility */
+  .loading-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .loading-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(245, 163, 0, 0.18) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: translateX(-100%);
+    pointer-events: none;
+    animation: shimmer 1.5s linear infinite;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(12);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 0.6s ease-out forwards;
+}

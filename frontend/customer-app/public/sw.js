@@ -2,6 +2,7 @@
  * Service Worker for Garbaking Customer App
  * Provides offline capabilities, caching, and background sync for orders
  */
+/* eslint-env serviceworker */
 
 const CACHE_NAME = 'garbaking-customer-v1.0.0'
 const DYNAMIC_CACHE = 'garbaking-dynamic-v1.0.0'

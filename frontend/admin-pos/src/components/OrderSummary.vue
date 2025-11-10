@@ -317,7 +317,7 @@ interface Props {
   isMobile?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isMobile: false
 })
 
@@ -337,7 +337,6 @@ const toast = useToast()
 const orderItems = computed(() => cartStore.items)
 const subtotal = computed(() => cartStore.subtotal)
 const tax = computed(() => cartStore.tax)
-const total = computed(() => cartStore.total)
 const isProcessing = computed(() => cartStore.isProcessingPayment)
 
 // Local state for payment method selection
@@ -352,21 +351,6 @@ const isCustomerLoading = ref(false)
 const isRedemptionLoading = ref(false)
 
 // Methods
-const processPayment = async () => {
-  try {
-    const result = await cartStore.processPayment(selectedPaymentMethod.value)
-
-    if (result.success) {
-      toast.success(`Payment successful! Transaction ID: ${result.transactionId}`)
-    } else {
-      toast.error(`Payment failed: ${result.error || 'Unknown error occurred'}`)
-    }
-  } catch (error) {
-    console.error('Payment processing error:', error)
-    toast.error('Payment failed. Please try again.')
-  }
-}
-
 const updatePaymentMethod = (method: 'cash' | 'card' | 'mobile') => {
   selectedPaymentMethod.value = method
   cartStore.paymentMethod = method

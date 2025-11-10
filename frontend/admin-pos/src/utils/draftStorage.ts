@@ -118,12 +118,12 @@ class DraftStorageService {
   public async updateDraft(id: string, updates: Partial<CartDraft>): Promise<void> {
     const db = await this.ensureDB()
 
-    return new Promise(async (resolve, reject) => {
-      const existing = await this.getDraft(id)
-      if (!existing) {
-        reject(new Error('Draft not found'))
-        return
-      }
+    const existing = await this.getDraft(id)
+    if (!existing) {
+      throw new Error('Draft not found')
+    }
+
+    return new Promise((resolve, reject) => {
 
       const transaction = db.transaction([DRAFT_STORE], 'readwrite')
       const store = transaction.objectStore(DRAFT_STORE)

@@ -1,0 +1,306 @@
+{
+  "welcome": "Bienvenue chez Garbaking",
+  "place_order": "Commander",
+  "cart": "Votre Panier",
+  "menu": "Menu",
+  "order_history": "Historique",
+  "order": "Commande",
+  "order_items": "Articles commandés",
+  "total": "Total",
+  "subtotal": "Sous-total",
+  "add_to_cart": "Ajouter au panier",
+  "remove_from_cart": "Retirer du panier",
+  "table_number": "Numéro de table",
+  "customer_name": "Nom du client",
+  "order_submitted": "Commande envoyée avec succès",
+  "order_accepted": "Commande acceptée",
+  "order_preparing": "Commande en préparation",
+  "order_ready": "Commande prête",
+  "order_ready_pickup": "Votre commande est prête !",
+  "estimated_time": "Temps estimé",
+  "minutes": "minutes",
+  "loading": "Chargement...",
+  "no_orders": "Aucune commande",
+  "no_orders_description": "Votre historique de commandes apparaîtra ici",
+  "mark_collected": "Marquer comme récupérée",
+  "retry_sync": "Réessayer",
+  "syncing": "Synchronisation...",
+  "no_items": "Aucun article dans cette catégorie",
+  "cart_cleared": "Panier vidé",
+  "submitting_order": "Envoi de la commande...",
+  "all": "Tout",
+
+  "home": {
+    "greeting": "Bonjour 👋",
+    "subtitle": "Que voulez-vous manger ?",
+    "search_placeholder": "Rechercher un plat...",
+    "search_results": "Résultats de recherche",
+    "best_sellers": "Meilleures ventes",
+    "see_all": "Voir tout",
+    "clear_search": "Effacer la recherche",
+    "no_results": "Aucun article ne correspond à votre recherche",
+    "no_items": "Aucun article trouvé",
+    "try_different_search": "Essayez un autre terme de recherche ou parcourez nos catégories",
+    "try_different_category": "Essayez de sélectionner une autre catégorie pour voir les articles disponibles",
+    "promo_title": "Obtenez 25% de réduction",
+    "promo_subtitle": "Sur votre première commande",
+    "promo_button": "Commander maintenant"
+  },
+
+  "favorites": {
+    "title": "Favoris ❤️",
+    "items_saved": "aucun article enregistré | {count} article enregistré | {count} articles enregistrés",
+    "switch_view": "Passer à la vue {view}",
+    "clear_all_label": "Effacer tous les favoris",
+    "add_to_cart_label": "Ajouter au panier",
+    "remove_label": "Retirer des favoris",
+    "empty_title": "Aucun favori pour le moment",
+    "empty_description": "Commencez à ajouter vos plats préférés pour les retrouver rapidement plus tard",
+    "browse_menu": "Parcourir le menu",
+    "confirm_clear_title": "Effacer tous les favoris ?",
+    "confirm_clear_message": "Cela supprimera tous les {count} articles de vos favoris. Cette action ne peut pas être annulée.",
+    "cancel": "Annuler",
+    "clear_all": "Tout effacer"
+  },
+
+  "vouchers": {
+    "title": "Mes bons",
+    "claimed_count": "Mes bons réclamés ({count})",
+    "claimed_section": "Bons réclamés",
+    "view_all": "Voir tout",
+    "used_section": "Bons utilisés ({count})",
+    "empty_title": "Aucun bon disponible",
+    "empty_description": "Revenez plus tard pour des offres exclusives et des réductions incroyables !",
+    "continue_shopping": "Continuer les achats",
+    "no_claimed_title": "Aucun bon réclamé",
+    "no_claimed_description": "Réclamez des bons pour économiser sur vos commandes !",
+    "browse_vouchers": "Parcourir les bons",
+    "claimed_success": "{title} réclamé avec succès !",
+    "already_claimed": "Bon déjà réclamé",
+    "claim_now": "Réclamer maintenant",
+    "use_now": "Utiliser maintenant",
+    "you_save": "Vous économisez",
+    "min_order": "Commande min.",
+    "no_min": "Pas de min.",
+    "promo_code": "Code promo",
+    "copied": "Copié !",
+    "copy": "Copier",
+    "valid_until": "Valable jusqu'au {date}",
+    "details_title": "Détails du bon",
+    "discount_value": "Valeur de la réduction",
+    "valid_from": "Valable à partir du",
+    "max_discount": "Réduction maximale",
+    "max_discount_desc": "Vous pouvez économiser jusqu'à {amount}$ avec ce bon",
+    "terms_title": "Conditions générales",
+    "usage_limit": "Limite d'utilisation",
+    "can_be_used": "Peut être utilisé {count} fois",
+    "close": "Fermer",
+    "claim_voucher": "Réclamer le bon",
+    "use_in_cart": "Utiliser dans le panier",
+    "new_user": "Nouvel utilisateur",
+    "claimed": "Réclamé",
+    "used": "Utilisé",
+    "free_delivery": "LIVRAISON GRATUITE",
+    "bogo": "BOGO {value}%",
+    "categories": {
+      "all": "Tous",
+      "new_user": "Nouvel utilisateur",
+      "percentage": "Pourcentage",
+      "fixed": "Montant fixe",
+      "delivery": "Livraison gratuite",
+      "bogo": "BOGO"
+    }
+  },
+
+  "profile": {
+    "title": "Profil",
+    "guest_user": "Utilisateur invité",
+    "no_phone": "Aucun numéro de téléphone",
+    "stats_orders": "Commandes",
+    "stats_points": "Points",
+    "stats_vouchers": "Bons",
+    "new_order": "Nouvelle commande",
+    "my_vouchers": "Mes bons",
+    "order_history": "Historique des commandes",
+    "language_changed": "Langue changée en {language}",
+    "settings": "Paramètres",
+    "account": "Compte",
+    "preferences": "Préférences"
+  },
+
+  "cart": {
+    "title": "Panier",
+    "empty_title": "Votre panier est vide",
+    "empty_description": "Découvrez notre délicieux menu et ajoutez vos plats préférés à votre panier",
+    "discover_menu": "Découvrir le menu",
+    "your_orders": "Vos commandes",
+    "order_summary": "Résumé de la commande",
+    "subtotal": "Sous-total",
+    "tax": "TVA",
+    "discount": "Remise",
+    "total": "Total",
+    "customer_info": "Informations client",
+    "full_name": "Nom complet *",
+    "full_name_placeholder": "Votre nom",
+    "phone": "Téléphone",
+    "phone_placeholder": "Votre numéro de téléphone",
+    "order_type": "Type de commande *",
+    "dine_in": "Sur place",
+    "takeaway": "À emporter",
+    "delivery": "Livraison",
+    "table_number": "Numéro de table",
+    "table_placeholder": "Numéro de table",
+    "special_notes": "Notes spéciales",
+    "special_notes_placeholder": "Allergies, préférences, instructions spéciales...",
+    "processing": "Traitement...",
+    "order_button": "Commander •",
+    "clear_confirm_title": "Vider le panier ?",
+    "clear_confirm_message": "Cette action supprimera tous les articles de votre panier",
+    "cancel": "Annuler",
+    "empty_action": "Vider",
+    "item_removed": "Article retiré du panier",
+    "fill_required_fields": "Veuillez remplir tous les champs obligatoires",
+    "checkout_error": "Erreur lors du passage à la commande",
+    "voucher_code": "Code bon",
+    "apply_voucher": "Appliquer le bon",
+    "remove_voucher": "Retirer le bon",
+    "voucher_applied": "Bon appliqué avec succès !",
+    "voucher_removed": "Bon retiré du panier",
+    "invalid_voucher": "Code bon invalide"
+  },
+
+  "navigation": {
+    "home": "Accueil",
+    "favorites": "Favoris",
+    "cart": "Panier",
+    "voucher": "Bons",
+    "profile": "Profil"
+  },
+
+  "menu_item": {
+    "add_to_favorites": "Ajouter aux favoris",
+    "remove_from_favorites": "Retirer des favoris",
+    "add_to_cart": "Ajouter {name} au panier",
+    "default_category": "Nourriture",
+    "calories": "{count} cal",
+    "prep_time": "{time}",
+    "rating": "{rating}"
+  },
+
+  "order_history": {
+    "title": "Historique des commandes",
+    "loading": "Chargement de l'historique...",
+    "empty_title": "Aucune commande pour le moment",
+    "empty_description": "Votre historique de commandes apparaîtra ici",
+    "start_ordering": "Commencer à commander",
+    "order_number": "Commande n°{number}",
+    "more_items": "+{count} article de plus | +{count} articles de plus",
+    "total": "Total",
+    "reorder": "Recommander",
+    "details": "Détails",
+    "refreshing": "Actualisation...",
+    "refresh": "Actualiser les commandes",
+    "items_added": "{count} articles ajoutés au panier !",
+    "load_failed": "Échec du chargement de l'historique",
+    "refreshed": "Historique des commandes actualisé",
+    "view_receipt": "Voir le reçu",
+    "cancel_order": "Annuler la commande"
+  },
+
+  "order_status": {
+    "pending": "En attente",
+    "confirmed": "Confirmée",
+    "preparing": "En préparation",
+    "ready": "Prête",
+    "completed": "Terminée",
+    "cancelled": "Annulée"
+  },
+
+  "time": {
+    "just_now": "À l'instant",
+    "minutes_ago": "Il y a {count} minute | Il y a {count} minutes",
+    "hours_ago": "Il y a {count} heure | Il y a {count} heures",
+    "days_ago": "Il y a {count} jour | Il y a {count} jours",
+    "yesterday": "Hier"
+  },
+
+  "categories": {
+    "all": "Tout",
+    "mains": "Plats principaux",
+    "drinks": "Boissons",
+    "desserts": "Desserts",
+    "appetizers": "Entrées"
+  },
+
+  "dietary_tags": {
+    "vegetarian": "Végétarien",
+    "vegan": "Végétalien",
+    "gluten_free": "Sans gluten",
+    "spicy": "Épicé",
+    "dairy_free": "Sans lactose"
+  },
+
+  "status": {
+    "queued": "En attente",
+    "synced": "Synchronisée"
+  },
+
+  "notifications": {
+    "item_added": "Article ajouté au panier",
+    "item_removed": "Article retiré du panier",
+    "order_queued": "Commande en file d'attente",
+    "order_synced": "Commande synchronisée",
+    "offline_mode": "Vous êtes actuellement hors ligne",
+    "pending_sync": "Synchronisation en attente"
+  },
+
+  "buttons": {
+    "submit": "Envoyer la commande",
+    "cancel": "Annuler",
+    "clear_cart": "Vider le panier",
+    "back": "Retour",
+    "continue": "Continuer",
+    "close": "Fermer",
+    "refresh": "Actualiser",
+    "switch_language": "Changer de langue",
+    "save": "Enregistrer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "confirm": "Confirmer"
+  },
+
+  "placeholders": {
+    "enter_table": "Entrez votre numéro de table (1-20)",
+    "enter_name": "Entrez votre nom",
+    "search": "Rechercher...",
+    "enter_code": "Entrez le code bon"
+  },
+
+  "errors": {
+    "table_required": "Le numéro de table est requis",
+    "name_required": "Le nom est requis",
+    "invalid_table": "Veuillez entrer un numéro de table valide (1-20)",
+    "cart_empty": "Votre panier est vide",
+    "generic_error": "Une erreur s'est produite. Veuillez réessayer."
+  },
+
+  "product_detail": {
+    "title": "Détails du produit",
+    "description": "Description",
+    "ingredients": "Ingrédients",
+    "allergens": "Allergènes",
+    "nutritional_info": "Informations nutritionnelles",
+    "select_size": "Sélectionner la taille",
+    "customize": "Personnaliser",
+    "add_special_instructions": "Ajouter des instructions spéciales",
+    "quantity": "Quantité",
+    "add_to_cart": "Ajouter au panier - {price}$"
+  },
+
+  "smart_suggest": {
+    "title": "Suggestions intelligentes",
+    "subtitle": "Basé sur vos préférences",
+    "loading": "Chargement des suggestions...",
+    "error": "Échec du chargement des suggestions"
+  }
+}

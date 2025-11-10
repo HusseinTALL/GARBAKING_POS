@@ -9,7 +9,6 @@ import { loyaltyApi } from '@/services/api-spring'
 import type {
   LoyaltyProgram,
   LoyaltyTier,
-  LoyaltyCustomer,
   LoyaltyCampaign,
   LoyaltyReward,
   LoyaltyRedemption

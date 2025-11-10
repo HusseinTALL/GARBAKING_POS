@@ -187,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { CustomerLoyaltyProfile, RedemptionRequest } from '@/services/loyalty'
 
 interface Props {
@@ -253,10 +253,11 @@ watch(() => form.value.redemptionType, (newType) => {
       case 'DISCOUNT':
         form.value.description = `$${discountValue.value.toFixed(2)} off order`
         break
-      case 'PERCENTAGE_OFF':
+      case 'PERCENTAGE_OFF': {
         const percentage = Math.min(Math.round(discountValue.value * 5), 50) // Max 50% off
         form.value.description = `${percentage}% off order`
         break
+      }
       case 'FREE_ITEM':
         form.value.description = `Free item up to $${discountValue.value.toFixed(2)}`
         break
@@ -272,10 +273,11 @@ watch(() => form.value.pointsToRedeem, () => {
       case 'DISCOUNT':
         form.value.description = `$${discountValue.value.toFixed(2)} off order`
         break
-      case 'PERCENTAGE_OFF':
+      case 'PERCENTAGE_OFF': {
         const percentage = Math.min(Math.round(discountValue.value * 5), 50)
         form.value.description = `${percentage}% off order`
         break
+      }
       case 'FREE_ITEM':
         form.value.description = `Free item up to $${discountValue.value.toFixed(2)}`
         break

@@ -342,13 +342,14 @@ const handleKeyDown = (event: KeyboardEvent) => {
       selectedIndex.value = 0
       break
 
-    case '/':
+    case '/': {
       event.preventDefault()
       const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement
       if (searchInput) {
         searchInput.focus()
       }
       break
+    }
   }
 }
 
@@ -361,11 +362,6 @@ const scrollToSelectedItem = async () => {
       block: 'nearest'
     })
   }
-}
-
-const resetKeyboardNav = () => {
-  selectedIndex.value = 0
-  isKeyboardNavActive.value = false
 }
 
 // Watch for changes in filtered items to reset selection

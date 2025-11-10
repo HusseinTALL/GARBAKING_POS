@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { X, AlertTriangle, Trash2, CheckCircle, AlertCircle } from 'lucide-vue-next'
+import { X, AlertTriangle, AlertCircle } from 'lucide-vue-next'
 import type { Component } from 'vue'
 
 interface Props {
@@ -86,7 +86,7 @@ interface Props {
   icon?: Component
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   confirmText: 'Confirm',
   cancelText: 'Cancel',
   loadingText: 'Processing...',

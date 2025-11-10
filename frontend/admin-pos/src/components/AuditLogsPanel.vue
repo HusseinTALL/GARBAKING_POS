@@ -305,7 +305,6 @@ import {
   Clock,
   DollarSign,
   Key,
-  AlertTriangle,
   Info
 } from 'lucide-vue-next'
 

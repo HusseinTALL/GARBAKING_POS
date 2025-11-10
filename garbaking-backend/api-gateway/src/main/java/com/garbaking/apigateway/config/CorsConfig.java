@@ -22,21 +22,20 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
 
-        // Allow frontend origins
-        corsConfig.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000",  // Admin POS
-            "http://localhost:3002",  // Customer App
-            "http://localhost:3003"   // KDS App
-        ));
+        // DO NOT use applyPermitDefaultValues() as it sets allowedOrigins to "*"
+        // which conflicts with allowCredentials=true
+
+        // Allow all origins for development (use specific origins in production)
+        corsConfig.addAllowedOrigin("*");
 
         // Allow all HTTP methods
         corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 
         // Allow all headers
-        corsConfig.setAllowedHeaders(Collections.singletonList("*"));
+        corsConfig.addAllowedHeader("*");
 
-        // Allow credentials (cookies, authorization headers)
-        corsConfig.setAllowCredentials(true);
+        // Disable credentials to allow wildcard origins (enable in production with specific origins)
+        corsConfig.setAllowCredentials(false);
 
         // Cache preflight response for 1 hour
         corsConfig.setMaxAge(3600L);

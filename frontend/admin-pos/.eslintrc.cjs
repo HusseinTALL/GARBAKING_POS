@@ -1,14 +1,26 @@
 /* eslint-env node */
-require('@rushstack/eslint-patch/modern-module-resolution')
+try {
+  require('@rushstack/eslint-patch/modern-module-resolution')
+} catch {
+  // Module is optional; continue without the patch when not installed.
+}
+
+const baseExtends = [
+  'plugin:vue/vue3-essential',
+  'eslint:recommended',
+  '@vue/eslint-config-typescript'
+]
+
+try {
+  require.resolve('@vue/eslint-config-prettier/skip-formatting')
+  baseExtends.push('@vue/eslint-config-prettier/skip-formatting')
+} catch {
+  // Optional prettier bridge; continue if not installed.
+}
 
 module.exports = {
   root: true,
-  extends: [
-    'plugin:vue/vue3-essential',
-    'eslint:recommended',
-    '@vue/eslint-config-typescript',
-    '@vue/eslint-config-prettier/skip-formatting'
-  ],
+  extends: baseExtends,
   parserOptions: {
     ecmaVersion: 'latest'
   },

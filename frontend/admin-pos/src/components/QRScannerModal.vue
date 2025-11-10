@@ -505,13 +505,13 @@ const stopScanning = async () => {
   }
 }
 
-const onScanSuccess = (decodedText: string, result: Html5QrcodeResult) => {
+const onScanSuccess = (decodedText: string, _result: Html5QrcodeResult) => {
   console.log('QR Code scanned:', decodedText)
   stopScanning()
   processScan(decodedText, 'qr')
 }
 
-const onScanFailure = (error: string) => {
+const onScanFailure = (_error: string) => {
   // Ignore scan failures (expected when no QR in frame)
 }
 

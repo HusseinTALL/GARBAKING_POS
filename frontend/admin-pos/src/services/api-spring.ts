@@ -150,31 +150,23 @@ apiClient.interceptors.response.use(
 // Authentication API (User Service via API Gateway)
 export const authApi = {
   async login(credentials: { email: string; password: string }) {
-    try {
-      const response = await apiClient.post('/api/auth/login', credentials)
-      const { token, user } = response.data
-      if (token) {
-        localStorage.setItem('auth_token', token)
-        localStorage.setItem('user', JSON.stringify(user))
-      }
-      return response.data
-    } catch (error: any) {
-      throw error
+    const response = await apiClient.post('/api/auth/login', credentials)
+    const { token, user } = response.data
+    if (token) {
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('user', JSON.stringify(user))
     }
+    return response.data
   },
 
   async register(userData: { name: string; email: string; password: string; phone?: string; role?: string }) {
-    try {
-      const response = await apiClient.post('/api/auth/register', userData)
-      const { token, user } = response.data
-      if (token) {
-        localStorage.setItem('auth_token', token)
-        localStorage.setItem('user', JSON.stringify(user))
-      }
-      return response.data
-    } catch (error: any) {
-      throw error
+    const response = await apiClient.post('/api/auth/register', userData)
+    const { token, user } = response.data
+    if (token) {
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('user', JSON.stringify(user))
     }
+    return response.data
   },
 
   async logout(reason?: string) {
@@ -194,35 +186,23 @@ export const authApi = {
   },
 
   async refresh(refreshToken: string) {
-    try {
-      const response = await apiClient.post('/api/auth/refresh', { refreshToken })
-      const { token, user } = response.data
-      if (token) {
-        localStorage.setItem('auth_token', token)
-        localStorage.setItem('user', JSON.stringify(user))
-      }
-      return response.data
-    } catch (error: any) {
-      throw error
+    const response = await apiClient.post('/api/auth/refresh', { refreshToken })
+    const { token, user } = response.data
+    if (token) {
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('user', JSON.stringify(user))
     }
+    return response.data
   },
 
   async verify() {
-    try {
-      const response = await apiClient.get('/api/auth/verify')
-      return response.data
-    } catch (error: any) {
-      throw error
-    }
+    const response = await apiClient.get('/api/auth/verify')
+    return response.data
   },
 
   async getMe() {
-    try {
-      const response = await apiClient.get('/api/users/me')
-      return response.data
-    } catch (error: any) {
-      throw error
-    }
+    const response = await apiClient.get('/api/users/me')
+    return response.data
   },
 
   getCurrentUser(): any | null {
@@ -369,6 +349,28 @@ export const menuItemsApi = {
       reason
     })
     return response.data
+  },
+
+  async getPublic() {
+    const response = await apiClient.get('/api/menu/public')
+    return response.data || []
+  },
+
+  async uploadImage(menuItemId: number, file: File, primary: boolean = true) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('primary', String(primary))
+
+    const response = await apiClient.post(`/api/menu-items/${menuItemId}/images`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return response.data
+  },
+
+  async deleteImage(menuItemId: number, imageId: number) {
+    await apiClient.delete(`/api/menu-items/${menuItemId}/images/${imageId}`)
   }
 }
 

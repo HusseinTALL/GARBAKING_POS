@@ -242,9 +242,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { useTablesStore, TableStatus, type Table, type Reservation } from '@/stores/tables'
-import { useAuthStore } from '@/stores/auth'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useTablesStore, TableStatus, type Table } from '@/stores/tables'
 import { storeToRefs } from 'pinia'
 import {
   LayoutGrid,
@@ -256,14 +255,12 @@ import {
 
 // Stores
 const tablesStore = useTablesStore()
-const authStore = useAuthStore()
 
 // Destructure store state
 const {
   tables,
   floorPlan,
   selectedTable,
-  isLoading,
   tableStats,
   sectionsWithTables,
   upcomingReservations
@@ -278,7 +275,7 @@ const showSettings = ref(false)
 const assignOrderTable = ref<Table | null>(null)
 
 // Floor plan state
-const floorPlanContainer = ref<HTMLElement>()
+const floorPlanContainer = ref<HTMLElement | null>(null)
 const floorPlanSize = ref({ width: 1200, height: 800 })
 const floorPlanScale = ref(1)
 

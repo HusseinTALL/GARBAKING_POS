@@ -175,14 +175,14 @@ interface Props {
   template?: ReceiptTemplate
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 // Emits
 const emit = defineEmits<{
-  'retry': [jobId: string]
-  'cancel': [jobId: string]
-  'view': [job: PrintJob]
-}>()</pre>
+  retry: [jobId: string]
+  cancel: [jobId: string]
+  view: [job: PrintJob]
+}>()
 
 // Local state
 const showMenu = ref(false)

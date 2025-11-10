@@ -1,0 +1,72 @@
+{
+  "welcome": {
+    "title": "Welcome to Garbaking",
+    "subtitle": "Touch anywhere to start ordering",
+    "touchToStart": "Touch to Start"
+  },
+  "mode": {
+    "title": "How would you like to enjoy your meal?",
+    "dineIn": "Dine In",
+    "takeaway": "Takeaway",
+    "selectLanguage": "Select Language",
+    "continue": "Continue"
+  },
+  "menu": {
+    "title": "Menu",
+    "viewCart": "View Cart",
+    "addToCart": "Add to Cart",
+    "items": "items",
+    "search": "Search menu...",
+    "noItems": "No items available",
+    "unavailable": "Currently Unavailable"
+  },
+  "customize": {
+    "title": "Customize Your Order",
+    "required": "Required",
+    "optional": "Optional",
+    "specialInstructions": "Special Instructions",
+    "addToCart": "Add to Cart",
+    "cancel": "Cancel",
+    "quantity": "Quantity"
+  },
+  "cart": {
+    "title": "Your Order",
+    "empty": "Your cart is empty",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "total": "Total",
+    "checkout": "Proceed to Payment",
+    "continueShopping": "Continue Shopping",
+    "remove": "Remove",
+    "edit": "Edit"
+  },
+  "payment": {
+    "title": "Select Payment Method",
+    "card": "Credit/Debit Card",
+    "mobileMoney": "Mobile Money",
+    "qrCode": "QR Code",
+    "cash": "Pay at Counter",
+    "processing": "Processing Payment...",
+    "cancel": "Cancel"
+  },
+  "confirmation": {
+    "title": "Order Confirmed!",
+    "orderNumber": "Order Number",
+    "thankYou": "Thank you for your order",
+    "pleaseWait": "Please wait for your order to be prepared",
+    "estimatedTime": "Estimated time",
+    "minutes": "minutes",
+    "newOrder": "Start New Order",
+    "dineInMessage": "Please find a seat. We'll bring your order to you.",
+    "takeawayMessage": "Please wait at the counter. We'll call your number when ready."
+  },
+  "common": {
+    "back": "Back",
+    "next": "Next",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "currency": "$"
+  }
+}

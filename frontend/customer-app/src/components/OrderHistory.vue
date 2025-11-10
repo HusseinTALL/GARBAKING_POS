@@ -59,7 +59,7 @@
         <!-- Order items preview (show first 2 items) -->
         <div class="space-y-2 mb-3">
           <div
-            v-for="(item, index) in order.orderItems.slice(0, 2)"
+            v-for="item in order.orderItems.slice(0, 2)"
             :key="item.id"
             class="flex items-center gap-3"
           >
@@ -252,7 +252,24 @@ const fetchOrderHistory = async () => {
     const response = await ordersApi.getCustomerOrderHistory(customerPhone.value)
 
     if (response.success && response.data) {
-      orders.value = response.data.orders || []
+      // Transform orders to ensure consistent data structure
+      // Backend sends 'items' with 'menuItemName', frontend expects 'orderItems' with 'name'
+      const transformedOrders = (response.data.orders || []).map((order: any) => ({
+        ...order,
+        orderItems: (order.items || order.orderItems || []).map((item: any) => ({
+          ...item,
+          // Map menuItemName to name for display
+          name: item.menuItemName || item.name || 'Unknown Item',
+          // Create a minimal menuItem object for image display
+          menuItem: item.menuItem || {
+            imageUrl: item.menuItemImageUrl || null,
+            name: item.menuItemName || item.name
+          }
+        })),
+        total: order.totalAmount || order.total || 0
+      }))
+
+      orders.value = transformedOrders
       console.log(`Loaded ${orders.value.length} orders for ${customerPhone.value}`)
     } else {
       throw new Error(response.error || 'Failed to fetch order history')
@@ -287,11 +304,11 @@ const reorderItems = (order: any) => {
     const cartItem = {
       menuItemId: String(item.menuItemId),
       id: String(item.menuItemId),
-      name: item.name || item.menuItem.name,
+      name: item.name || item.menuItemName || 'Unknown Item',
       price: item.unitPrice,
-      imageUrl: item.menuItem.imageUrl,
-      notes: item.notes || '',
-      sku: item.menuItem?.sku
+      imageUrl: item.menuItem?.imageUrl || null,
+      notes: item.specialInstructions || item.notes || '',
+      sku: item.menuItemSku || item.menuItem?.sku
     }
 
     cartStore.addItem(cartItem, item.quantity)

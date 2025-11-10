@@ -360,7 +360,7 @@ const getReservationStatusClass = (status: string): string => {
   return classes[status] || 'bg-gray-100 text-gray-800'
 }
 
-const seatReservation = (reservation: Reservation) => {
+const seatReservation = (_reservation: Reservation) => {
   emit('status-change', props.table.id, TableStatus.OCCUPIED)
   // Additional logic for seating reservation
 }

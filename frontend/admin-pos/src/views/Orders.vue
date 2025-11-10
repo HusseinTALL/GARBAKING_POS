@@ -651,7 +651,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useOrdersStore, OrderStatus } from '@/stores/orders'
-import { useNotificationStore } from '@/stores/notification'
 import {
   RefreshCw,
   Volume2,
@@ -684,7 +683,6 @@ interface Notification {
 
 // Stores
 const ordersStore = useOrdersStore()
-const notificationStore = useNotificationStore()
 
 // State
 const soundEnabled = ref(true)
@@ -806,18 +804,21 @@ const filteredOrders = computed(() => {
       switch (advancedFilters.value.dateRange) {
         case 'today':
           return orderDate >= today
-        case 'yesterday':
+        case 'yesterday': {
           const yesterday = new Date(today)
           yesterday.setDate(yesterday.getDate() - 1)
           return orderDate >= yesterday && orderDate < today
-        case 'week':
+        }
+        case 'week': {
           const weekAgo = new Date(today)
           weekAgo.setDate(weekAgo.getDate() - 7)
           return orderDate >= weekAgo
-        case 'month':
+        }
+        case 'month': {
           const monthAgo = new Date(today)
           monthAgo.setMonth(monthAgo.getMonth() - 1)
           return orderDate >= monthAgo
+        }
         default:
           return true
       }
@@ -849,7 +850,7 @@ const filteredOrders = computed(() => {
         return (b.total || 0) - (a.total || 0)
       case 'amount-low':
         return (a.total || 0) - (b.total || 0)
-      default:
+      default: {
         // Default: Priority + newest
         const statusPriority = {
           'READY': 5,
@@ -868,6 +869,7 @@ const filteredOrders = computed(() => {
         }
 
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
     }
   })
 
