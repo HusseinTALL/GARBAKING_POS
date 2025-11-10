@@ -25,6 +25,9 @@ dependencies {
     // Guava (for rate limiting cache)
     implementation 'com.google.guava:guava:32.1.3-jre'
 
+    // Google reCAPTCHA
+    implementation 'com.google.api-client:google-api-client:2.2.0'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

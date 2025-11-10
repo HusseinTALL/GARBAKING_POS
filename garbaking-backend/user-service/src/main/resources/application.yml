@@ -114,3 +114,14 @@ security:
     refresh:
       max-attempts: 10
       window-minutes: 1
+
+# CAPTCHA Configuration (Google reCAPTCHA v3)
+captcha:
+  recaptcha:
+    enabled: false  # Set to true to enable CAPTCHA verification
+    site-key: ${RECAPTCHA_SITE_KEY:your-site-key-here}  # Public key for frontend
+    secret-key: ${RECAPTCHA_SECRET_KEY:your-secret-key-here}  # Private key for backend verification
+    verify-url: https://www.google.com/recaptcha/api/siteverify
+    threshold: 0.5  # Score threshold (0.0-1.0), recommended: 0.5
+    connection-timeout: 5000  # Connection timeout in milliseconds
+    read-timeout: 5000  # Read timeout in milliseconds
