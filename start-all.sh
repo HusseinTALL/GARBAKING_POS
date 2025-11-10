@@ -370,3 +370,4 @@ echo
 
 # Wait for all processes
 wait
+cleanup
