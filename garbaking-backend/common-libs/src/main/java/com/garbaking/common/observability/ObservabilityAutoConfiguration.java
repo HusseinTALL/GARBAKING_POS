@@ -15,7 +15,6 @@ import org.springframework.core.env.Environment;
 @AutoConfiguration
 @EnableConfigurationProperties(ObservabilityProperties.class)
 public class ObservabilityAutoConfiguration {
-
     @Bean
     @ConditionalOnMissingBean
     MeterRegistryCustomizer<MeterRegistry> commonTagsCustomizer(ObservabilityProperties properties, Environment environment) {
