@@ -1374,12 +1374,12 @@ export const printersApi = {
   }
 }
 
-// Payment API (Payment Service - To be implemented)
-// NOTE: These endpoints are not yet implemented in Spring Boot backend
-// They need to be created in a new Payment Service microservice
+// Payment API (Operations Service)
+// Payment processing, methods, transactions
 export const paymentApi = {
+  // Payment Methods Management
   async getPaymentMethods() {
-    const response = await apiClient.get('/api/payment/methods')
+    const response = await apiClient.get('/api/payments/methods')
     const methods = Array.isArray(response.data)
       ? response.data
       : Array.isArray(response.data?.methods)
@@ -1388,54 +1388,211 @@ export const paymentApi = {
     return methods.map(mapPaymentMethodDto)
   },
 
-  async processPayment(payload: any) {
-    const response = await apiClient.post('/api/payment/process', payload)
+  async getPaymentMethod(code: string) {
+    const response = await apiClient.get(`/api/payments/methods/${code}`)
+    return mapPaymentMethodDto(response.data)
+  },
+
+  async updatePaymentMethod(code: string, payload: any) {
+    const response = await apiClient.put(`/api/payments/methods/${code}`, payload)
+    return mapPaymentMethodDto(response.data)
+  },
+
+  // Payment Processing
+  async processPayment(payload: {
+    orderId: string
+    amount: number
+    paymentMethod: string
+    tipAmount?: number
+    cashDrawerSessionId?: number
+  }) {
+    const response = await apiClient.post('/api/payments/charges', payload)
     return response.data
   },
 
-  async processSplitPayment(payload: any) {
-    const response = await apiClient.post('/api/payment/process-split', payload)
-    return response.data
-  },
-
-  async refundPayment(transactionId: string, amount: number, reason?: string) {
-    const response = await apiClient.post(`/api/payment/refund/${transactionId}`, {
-      amount,
-      reason
+  async refundPayment(transactionId: number, amount: number) {
+    const response = await apiClient.post('/api/payments/refunds', {
+      transactionId,
+      amount
     })
     return response.data
   },
 
-  async openCashDrawer(staffId: string, startingAmount: number) {
-    const response = await apiClient.post('/api/payment/cash-drawer/open', {
-      staffId,
-      startingAmount
+  // Transaction Queries
+  async getTransaction(id: number) {
+    const response = await apiClient.get(`/api/payments/transactions/${id}`)
+    return response.data
+  },
+
+  async getTransactionByReference(reference: string) {
+    const response = await apiClient.get(`/api/payments/transactions/reference/${reference}`)
+    return response.data
+  },
+
+  async getTransactionsByOrder(orderId: string) {
+    const response = await apiClient.get(`/api/payments/transactions/order/${orderId}`)
+    return response.data
+  },
+
+  async getTransactionsBySession(sessionId: number) {
+    const response = await apiClient.get(`/api/payments/transactions/session/${sessionId}`)
+    return response.data
+  },
+
+  async getAllTransactions() {
+    const response = await apiClient.get('/api/payments/transactions')
+    return response.data
+  },
+
+  // Analytics
+  async getPaymentBreakdown() {
+    const response = await apiClient.get('/api/payments/breakdown')
+    return response.data
+  },
+
+  async getPaymentBreakdownForSession(sessionId: number) {
+    const response = await apiClient.get(`/api/payments/breakdown/session/${sessionId}`)
+    return response.data
+  }
+}
+
+// Cash Drawer API (Operations Service)
+// Cash drawer lifecycle management, sessions, reconciliation
+export const cashDrawerApi = {
+  // Cash Drawer Management
+  async registerDrawer(payload: {
+    name: string
+    terminalId: string
+    location?: string
+  }) {
+    const response = await apiClient.post('/api/cash-drawer/register', payload)
+    return response.data
+  },
+
+  async getAllDrawers() {
+    const response = await apiClient.get('/api/cash-drawer')
+    return response.data
+  },
+
+  async getDrawer(drawerId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/${drawerId}`)
+    return response.data
+  },
+
+  async getDrawerByTerminal(terminalId: string) {
+    const response = await apiClient.get(`/api/cash-drawer/terminal/${terminalId}`)
+    return response.data
+  },
+
+  async getDrawersByLocation(location: string) {
+    const response = await apiClient.get(`/api/cash-drawer/location/${location}`)
+    return response.data
+  },
+
+  // Session Management
+  async openSession(drawerId: number, payload: {
+    userId: number
+    startingCash: number
+    denominationCounts?: Record<string, number>
+  }) {
+    const response = await apiClient.post(`/api/cash-drawer/${drawerId}/open`, payload)
+    return response.data
+  },
+
+  async closeSession(sessionId: number, payload: {
+    userId: number
+    countedCash: number
+    denominationCounts?: Record<string, number>
+    notes?: string
+  }) {
+    const response = await apiClient.post(`/api/cash-drawer/sessions/${sessionId}/close`, payload)
+    return response.data
+  },
+
+  async getCurrentSession(drawerId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/${drawerId}/current-session`)
+    return response.data
+  },
+
+  async getSessionsByDrawer(drawerId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/${drawerId}/sessions`)
+    return response.data
+  },
+
+  async getSessionsByUser(userId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/user/${userId}`)
+    return response.data
+  },
+
+  // Cash Transactions
+  async recordCashDrop(sessionId: number, payload: {
+    amount: number
+    userId: number
+    notes?: string
+  }) {
+    const response = await apiClient.post(`/api/cash-drawer/sessions/${sessionId}/drop`, payload)
+    return response.data
+  },
+
+  async recordCashPayout(sessionId: number, payload: {
+    amount: number
+    userId: number
+    notes: string
+  }) {
+    const response = await apiClient.post(`/api/cash-drawer/sessions/${sessionId}/payout`, payload)
+    return response.data
+  },
+
+  async recordNoSale(sessionId: number, userId: number) {
+    const response = await apiClient.post(`/api/cash-drawer/sessions/${sessionId}/no-sale`, null, {
+      params: { userId }
     })
     return response.data
   },
 
-  async closeCashDrawer(drawerData: any) {
-    const response = await apiClient.post('/api/payment/cash-drawer/close', drawerData)
+  async getSessionTransactions(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/transactions`)
     return response.data
   },
 
-  async addCashTransaction(transaction: any) {
-    const response = await apiClient.post('/api/payment/cash-drawer/transaction', transaction)
+  async getTransactionsByType(type: string) {
+    const response = await apiClient.get(`/api/cash-drawer/transactions/type/${type}`)
     return response.data
   },
 
-  async printReceipt(transactionId: string) {
-    const response = await apiClient.post(`/api/payment/receipt/${transactionId}`)
+  // Reconciliation
+  async getReconciliation(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/reconciliation`)
     return response.data
   },
 
-  async getCashDrawerStatus() {
-    const response = await apiClient.get('/api/payment/cash-drawer/status')
+  async getReconciliationsByStatus(status: string) {
+    const response = await apiClient.get(`/api/cash-drawer/reconciliations/status/${status}`)
     return response.data
   },
 
-  async getRecentTransactions(limit = 50) {
-    const response = await apiClient.get(`/api/payment/transactions/recent?limit=${limit}`)
+  async getReconciliationsByDateRange(start: string, end: string) {
+    const response = await apiClient.get('/api/cash-drawer/reconciliations', {
+      params: { start, end }
+    })
+    return response.data
+  },
+
+  // Statistics
+  async getSessionStatistics(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/statistics`)
+    return response.data
+  },
+
+  async getCurrentBalance(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/balance`)
+    return response.data
+  },
+
+  async getDenominationCounts(sessionId: number, countType: 'OPENING' | 'CLOSING') {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/denominations`, {
+      params: { countType }
+    })
     return response.data
   }
 }
@@ -1513,5 +1670,6 @@ export default {
   receipts: receiptsApi,
   printers: printersApi,
   payment: paymentApi,
+  cashDrawer: cashDrawerApi,
   upload: uploadApi
 }
