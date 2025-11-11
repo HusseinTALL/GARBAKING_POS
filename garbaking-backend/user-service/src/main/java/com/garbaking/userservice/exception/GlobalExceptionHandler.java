@@ -107,6 +107,25 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle CaptchaVerificationException
+     */
+    @ExceptionHandler(CaptchaVerificationException.class)
+    public ResponseEntity<ErrorResponse> handleCaptchaVerificationException(
+            CaptchaVerificationException ex,
+            WebRequest request
+    ) {
+        log.error("CAPTCHA verification failed: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("CAPTCHA Verification Failed")
+                .message(ex.getMessage())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
      * Handle all other exceptions
      */
     @ExceptionHandler(Exception.class)

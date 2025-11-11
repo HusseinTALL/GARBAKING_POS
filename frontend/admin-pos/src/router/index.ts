@@ -16,8 +16,24 @@ import Analytics from '@/views/Analytics.vue'
 import Settings from '@/views/Settings.vue'
 import Tables from '@/views/Tables.vue'
 import Payment from '@/views/Payment.vue'
+import CashReports from '@/views/CashReports.vue'
 import Receipts from '@/views/Receipts.vue'
 import Loyalty from '@/views/Loyalty.vue'
+import InventoryDashboard from '@/views/inventory/InventoryDashboard.vue'
+import InventoryItems from '@/views/inventory/InventoryItems.vue'
+import PurchaseOrders from '@/views/inventory/PurchaseOrders.vue'
+import EmployeeDashboard from '@/views/employees/EmployeeDashboard.vue'
+import EmployeeList from '@/views/employees/EmployeeList.vue'
+import TimeClock from '@/views/employees/TimeClock.vue'
+import Timesheet from '@/views/employees/Timesheet.vue'
+import TimeOff from '@/views/employees/TimeOff.vue'
+import ScheduleCalendar from '@/views/employees/ScheduleCalendar.vue'
+import EmployeeAvailability from '@/views/employees/EmployeeAvailability.vue'
+import ShiftSwap from '@/views/employees/ShiftSwap.vue'
+import PayrollDashboard from '@/views/employees/PayrollDashboard.vue'
+import PerformanceReviews from '@/views/employees/PerformanceReviews.vue'
+import TrainingCertifications from '@/views/employees/TrainingCertifications.vue'
+import EmployeeAnalytics from '@/views/employees/EmployeeAnalytics.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -123,6 +139,165 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: 'Payment Processing',
           feature: 'cash-management'
+        }
+      },
+      {
+        path: '/cash-reports',
+        name: 'cash-reports',
+        component: CashReports,
+        meta: {
+          title: 'Cash Reports',
+          feature: 'cash-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/inventory',
+        name: 'inventory-dashboard',
+        component: InventoryDashboard,
+        meta: {
+          title: 'Inventory Dashboard',
+          feature: 'inventory-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/inventory/items',
+        name: 'inventory-items',
+        component: InventoryItems,
+        meta: {
+          title: 'Inventory Items',
+          feature: 'inventory-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/inventory/purchase-orders',
+        name: 'purchase-orders',
+        component: PurchaseOrders,
+        meta: {
+          title: 'Purchase Orders',
+          feature: 'inventory-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees',
+        name: 'employee-dashboard',
+        component: EmployeeDashboard,
+        meta: {
+          title: 'Employee Dashboard',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/list',
+        name: 'employee-list',
+        component: EmployeeList,
+        meta: {
+          title: 'Employees',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/time-clock',
+        name: 'time-clock',
+        component: TimeClock,
+        meta: {
+          title: 'Time Clock',
+          feature: 'employee-management'
+        }
+      },
+      {
+        path: '/employees/timesheet',
+        name: 'timesheet',
+        component: Timesheet,
+        meta: {
+          title: 'Timesheets',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/time-off',
+        name: 'time-off',
+        component: TimeOff,
+        meta: {
+          title: 'Time Off',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/schedule',
+        name: 'schedule-calendar',
+        component: ScheduleCalendar,
+        meta: {
+          title: 'Schedule Calendar',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/availability',
+        name: 'employee-availability',
+        component: EmployeeAvailability,
+        meta: {
+          title: 'Employee Availability',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/shift-swaps',
+        name: 'shift-swaps',
+        component: ShiftSwap,
+        meta: {
+          title: 'Shift Swaps',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/payroll',
+        name: 'payroll',
+        component: PayrollDashboard,
+        meta: {
+          title: 'Payroll',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/performance',
+        name: 'performance-reviews',
+        component: PerformanceReviews,
+        meta: {
+          title: 'Performance Reviews',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/training',
+        name: 'training-certifications',
+        component: TrainingCertifications,
+        meta: {
+          title: 'Training & Certifications',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/analytics',
+        name: 'employee-analytics',
+        component: EmployeeAnalytics,
+        meta: {
+          title: 'Employee Analytics',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
         }
       },
       {

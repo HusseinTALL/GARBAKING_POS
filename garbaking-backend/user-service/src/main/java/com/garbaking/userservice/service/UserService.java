@@ -31,6 +31,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     /**
      * Register a new user
@@ -57,11 +58,15 @@ public class UserService {
         User savedUser = userRepository.save(user);
         log.info("User registered successfully with ID: {}", savedUser.getId());
 
-        // Generate JWT token
+        // Generate JWT access token
         String token = jwtUtil.generateToken(savedUser);
+
+        // Generate refresh token
+        String refreshToken = refreshTokenService.createRefreshToken(savedUser).getToken();
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .user(convertToDTO(savedUser))
                 .message("User registered successfully")
                 .build();
@@ -90,11 +95,15 @@ public class UserService {
 
         log.info("User logged in successfully: {}", user.getId());
 
-        // Generate JWT token
+        // Generate JWT access token
         String token = jwtUtil.generateToken(user);
+
+        // Generate refresh token
+        String refreshToken = refreshTokenService.createRefreshToken(user).getToken();
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .user(convertToDTO(user))
                 .message("Login successful")
                 .build();
@@ -213,6 +222,59 @@ public class UserService {
 
         userRepository.deleteById(id);
         log.info("User hard deleted successfully: {}", id);
+    }
+
+    /**
+     * Refresh access token using refresh token
+     */
+    @Transactional
+    public AuthResponse refreshAccessToken(String refreshToken) {
+        log.info("Refreshing access token");
+
+        // Verify and get refresh token
+        User user = refreshTokenService.getUserFromRefreshToken(refreshToken);
+
+        // Generate new access token
+        String newAccessToken = jwtUtil.generateToken(user);
+
+        log.info("Access token refreshed for user: {}", user.getEmail());
+
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(refreshToken) // Return same refresh token
+                .user(convertToDTO(user))
+                .message("Token refreshed successfully")
+                .build();
+    }
+
+    /**
+     * Logout user by revoking refresh token
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        log.info("Logging out user");
+
+        try {
+            refreshTokenService.revokeRefreshToken(refreshToken);
+            log.info("User logged out successfully");
+        } catch (Exception e) {
+            log.warn("Logout attempt with invalid token: {}", e.getMessage());
+            // Don't throw - logout should be idempotent
+        }
+    }
+
+    /**
+     * Logout from all devices by revoking all user's refresh tokens
+     */
+    @Transactional
+    public void logoutAll(Long userId) {
+        log.info("Logging out user from all devices: {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        refreshTokenService.revokeAllUserTokens(user);
+        log.info("User logged out from all devices: {}", user.getEmail());
     }
 
     /**

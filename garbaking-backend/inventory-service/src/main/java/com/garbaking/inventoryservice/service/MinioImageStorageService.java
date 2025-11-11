@@ -23,12 +23,22 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class MinioImageStorageService {
 
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
+
+    /**
+     * Constructor with lazy MinioClient injection
+     * MinioClient is lazy to avoid startup failures when MinIO is unavailable
+     */
+    public MinioImageStorageService(
+            @org.springframework.context.annotation.Lazy MinioClient minioClient,
+            MinioProperties minioProperties) {
+        this.minioClient = minioClient;
+        this.minioProperties = minioProperties;
+    }
 
     /**
      * Uploads an image to MinIO and returns the storage details

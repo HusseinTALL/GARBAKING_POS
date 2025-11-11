@@ -1,0 +1,97 @@
+spring:
+  application:
+    name: user-service-test
+
+  # Use H2 in-memory database for testing
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # JPA Configuration for H2
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
+
+  # Disable Eureka for tests
+  cloud:
+    config:
+      enabled: false
+
+# Server Configuration
+server:
+  port: 0  # Random port for tests
+
+# Disable Eureka for tests
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+# JWT Configuration (use test secret)
+jwt:
+  secret: test-secret-key-for-integration-tests-only-not-for-production-use
+  expiration: 3600000  # 1 hour
+  refresh:
+    expiration: 7200000  # 2 hours
+    max-per-user: 5
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# Disable tracing for tests
+  tracing:
+    enabled: false
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+  metrics:
+    export:
+      prometheus:
+        enabled: false
+
+# Logging - less verbose for tests
+logging:
+  level:
+    root: WARN
+    com.garbaking: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
+
+# Security Configuration - keep rate limiting for tests
+security:
+  rate-limit:
+    login:
+      max-attempts: 5
+      window-minutes: 15
+    register:
+      max-attempts: 3
+      window-minutes: 60
+    refresh:
+      max-attempts: 10
+      window-minutes: 1
+
+# CAPTCHA Configuration - disabled for tests
+captcha:
+  recaptcha:
+    enabled: false  # Disable CAPTCHA for integration tests
+    site-key: test-site-key
+    secret-key: test-secret-key
+    verify-url: https://www.google.com/recaptcha/api/siteverify
+    threshold: 0.5
+    connection-timeout: 5000
+    read-timeout: 5000

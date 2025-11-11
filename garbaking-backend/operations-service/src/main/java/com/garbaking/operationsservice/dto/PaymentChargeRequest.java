@@ -23,4 +23,7 @@ public class PaymentChargeRequest {
 
     @DecimalMin("0.00")
     private BigDecimal tipAmount = BigDecimal.ZERO;
+
+    // Optional: Link to cash drawer session for cash tracking
+    private Long cashDrawerSessionId;
 }

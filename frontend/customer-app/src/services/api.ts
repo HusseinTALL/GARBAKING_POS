@@ -30,21 +30,101 @@ const apiClient = axios.create({
   }
 })
 
-// Response interceptor for error handling
+// Flag to prevent multiple refresh attempts
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (value?: any) => void
+  reject: (reason?: any) => void
+}> = []
+
+const processQueue = (error: any = null, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
+  failedQueue = []
+}
+
+// Response interceptor for error handling and automatic token refresh
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     const toast = useToast()
     const networkStore = useNetworkStore()
+    const originalRequest = error.config as any
 
     if (!error.response) {
       // Network error - probably offline
       networkStore.setOnline(false)
       console.error('Network error:', error.message)
-    } else {
-      // HTTP error
-      console.error('API error:', error.response.status, error.response.data)
+      return Promise.reject(error)
     }
+
+    // Handle 401 errors (unauthorized - token expired)
+    if (error.response.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then(token => {
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token
+          }
+          return apiClient(originalRequest)
+        }).catch(err => {
+          return Promise.reject(err)
+        })
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      const refreshToken = localStorage.getItem('refresh_token')
+
+      if (!refreshToken) {
+        // No refresh token, just reject
+        return Promise.reject(error)
+      }
+
+      try {
+        // Attempt to refresh the token
+        const response = await apiClient.post('/api/auth/refresh', { refreshToken })
+        const { token: newAccessToken, refreshToken: newRefreshToken } = response.data
+
+        if (newAccessToken) {
+          localStorage.setItem('auth_token', newAccessToken)
+          if (newRefreshToken) {
+            localStorage.setItem('refresh_token', newRefreshToken)
+          }
+
+          // Update authorization header
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken
+          }
+          apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken
+
+          // Process queued requests
+          processQueue(null, newAccessToken)
+
+          // Retry original request
+          return apiClient(originalRequest)
+        }
+      } catch (refreshError) {
+        // Refresh failed, clear tokens
+        processQueue(refreshError, null)
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('refresh_token')
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
+      }
+    }
+
+    // HTTP error
+    console.error('API error:', error.response.status, error.response.data)
 
     return Promise.reject(error)
   }
@@ -118,7 +198,42 @@ export const menuApi = {
    */
   async getPublicMenu(): Promise<ApiResponse<{ categories: any[] }>> {
     try {
-      return await makeRequest('/api/menu/public', { method: 'GET' })
+      // Get categories from inventory service
+      const categoriesResponse = await makeRequest('/api/categories', { method: 'GET' })
+      const categories = Array.isArray(categoriesResponse)
+        ? categoriesResponse
+        : (categoriesResponse.data || categoriesResponse || [])
+
+      // Get all available menu items
+      const itemsResponse = await makeRequest('/api/menu-items?availableOnly=true', { method: 'GET' })
+      const allItems = Array.isArray(itemsResponse)
+        ? itemsResponse
+        : (itemsResponse.data || itemsResponse || [])
+
+      // Group items by category
+      const categoriesWithItems = categories.map((category: any) => ({
+        ...category,
+        id: String(category.id),
+        sortOrder: category.displayOrder || category.sortOrder || 0,
+        isActive: category.active !== undefined ? category.active : category.isActive !== false,
+        menuItems: allItems
+          .filter((item: any) => String(item.categoryId) === String(category.id))
+          .map((item: any) => ({
+            ...item,
+            id: String(item.id),
+            categoryId: String(item.categoryId),
+            isAvailable: item.available !== undefined ? item.available : item.isAvailable !== false,
+            isActive: item.active !== undefined ? item.active : item.isActive !== false,
+            price: typeof item.price === 'number' ? item.price : parseFloat(item.price || 0),
+          }))
+      }))
+
+      return {
+        success: true,
+        data: {
+          categories: categoriesWithItems
+        }
+      }
     } catch (error: any) {
       return {
         success: false,

@@ -45,4 +45,9 @@ public class UserDTO {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    /**
+     * CAPTCHA token from frontend (optional, used when CAPTCHA is enabled)
+     */
+    private String captchaToken;
 }

@@ -124,24 +124,104 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor for error handling
+// Flag to prevent multiple refresh attempts
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (value?: any) => void
+  reject: (reason?: any) => void
+}> = []
+
+const processQueue = (error: any = null, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
+  failedQueue = []
+}
+
+// Response interceptor for error handling and automatic token refresh
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     const toast = useToast()
+    const originalRequest = error.config as any
 
     if (!error.response) {
       console.error('Network error:', error.message)
       toast.error('Network error. Please check your connection.')
-    } else {
-      console.error('API error:', error.response.status, error.response.data)
+      return Promise.reject(error)
+    }
 
-      if (error.response.status === 401) {
+    // Handle 401 errors (unauthorized - token expired)
+    if (error.response.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then(token => {
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token
+          }
+          return apiClient(originalRequest)
+        }).catch(err => {
+          return Promise.reject(err)
+        })
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      const refreshToken = localStorage.getItem('refresh_token')
+
+      if (!refreshToken) {
+        // No refresh token, redirect to login
         localStorage.removeItem('auth_token')
         toast.error('Session expired. Please log in again.')
         window.location.href = '/login'
+        return Promise.reject(error)
+      }
+
+      try {
+        // Attempt to refresh the token
+        const response = await apiClient.post('/api/auth/refresh', { refreshToken })
+        const { token: newAccessToken, refreshToken: newRefreshToken } = response.data
+
+        if (newAccessToken) {
+          localStorage.setItem('auth_token', newAccessToken)
+          if (newRefreshToken) {
+            localStorage.setItem('refresh_token', newRefreshToken)
+          }
+
+          // Update authorization header
+          if (originalRequest.headers) {
+            originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken
+          }
+          apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + newAccessToken
+
+          // Process queued requests
+          processQueue(null, newAccessToken)
+
+          // Retry original request
+          return apiClient(originalRequest)
+        }
+      } catch (refreshError) {
+        // Refresh failed, redirect to login
+        processQueue(refreshError, null)
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('refresh_token')
+        toast.error('Session expired. Please log in again.')
+        window.location.href = '/login'
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
       }
     }
+
+    // Handle other errors
+    console.error('API error:', error.response.status, error.response.data)
 
     return Promise.reject(error)
   }
@@ -151,9 +231,10 @@ apiClient.interceptors.response.use(
 export const authApi = {
   async login(credentials: { email: string; password: string }) {
     const response = await apiClient.post('/api/auth/login', credentials)
-    const { token, user } = response.data
+    const { token, refreshToken, user } = response.data
     if (token) {
       localStorage.setItem('auth_token', token)
+      localStorage.setItem('refresh_token', refreshToken || token)
       localStorage.setItem('user', JSON.stringify(user))
     }
     return response.data
@@ -161,9 +242,10 @@ export const authApi = {
 
   async register(userData: { name: string; email: string; password: string; phone?: string; role?: string }) {
     const response = await apiClient.post('/api/auth/register', userData)
-    const { token, user } = response.data
+    const { token, refreshToken, user } = response.data
     if (token) {
       localStorage.setItem('auth_token', token)
+      localStorage.setItem('refresh_token', refreshToken || token)
       localStorage.setItem('user', JSON.stringify(user))
     }
     return response.data
@@ -171,7 +253,10 @@ export const authApi = {
 
   async logout(reason?: string) {
     try {
-      await apiClient.post('/api/auth/logout', { reason })
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (refreshToken) {
+        await apiClient.post('/api/auth/logout', { refreshToken })
+      }
     } catch (error) {
       console.warn('Logout API call failed:', error)
     } finally {
@@ -187,9 +272,12 @@ export const authApi = {
 
   async refresh(refreshToken: string) {
     const response = await apiClient.post('/api/auth/refresh', { refreshToken })
-    const { token, user } = response.data
+    const { token, refreshToken: newRefreshToken, user } = response.data
     if (token) {
       localStorage.setItem('auth_token', token)
+      if (newRefreshToken) {
+        localStorage.setItem('refresh_token', newRefreshToken)
+      }
       localStorage.setItem('user', JSON.stringify(user))
     }
     return response.data
@@ -1286,12 +1374,12 @@ export const printersApi = {
   }
 }
 
-// Payment API (Payment Service - To be implemented)
-// NOTE: These endpoints are not yet implemented in Spring Boot backend
-// They need to be created in a new Payment Service microservice
+// Payment API (Operations Service)
+// Payment processing, methods, transactions
 export const paymentApi = {
+  // Payment Methods Management
   async getPaymentMethods() {
-    const response = await apiClient.get('/api/payment/methods')
+    const response = await apiClient.get('/api/payments/methods')
     const methods = Array.isArray(response.data)
       ? response.data
       : Array.isArray(response.data?.methods)
@@ -1300,54 +1388,211 @@ export const paymentApi = {
     return methods.map(mapPaymentMethodDto)
   },
 
-  async processPayment(payload: any) {
-    const response = await apiClient.post('/api/payment/process', payload)
+  async getPaymentMethod(code: string) {
+    const response = await apiClient.get(`/api/payments/methods/${code}`)
+    return mapPaymentMethodDto(response.data)
+  },
+
+  async updatePaymentMethod(code: string, payload: any) {
+    const response = await apiClient.put(`/api/payments/methods/${code}`, payload)
+    return mapPaymentMethodDto(response.data)
+  },
+
+  // Payment Processing
+  async processPayment(payload: {
+    orderId: string
+    amount: number
+    paymentMethod: string
+    tipAmount?: number
+    cashDrawerSessionId?: number
+  }) {
+    const response = await apiClient.post('/api/payments/charges', payload)
     return response.data
   },
 
-  async processSplitPayment(payload: any) {
-    const response = await apiClient.post('/api/payment/process-split', payload)
-    return response.data
-  },
-
-  async refundPayment(transactionId: string, amount: number, reason?: string) {
-    const response = await apiClient.post(`/api/payment/refund/${transactionId}`, {
-      amount,
-      reason
+  async refundPayment(transactionId: number, amount: number) {
+    const response = await apiClient.post('/api/payments/refunds', {
+      transactionId,
+      amount
     })
     return response.data
   },
 
-  async openCashDrawer(staffId: string, startingAmount: number) {
-    const response = await apiClient.post('/api/payment/cash-drawer/open', {
-      staffId,
-      startingAmount
+  // Transaction Queries
+  async getTransaction(id: number) {
+    const response = await apiClient.get(`/api/payments/transactions/${id}`)
+    return response.data
+  },
+
+  async getTransactionByReference(reference: string) {
+    const response = await apiClient.get(`/api/payments/transactions/reference/${reference}`)
+    return response.data
+  },
+
+  async getTransactionsByOrder(orderId: string) {
+    const response = await apiClient.get(`/api/payments/transactions/order/${orderId}`)
+    return response.data
+  },
+
+  async getTransactionsBySession(sessionId: number) {
+    const response = await apiClient.get(`/api/payments/transactions/session/${sessionId}`)
+    return response.data
+  },
+
+  async getAllTransactions() {
+    const response = await apiClient.get('/api/payments/transactions')
+    return response.data
+  },
+
+  // Analytics
+  async getPaymentBreakdown() {
+    const response = await apiClient.get('/api/payments/breakdown')
+    return response.data
+  },
+
+  async getPaymentBreakdownForSession(sessionId: number) {
+    const response = await apiClient.get(`/api/payments/breakdown/session/${sessionId}`)
+    return response.data
+  }
+}
+
+// Cash Drawer API (Operations Service)
+// Cash drawer lifecycle management, sessions, reconciliation
+export const cashDrawerApi = {
+  // Cash Drawer Management
+  async registerDrawer(payload: {
+    name: string
+    terminalId: string
+    location?: string
+  }) {
+    const response = await apiClient.post('/api/cash-drawer/register', payload)
+    return response.data
+  },
+
+  async getAllDrawers() {
+    const response = await apiClient.get('/api/cash-drawer')
+    return response.data
+  },
+
+  async getDrawer(drawerId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/${drawerId}`)
+    return response.data
+  },
+
+  async getDrawerByTerminal(terminalId: string) {
+    const response = await apiClient.get(`/api/cash-drawer/terminal/${terminalId}`)
+    return response.data
+  },
+
+  async getDrawersByLocation(location: string) {
+    const response = await apiClient.get(`/api/cash-drawer/location/${location}`)
+    return response.data
+  },
+
+  // Session Management
+  async openSession(drawerId: number, payload: {
+    userId: number
+    startingCash: number
+    denominationCounts?: Record<string, number>
+  }) {
+    const response = await apiClient.post(`/api/cash-drawer/${drawerId}/open`, payload)
+    return response.data
+  },
+
+  async closeSession(sessionId: number, payload: {
+    userId: number
+    countedCash: number
+    denominationCounts?: Record<string, number>
+    notes?: string
+  }) {
+    const response = await apiClient.post(`/api/cash-drawer/sessions/${sessionId}/close`, payload)
+    return response.data
+  },
+
+  async getCurrentSession(drawerId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/${drawerId}/current-session`)
+    return response.data
+  },
+
+  async getSessionsByDrawer(drawerId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/${drawerId}/sessions`)
+    return response.data
+  },
+
+  async getSessionsByUser(userId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/user/${userId}`)
+    return response.data
+  },
+
+  // Cash Transactions
+  async recordCashDrop(sessionId: number, payload: {
+    amount: number
+    userId: number
+    notes?: string
+  }) {
+    const response = await apiClient.post(`/api/cash-drawer/sessions/${sessionId}/drop`, payload)
+    return response.data
+  },
+
+  async recordCashPayout(sessionId: number, payload: {
+    amount: number
+    userId: number
+    notes: string
+  }) {
+    const response = await apiClient.post(`/api/cash-drawer/sessions/${sessionId}/payout`, payload)
+    return response.data
+  },
+
+  async recordNoSale(sessionId: number, userId: number) {
+    const response = await apiClient.post(`/api/cash-drawer/sessions/${sessionId}/no-sale`, null, {
+      params: { userId }
     })
     return response.data
   },
 
-  async closeCashDrawer(drawerData: any) {
-    const response = await apiClient.post('/api/payment/cash-drawer/close', drawerData)
+  async getSessionTransactions(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/transactions`)
     return response.data
   },
 
-  async addCashTransaction(transaction: any) {
-    const response = await apiClient.post('/api/payment/cash-drawer/transaction', transaction)
+  async getTransactionsByType(type: string) {
+    const response = await apiClient.get(`/api/cash-drawer/transactions/type/${type}`)
     return response.data
   },
 
-  async printReceipt(transactionId: string) {
-    const response = await apiClient.post(`/api/payment/receipt/${transactionId}`)
+  // Reconciliation
+  async getReconciliation(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/reconciliation`)
     return response.data
   },
 
-  async getCashDrawerStatus() {
-    const response = await apiClient.get('/api/payment/cash-drawer/status')
+  async getReconciliationsByStatus(status: string) {
+    const response = await apiClient.get(`/api/cash-drawer/reconciliations/status/${status}`)
     return response.data
   },
 
-  async getRecentTransactions(limit = 50) {
-    const response = await apiClient.get(`/api/payment/transactions/recent?limit=${limit}`)
+  async getReconciliationsByDateRange(start: string, end: string) {
+    const response = await apiClient.get('/api/cash-drawer/reconciliations', {
+      params: { start, end }
+    })
+    return response.data
+  },
+
+  // Statistics
+  async getSessionStatistics(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/statistics`)
+    return response.data
+  },
+
+  async getCurrentBalance(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/balance`)
+    return response.data
+  },
+
+  async getDenominationCounts(sessionId: number, countType: 'OPENING' | 'CLOSING') {
+    const response = await apiClient.get(`/api/cash-drawer/sessions/${sessionId}/denominations`, {
+      params: { countType }
+    })
     return response.data
   }
 }
@@ -1403,6 +1648,280 @@ export const uploadApi = {
   }
 }
 
+// ==================== Cash Reports API ====================
+export const cashReportApi = {
+  /**
+   * Get daily cash report for a specific date
+   */
+  async getDailyReport(date: string) {
+    const response = await apiClient.get('/api/cash-reports/daily', {
+      params: { date }
+    })
+    return response.data
+  },
+
+  /**
+   * Get today's cash report
+   */
+  async getTodayReport() {
+    const response = await apiClient.get('/api/cash-reports/daily/today')
+    return response.data
+  },
+
+  /**
+   * Get daily reports for a date range
+   */
+  async getDailyReports(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/daily/range', {
+      params: { startDate, endDate }
+    })
+    return response.data
+  },
+
+  /**
+   * Get session summary by ID
+   */
+  async getSessionSummary(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-reports/sessions/${sessionId}`)
+    return response.data
+  },
+
+  /**
+   * Get variance report for date range
+   */
+  async getVarianceReport(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/variances', {
+      params: { startDate, endDate }
+    })
+    return response.data
+  },
+
+  /**
+   * Get today's variances
+   */
+  async getTodayVariances() {
+    const response = await apiClient.get('/api/cash-reports/variances/today')
+    return response.data
+  },
+
+  /**
+   * Get cash flow analysis for date range
+   */
+  async getCashFlowAnalysis(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/cash-flow', {
+      params: { startDate, endDate }
+    })
+    return response.data
+  },
+
+  /**
+   * Get weekly cash flow
+   */
+  async getWeeklyCashFlow() {
+    const response = await apiClient.get('/api/cash-reports/cash-flow/week')
+    return response.data
+  },
+
+  /**
+   * Get monthly cash flow
+   */
+  async getMonthlyCashFlow() {
+    const response = await apiClient.get('/api/cash-reports/cash-flow/month')
+    return response.data
+  },
+
+  /**
+   * Export daily report to PDF
+   */
+  async exportDailyReportToPDF(date: string) {
+    const response = await apiClient.get('/api/cash-reports/export/daily/pdf', {
+      params: { date },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
+   * Export variance report to PDF
+   */
+  async exportVarianceReportToPDF(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/export/variances/pdf', {
+      params: { startDate, endDate },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
+   * Export daily report to Excel
+   */
+  async exportDailyReportToExcel(date: string) {
+    const response = await apiClient.get('/api/cash-reports/export/daily/excel', {
+      params: { date },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
+   * Export variance report to Excel
+   */
+  async exportVarianceReportToExcel(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/export/variances/excel', {
+      params: { startDate, endDate },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
+   * Export forecast to Excel
+   */
+  async exportForecastToExcel(daysAhead: number = 7, historicalDays: number = 30) {
+    const response = await apiClient.get('/api/cash-reports/export/forecast/excel', {
+      params: { daysAhead, historicalDays },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
+   * Get cash flow forecast
+   */
+  async getForecast(daysAhead: number = 7, historicalDays: number = 30) {
+    const response = await apiClient.get('/api/cash-reports/forecast', {
+      params: { daysAhead, historicalDays }
+    })
+    return response.data
+  }
+}
+
+// ==================== Variance Alerts API ====================
+export const varianceAlertApi = {
+  /**
+   * Get all unresolved alerts
+   */
+  async getUnresolvedAlerts() {
+    const response = await apiClient.get('/api/variance-alerts/unresolved')
+    return response.data
+  },
+
+  /**
+   * Get unacknowledged alerts
+   */
+  async getUnacknowledgedAlerts() {
+    const response = await apiClient.get('/api/variance-alerts/unacknowledged')
+    return response.data
+  },
+
+  /**
+   * Get high priority alerts
+   */
+  async getHighPriorityAlerts() {
+    const response = await apiClient.get('/api/variance-alerts/high-priority')
+    return response.data
+  },
+
+  /**
+   * Get alerts by severity
+   */
+  async getAlertsBySeverity(severity: string) {
+    const response = await apiClient.get(`/api/variance-alerts/severity/${severity}`)
+    return response.data
+  },
+
+  /**
+   * Get alerts for date range
+   */
+  async getAlertsByDateRange(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/variance-alerts/date-range', {
+      params: { startDate, endDate }
+    })
+    return response.data
+  },
+
+  /**
+   * Get alerts for specific session
+   */
+  async getAlertsForSession(sessionId: number) {
+    const response = await apiClient.get(`/api/variance-alerts/session/${sessionId}`)
+    return response.data
+  },
+
+  /**
+   * Acknowledge an alert
+   */
+  async acknowledgeAlert(alertId: number, userId: number) {
+    const response = await apiClient.post(`/api/variance-alerts/${alertId}/acknowledge`, {
+      userId
+    })
+    return response.data
+  },
+
+  /**
+   * Resolve an alert
+   */
+  async resolveAlert(alertId: number, userId: number, resolutionNotes: string) {
+    const response = await apiClient.post(`/api/variance-alerts/${alertId}/resolve`, {
+      userId,
+      resolutionNotes
+    })
+    return response.data
+  },
+
+  /**
+   * Get alert statistics
+   */
+  async getAlertStatistics() {
+    const response = await apiClient.get('/api/variance-alerts/statistics')
+    return response.data
+  }
+}
+
+// ==================== Alert Preferences API ====================
+export const alertPreferencesApi = {
+  /**
+   * Get global alert preferences
+   */
+  async getGlobalPreferences() {
+    const response = await apiClient.get('/api/alert-preferences/global')
+    return response.data
+  },
+
+  /**
+   * Get user-specific preferences
+   */
+  async getUserPreferences(userId: number) {
+    const response = await apiClient.get(`/api/alert-preferences/user/${userId}`)
+    return response.data
+  },
+
+  /**
+   * Update global preferences
+   */
+  async updateGlobalPreferences(preferences: any) {
+    const response = await apiClient.put('/api/alert-preferences/global', preferences)
+    return response.data
+  },
+
+  /**
+   * Update user preferences
+   */
+  async updateUserPreferences(userId: number, preferences: any) {
+    const response = await apiClient.put(`/api/alert-preferences/user/${userId}`, preferences)
+    return response.data
+  },
+
+  /**
+   * Reset to default preferences
+   */
+  async resetToDefaults(userId?: number) {
+    const params = userId ? { userId } : {}
+    const response = await apiClient.post('/api/alert-preferences/reset', null, { params })
+    return response.data
+  }
+}
+
 // Export axios instance
 export { apiClient }
 
@@ -1425,5 +1944,9 @@ export default {
   receipts: receiptsApi,
   printers: printersApi,
   payment: paymentApi,
-  upload: uploadApi
+  cashDrawer: cashDrawerApi,
+  upload: uploadApi,
+  cashReports: cashReportApi,
+  varianceAlerts: varianceAlertApi,
+  alertPreferences: alertPreferencesApi
 }

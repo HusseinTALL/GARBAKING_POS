@@ -200,7 +200,7 @@ cleanup() {
     exit 0
 }
 
-trap cleanup SIGINT SIGTERM EXIT
+trap cleanup SIGINT SIGTERM
 
 # Generate session summary
 generate_session_summary() {
@@ -286,7 +286,7 @@ start_service() {
     local port=$2
     local module_dir=$3
     local jar_name=$4
-    local extra_args="--spring.cloud.config.enabled=false"
+    local extra_args=$5
 
     echo
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -346,22 +346,22 @@ start_service() {
 }
 
 # Start services in correct order
-start_service "config-server" 8762 "config-server" "config-server-1.0.0.jar"
-start_service "discovery-server" 8761 "discovery-server" "discovery-server-1.0.0.jar"
+start_service "config-server" 8762 "config-server" "config-server-1.0.0.jar" "--spring.cloud.config.enabled=false"
+start_service "discovery-server" 8761 "discovery-server" "discovery-server-1.0.0.jar" "--spring.cloud.config.enabled=false"
 
 print_info "Waiting for core services to be ready..."
 sleep 10
 
-start_service "user-service" 8081 "user-service" "user-service-1.0.0.jar"
-start_service "order-service" 8082 "order-service" "order-service-1.0.0.jar"
-start_service "inventory-service" 8083 "inventory-service" "inventory-service-1.0.0.jar"
-start_service "operations-service" 8085 "operations-service" "operations-service-1.0.0.jar"
-start_service "analytics-service" 8086 "analytics-service" "analytics-service-1.0.0.jar"
+start_service "user-service" 8081 "user-service" "user-service-1.0.0.jar" "--spring.cloud.config.enabled=false"
+start_service "order-service" 8082 "order-service" "order-service-1.0.0.jar" "--spring.cloud.config.enabled=false"
+start_service "inventory-service" 8083 "inventory-service" "inventory-service-1.0.0.jar" "--spring.cloud.config.enabled=false"
+start_service "operations-service" 8085 "operations-service" "operations-service-1.0.0.jar" "--spring.cloud.config.enabled=false"
+start_service "analytics-service" 8086 "analytics-service" "analytics-service-1.0.0.jar" "--spring.cloud.config.enabled=false"
 
 print_info "Waiting for services to register with Eureka..."
 sleep 10
 
-start_service "api-gateway" 8080 "api-gateway" "api-gateway-1.0.0.jar"
+start_service "api-gateway" 8080 "api-gateway" "api-gateway-1.0.0.jar" "--spring.cloud.config.enabled=false"
 
 # Health check monitoring in background
 if [ "$ENABLE_LOG_MONITORING" = true ]; then
@@ -436,11 +436,12 @@ chmod +x "$SCRIPT_DIR/status-check.sh"
 
 # Follow logs if requested
 if [ "$FOLLOW_LOGS_ON_START" = true ]; then
-    echo -e "${CYAN}Following aggregated logs (Ctrl+C to stop monitoring, services will continue)...${NC}"
+    echo -e "${CYAN}Following aggregated logs (Ctrl+C to stop all services)...${NC}"
     echo
     tail -f "$AGGREGATED_LOG" "$CURRENT_LOG_DIR"/*.log
 else
     log_with_timestamp "SYSTEM" "All services started successfully"
     print_info "Services are running. Press Ctrl+C to stop all services."
     wait
+    cleanup
 fi

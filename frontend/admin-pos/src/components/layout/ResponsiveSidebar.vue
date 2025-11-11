@@ -382,7 +382,8 @@ import {
   TrendingUp,
   Clock,
   Sparkles,
-  Zap
+  Zap,
+  FileText
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -474,6 +475,13 @@ const managementNavItems = [
     path: '/payment',
     label: 'Payments',
     icon: CreditCard,
+    badge: null,
+    shortcut: null
+  },
+  {
+    path: '/cash-reports',
+    label: 'Cash Reports',
+    icon: FileText,
     badge: null,
     shortcut: null
   },

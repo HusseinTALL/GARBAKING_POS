@@ -62,6 +62,9 @@ eureka:
 jwt:
   secret: your-256-bit-secret-key-for-jwt-signing-change-this-in-production
   expiration: 86400000  # 24 hours in milliseconds
+  refresh:
+    expiration: 604800000  # 7 days in milliseconds
+    max-per-user: 5  # Maximum active refresh tokens per user
 
 # Management Endpoints
 management:
@@ -98,3 +101,27 @@ garbaking:
     alerts:
       auth-failure-threshold: 10
       evaluation-interval: PT2M
+
+# Security Configuration
+security:
+  rate-limit:
+    login:
+      max-attempts: 5
+      window-minutes: 15
+    register:
+      max-attempts: 3
+      window-minutes: 60
+    refresh:
+      max-attempts: 10
+      window-minutes: 1
+
+# CAPTCHA Configuration (Google reCAPTCHA v3)
+captcha:
+  recaptcha:
+    enabled: false  # Set to true to enable CAPTCHA verification
+    site-key: ${RECAPTCHA_SITE_KEY:your-site-key-here}  # Public key for frontend
+    secret-key: ${RECAPTCHA_SECRET_KEY:your-secret-key-here}  # Private key for backend verification
+    verify-url: https://www.google.com/recaptcha/api/siteverify
+    threshold: 0.5  # Score threshold (0.0-1.0), recommended: 0.5
+    connection-timeout: 5000  # Connection timeout in milliseconds
+    read-timeout: 5000  # Read timeout in milliseconds

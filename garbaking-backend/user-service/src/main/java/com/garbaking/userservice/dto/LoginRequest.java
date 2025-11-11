@@ -24,4 +24,9 @@ public class LoginRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
+
+    /**
+     * CAPTCHA token from frontend (optional, used when CAPTCHA is enabled)
+     */
+    private String captchaToken;
 }
