@@ -235,11 +235,7 @@
 
       <!-- Cash Flow -->
       <div v-if="selectedReport === 'cashflow'" class="space-y-6">
-        <div class="bg-gray-800 rounded-lg p-6 text-center text-gray-400">
-          <TrendingUp class="w-16 h-16 mx-auto mb-4 opacity-50" />
-          <p class="text-lg">Cash Flow Analysis</p>
-          <p class="text-sm mt-2">Coming soon...</p>
-        </div>
+        <CashFlowForecastComponent />
       </div>
 
       <!-- Alert Settings -->
@@ -263,6 +259,7 @@ import { cashReportApi } from '@/services/api-spring'
 import { useToast } from 'vue-toastification'
 import VarianceAlertsComponent from '@/components/reports/VarianceAlerts.vue'
 import AlertPreferencesComponent from '@/components/reports/AlertPreferences.vue'
+import CashFlowForecastComponent from '@/components/reports/CashFlowForecast.vue'
 
 const toast = useToast()
 

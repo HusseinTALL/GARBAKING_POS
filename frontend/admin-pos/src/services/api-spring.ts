@@ -1750,6 +1750,16 @@ export const cashReportApi = {
       responseType: 'blob'
     })
     return response.data
+  },
+
+  /**
+   * Get cash flow forecast
+   */
+  async getForecast(daysAhead: number = 7, historicalDays: number = 30) {
+    const response = await apiClient.get('/api/cash-reports/forecast', {
+      params: { daysAhead, historicalDays }
+    })
+    return response.data
   }
 }
 
