@@ -24,6 +24,9 @@ import InventoryItems from '@/views/inventory/InventoryItems.vue'
 import PurchaseOrders from '@/views/inventory/PurchaseOrders.vue'
 import EmployeeDashboard from '@/views/employees/EmployeeDashboard.vue'
 import EmployeeList from '@/views/employees/EmployeeList.vue'
+import TimeClock from '@/views/employees/TimeClock.vue'
+import Timesheet from '@/views/employees/Timesheet.vue'
+import TimeOff from '@/views/employees/TimeOff.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -187,6 +190,35 @@ const routes: RouteRecordRaw[] = [
         component: EmployeeList,
         meta: {
           title: 'Employees',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/time-clock',
+        name: 'time-clock',
+        component: TimeClock,
+        meta: {
+          title: 'Time Clock',
+          feature: 'employee-management'
+        }
+      },
+      {
+        path: '/employees/timesheet',
+        name: 'timesheet',
+        component: Timesheet,
+        meta: {
+          title: 'Timesheets',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/time-off',
+        name: 'time-off',
+        component: TimeOff,
+        meta: {
+          title: 'Time Off',
           feature: 'employee-management',
           minRole: 'MANAGER'
         }

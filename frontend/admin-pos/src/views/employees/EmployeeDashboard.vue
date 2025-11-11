@@ -194,18 +194,25 @@
             <p class="font-medium">View All</p>
           </router-link>
           <router-link
-            to="/employees/departments"
+            to="/employees/time-clock"
             class="bg-purple-600 hover:bg-purple-700 text-white rounded-lg p-4 text-center transition-colors"
           >
-            <Briefcase class="w-8 h-8 mx-auto mb-2" />
-            <p class="font-medium">Departments</p>
+            <Clock class="w-8 h-8 mx-auto mb-2" />
+            <p class="font-medium">Time Clock</p>
           </router-link>
           <router-link
-            to="/employees/schedules"
+            to="/employees/timesheet"
             class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg p-4 text-center transition-colors"
           >
             <Calendar class="w-8 h-8 mx-auto mb-2" />
-            <p class="font-medium">Schedules</p>
+            <p class="font-medium">Timesheets</p>
+          </router-link>
+          <router-link
+            to="/employees/time-off"
+            class="bg-orange-600 hover:bg-orange-700 text-white rounded-lg p-4 text-center transition-colors"
+          >
+            <Briefcase class="w-8 h-8 mx-auto mb-2" />
+            <p class="font-medium">Time Off</p>
           </router-link>
         </div>
       </div>
