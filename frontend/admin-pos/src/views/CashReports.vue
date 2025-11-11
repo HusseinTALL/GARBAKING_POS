@@ -14,6 +14,7 @@
             <option value="daily">Daily Report</option>
             <option value="variances">Variance Alerts</option>
             <option value="cashflow">Cash Flow</option>
+            <option value="settings">Alert Settings</option>
           </select>
           <button
             @click="refreshData"
@@ -228,6 +229,11 @@
         </div>
       </div>
 
+      <!-- Alert Settings -->
+      <div v-if="selectedReport === 'settings'" class="space-y-6">
+        <AlertPreferencesComponent />
+      </div>
+
       <!-- Empty State -->
       <div v-if="!dailyReport && !isLoading && selectedReport === 'daily'" class="text-center py-12">
         <FileText class="w-16 h-16 mx-auto text-gray-600 mb-4" />
@@ -243,6 +249,7 @@ import { RotateCw, TrendingUp, DollarSign, Clock, AlertTriangle, FileText } from
 import { cashReportApi } from '@/services/api-spring'
 import { useToast } from 'vue-toastification'
 import VarianceAlertsComponent from '@/components/reports/VarianceAlerts.vue'
+import AlertPreferencesComponent from '@/components/reports/AlertPreferences.vue'
 
 const toast = useToast()
 

@@ -1813,6 +1813,50 @@ export const varianceAlertApi = {
   }
 }
 
+// ==================== Alert Preferences API ====================
+export const alertPreferencesApi = {
+  /**
+   * Get global alert preferences
+   */
+  async getGlobalPreferences() {
+    const response = await apiClient.get('/api/alert-preferences/global')
+    return response.data
+  },
+
+  /**
+   * Get user-specific preferences
+   */
+  async getUserPreferences(userId: number) {
+    const response = await apiClient.get(`/api/alert-preferences/user/${userId}`)
+    return response.data
+  },
+
+  /**
+   * Update global preferences
+   */
+  async updateGlobalPreferences(preferences: any) {
+    const response = await apiClient.put('/api/alert-preferences/global', preferences)
+    return response.data
+  },
+
+  /**
+   * Update user preferences
+   */
+  async updateUserPreferences(userId: number, preferences: any) {
+    const response = await apiClient.put(`/api/alert-preferences/user/${userId}`, preferences)
+    return response.data
+  },
+
+  /**
+   * Reset to default preferences
+   */
+  async resetToDefaults(userId?: number) {
+    const params = userId ? { userId } : {}
+    const response = await apiClient.post('/api/alert-preferences/reset', null, { params })
+    return response.data
+  }
+}
+
 // Export axios instance
 export { apiClient }
 
@@ -1838,5 +1882,6 @@ export default {
   cashDrawer: cashDrawerApi,
   upload: uploadApi,
   cashReports: cashReportApi,
-  varianceAlerts: varianceAlertApi
+  varianceAlerts: varianceAlertApi,
+  alertPreferences: alertPreferencesApi
 }

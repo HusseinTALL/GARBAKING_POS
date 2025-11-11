@@ -16,6 +16,7 @@ import Analytics from '@/views/Analytics.vue'
 import Settings from '@/views/Settings.vue'
 import Tables from '@/views/Tables.vue'
 import Payment from '@/views/Payment.vue'
+import CashReports from '@/views/CashReports.vue'
 import Receipts from '@/views/Receipts.vue'
 import Loyalty from '@/views/Loyalty.vue'
 
@@ -123,6 +124,16 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: 'Payment Processing',
           feature: 'cash-management'
+        }
+      },
+      {
+        path: '/cash-reports',
+        name: 'cash-reports',
+        component: CashReports,
+        meta: {
+          title: 'Cash Reports',
+          feature: 'cash-management',
+          minRole: 'MANAGER'
         }
       },
       {
