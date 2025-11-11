@@ -23,6 +23,13 @@ dependencies {
     // Apache Commons for text formatting
     implementation 'org.apache.commons:commons-text:1.11.0'
 
+    // PDF generation
+    implementation 'com.itextpdf:itext7-core:7.2.5'
+
+    // Excel generation
+    implementation 'org.apache.poi:poi:5.2.5'
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
+
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'com.h2database:h2:2.2.224'

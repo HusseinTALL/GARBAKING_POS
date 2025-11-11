@@ -1,6 +1,7 @@
 package com.garbaking.operationsservice.controller;
 
 import com.garbaking.operationsservice.dto.report.*;
+import com.garbaking.operationsservice.service.CashFlowForecastService;
 import com.garbaking.operationsservice.service.CashReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import java.util.List;
 public class CashReportController {
 
     private final CashReportService reportService;
+    private final CashFlowForecastService forecastService;
 
     /**
      * Get daily cash report for a specific date
@@ -143,5 +145,20 @@ public class CashReportController {
 
         CashFlowReportDTO report = reportService.getCashFlowAnalysis(startOfMonth, endOfMonth);
         return ResponseEntity.ok(report);
+    }
+
+    /**
+     * Get cash flow forecast
+     */
+    @GetMapping("/forecast")
+    public ResponseEntity<CashFlowForecastService.CashFlowForecast> getForecast(
+            @RequestParam(defaultValue = "7") int daysAhead,
+            @RequestParam(defaultValue = "30") int historicalDays) {
+        log.info("Fetching cash flow forecast for {} days ahead based on {} historical days",
+                daysAhead, historicalDays);
+
+        CashFlowForecastService.CashFlowForecast forecast =
+                forecastService.generateForecast(daysAhead, historicalDays);
+        return ResponseEntity.ok(forecast);
     }
 }
