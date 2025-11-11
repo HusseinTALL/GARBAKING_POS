@@ -141,6 +141,18 @@ public class TrainingService {
         log.info("Updated {} certifications", allCertifications.size());
     }
 
+    @Transactional(readOnly = true)
+    public List<TrainingProgram> getAllTrainingPrograms() {
+        log.info("Getting all training programs");
+        return programRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CertificationType> getAllCertificationTypes() {
+        log.info("Getting all certification types");
+        return certificationTypeRepository.findAll();
+    }
+
     private EmployeeTrainingDTO convertTrainingToDTO(EmployeeTraining training) {
         return EmployeeTrainingDTO.builder()
                 .id(training.getId())

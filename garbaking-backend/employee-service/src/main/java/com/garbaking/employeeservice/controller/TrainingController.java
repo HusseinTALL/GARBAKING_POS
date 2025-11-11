@@ -111,4 +111,16 @@ public class TrainingController {
         trainingService.updateCertificationStatuses();
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/programs")
+    public ResponseEntity<List<?>> getAllTrainingPrograms() {
+        log.info("GET /api/employees/training/programs");
+        return ResponseEntity.ok(trainingService.getAllTrainingPrograms());
+    }
+
+    @GetMapping("/certifications/types")
+    public ResponseEntity<List<?>> getAllCertificationTypes() {
+        log.info("GET /api/employees/training/certifications/types");
+        return ResponseEntity.ok(trainingService.getAllCertificationTypes());
+    }
 }
