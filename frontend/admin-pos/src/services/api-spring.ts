@@ -1648,6 +1648,171 @@ export const uploadApi = {
   }
 }
 
+// ==================== Cash Reports API ====================
+export const cashReportApi = {
+  /**
+   * Get daily cash report for a specific date
+   */
+  async getDailyReport(date: string) {
+    const response = await apiClient.get('/api/cash-reports/daily', {
+      params: { date }
+    })
+    return response.data
+  },
+
+  /**
+   * Get today's cash report
+   */
+  async getTodayReport() {
+    const response = await apiClient.get('/api/cash-reports/daily/today')
+    return response.data
+  },
+
+  /**
+   * Get daily reports for a date range
+   */
+  async getDailyReports(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/daily/range', {
+      params: { startDate, endDate }
+    })
+    return response.data
+  },
+
+  /**
+   * Get session summary by ID
+   */
+  async getSessionSummary(sessionId: number) {
+    const response = await apiClient.get(`/api/cash-reports/sessions/${sessionId}`)
+    return response.data
+  },
+
+  /**
+   * Get variance report for date range
+   */
+  async getVarianceReport(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/variances', {
+      params: { startDate, endDate }
+    })
+    return response.data
+  },
+
+  /**
+   * Get today's variances
+   */
+  async getTodayVariances() {
+    const response = await apiClient.get('/api/cash-reports/variances/today')
+    return response.data
+  },
+
+  /**
+   * Get cash flow analysis for date range
+   */
+  async getCashFlowAnalysis(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/cash-flow', {
+      params: { startDate, endDate }
+    })
+    return response.data
+  },
+
+  /**
+   * Get weekly cash flow
+   */
+  async getWeeklyCashFlow() {
+    const response = await apiClient.get('/api/cash-reports/cash-flow/week')
+    return response.data
+  },
+
+  /**
+   * Get monthly cash flow
+   */
+  async getMonthlyCashFlow() {
+    const response = await apiClient.get('/api/cash-reports/cash-flow/month')
+    return response.data
+  }
+}
+
+// ==================== Variance Alerts API ====================
+export const varianceAlertApi = {
+  /**
+   * Get all unresolved alerts
+   */
+  async getUnresolvedAlerts() {
+    const response = await apiClient.get('/api/variance-alerts/unresolved')
+    return response.data
+  },
+
+  /**
+   * Get unacknowledged alerts
+   */
+  async getUnacknowledgedAlerts() {
+    const response = await apiClient.get('/api/variance-alerts/unacknowledged')
+    return response.data
+  },
+
+  /**
+   * Get high priority alerts
+   */
+  async getHighPriorityAlerts() {
+    const response = await apiClient.get('/api/variance-alerts/high-priority')
+    return response.data
+  },
+
+  /**
+   * Get alerts by severity
+   */
+  async getAlertsBySeverity(severity: string) {
+    const response = await apiClient.get(`/api/variance-alerts/severity/${severity}`)
+    return response.data
+  },
+
+  /**
+   * Get alerts for date range
+   */
+  async getAlertsByDateRange(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/variance-alerts/date-range', {
+      params: { startDate, endDate }
+    })
+    return response.data
+  },
+
+  /**
+   * Get alerts for specific session
+   */
+  async getAlertsForSession(sessionId: number) {
+    const response = await apiClient.get(`/api/variance-alerts/session/${sessionId}`)
+    return response.data
+  },
+
+  /**
+   * Acknowledge an alert
+   */
+  async acknowledgeAlert(alertId: number, userId: number) {
+    const response = await apiClient.post(`/api/variance-alerts/${alertId}/acknowledge`, {
+      userId
+    })
+    return response.data
+  },
+
+  /**
+   * Resolve an alert
+   */
+  async resolveAlert(alertId: number, userId: number, resolutionNotes: string) {
+    const response = await apiClient.post(`/api/variance-alerts/${alertId}/resolve`, {
+      userId,
+      resolutionNotes
+    })
+    return response.data
+  },
+
+  /**
+   * Get alert statistics
+   */
+  async getAlertStatistics() {
+    const response = await apiClient.get('/api/variance-alerts/statistics')
+    return response.data
+  }
+}
+
 // Export axios instance
 export { apiClient }
 
@@ -1671,5 +1836,7 @@ export default {
   printers: printersApi,
   payment: paymentApi,
   cashDrawer: cashDrawerApi,
-  upload: uploadApi
+  upload: uploadApi,
+  cashReports: cashReportApi,
+  varianceAlerts: varianceAlertApi
 }
