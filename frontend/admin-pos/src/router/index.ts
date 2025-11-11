@@ -33,6 +33,7 @@ import ShiftSwap from '@/views/employees/ShiftSwap.vue'
 import PayrollDashboard from '@/views/employees/PayrollDashboard.vue'
 import PerformanceReviews from '@/views/employees/PerformanceReviews.vue'
 import TrainingCertifications from '@/views/employees/TrainingCertifications.vue'
+import EmployeeAnalytics from '@/views/employees/EmployeeAnalytics.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -285,6 +286,16 @@ const routes: RouteRecordRaw[] = [
         component: TrainingCertifications,
         meta: {
           title: 'Training & Certifications',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/analytics',
+        name: 'employee-analytics',
+        component: EmployeeAnalytics,
+        meta: {
+          title: 'Employee Analytics',
           feature: 'employee-management',
           minRole: 'MANAGER'
         }
