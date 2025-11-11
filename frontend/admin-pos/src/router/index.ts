@@ -22,6 +22,8 @@ import Loyalty from '@/views/Loyalty.vue'
 import InventoryDashboard from '@/views/inventory/InventoryDashboard.vue'
 import InventoryItems from '@/views/inventory/InventoryItems.vue'
 import PurchaseOrders from '@/views/inventory/PurchaseOrders.vue'
+import EmployeeDashboard from '@/views/employees/EmployeeDashboard.vue'
+import EmployeeList from '@/views/employees/EmployeeList.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -166,6 +168,26 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: 'Purchase Orders',
           feature: 'inventory-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees',
+        name: 'employee-dashboard',
+        component: EmployeeDashboard,
+        meta: {
+          title: 'Employee Dashboard',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/list',
+        name: 'employee-list',
+        component: EmployeeList,
+        meta: {
+          title: 'Employees',
+          feature: 'employee-management',
           minRole: 'MANAGER'
         }
       },
