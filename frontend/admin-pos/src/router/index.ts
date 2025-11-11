@@ -21,6 +21,7 @@ import Receipts from '@/views/Receipts.vue'
 import Loyalty from '@/views/Loyalty.vue'
 import InventoryDashboard from '@/views/inventory/InventoryDashboard.vue'
 import InventoryItems from '@/views/inventory/InventoryItems.vue'
+import PurchaseOrders from '@/views/inventory/PurchaseOrders.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -154,6 +155,16 @@ const routes: RouteRecordRaw[] = [
         component: InventoryItems,
         meta: {
           title: 'Inventory Items',
+          feature: 'inventory-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/inventory/purchase-orders',
+        name: 'purchase-orders',
+        component: PurchaseOrders,
+        meta: {
+          title: 'Purchase Orders',
           feature: 'inventory-management',
           minRole: 'MANAGER'
         }

@@ -167,6 +167,13 @@
             <p class="font-medium">View Items</p>
           </router-link>
           <router-link
+            to="/inventory/purchase-orders"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg p-4 text-center transition-colors"
+          >
+            <ShoppingCart class="w-8 h-8 mx-auto mb-2" />
+            <p class="font-medium">Purchase Orders</p>
+          </router-link>
+          <router-link
             to="/inventory/stock-adjustment"
             class="bg-purple-600 hover:bg-purple-700 text-white rounded-lg p-4 text-center transition-colors"
           >
@@ -190,7 +197,7 @@
 import { ref, onMounted } from 'vue'
 import {
   RotateCw, Package, AlertTriangle, DollarSign, MapPin,
-  CheckCircle, Clock, Plus, List, RefreshCcw, Truck
+  CheckCircle, Clock, Plus, List, RefreshCcw, Truck, ShoppingCart
 } from 'lucide-vue-next'
 import axios from 'axios'
 import { useToast } from 'vue-toastification'
