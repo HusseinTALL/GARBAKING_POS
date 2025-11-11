@@ -19,6 +19,8 @@ import Payment from '@/views/Payment.vue'
 import CashReports from '@/views/CashReports.vue'
 import Receipts from '@/views/Receipts.vue'
 import Loyalty from '@/views/Loyalty.vue'
+import InventoryDashboard from '@/views/inventory/InventoryDashboard.vue'
+import InventoryItems from '@/views/inventory/InventoryItems.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -133,6 +135,26 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: 'Cash Reports',
           feature: 'cash-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/inventory',
+        name: 'inventory-dashboard',
+        component: InventoryDashboard,
+        meta: {
+          title: 'Inventory Dashboard',
+          feature: 'inventory-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/inventory/items',
+        name: 'inventory-items',
+        component: InventoryItems,
+        meta: {
+          title: 'Inventory Items',
+          feature: 'inventory-management',
           minRole: 'MANAGER'
         }
       },

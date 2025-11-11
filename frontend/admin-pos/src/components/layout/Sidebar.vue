@@ -60,6 +60,7 @@ import {
   CreditCard,
   Receipt,
   Users,
+  Package,
   Settings,
   Bell,
   LogOut
@@ -95,6 +96,11 @@ const navItems = [
     path: '/menu',
     label: 'Menu',
     icon: UtensilsCrossed
+  },
+  {
+    path: '/inventory',
+    label: 'Inventory',
+    icon: Package
   },
   {
     path: '/kitchen',
