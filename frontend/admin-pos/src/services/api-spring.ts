@@ -1728,6 +1728,28 @@ export const cashReportApi = {
   async getMonthlyCashFlow() {
     const response = await apiClient.get('/api/cash-reports/cash-flow/month')
     return response.data
+  },
+
+  /**
+   * Export daily report to PDF
+   */
+  async exportDailyReportToPDF(date: string) {
+    const response = await apiClient.get('/api/cash-reports/export/daily/pdf', {
+      params: { date },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
+   * Export variance report to PDF
+   */
+  async exportVarianceReportToPDF(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/export/variances/pdf', {
+      params: { startDate, endDate },
+      responseType: 'blob'
+    })
+    return response.data
   }
 }
 

@@ -33,13 +33,26 @@
       <div v-if="selectedReport === 'daily'" class="space-y-6">
         <!-- Date Selector -->
         <div class="bg-gray-800 rounded-lg p-4">
-          <label class="block text-sm font-medium text-gray-300 mb-2">Report Date</label>
-          <input
-            v-model="selectedDate"
-            type="date"
-            class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            @change="loadDailyReport"
-          />
+          <div class="flex items-end gap-3">
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-300 mb-2">Report Date</label>
+              <input
+                v-model="selectedDate"
+                type="date"
+                class="w-full bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                @change="loadDailyReport"
+              />
+            </div>
+            <button
+              v-if="dailyReport"
+              @click="exportDailyToPDF"
+              :disabled="isExporting"
+              class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <Download class="w-4 h-4" />
+              {{ isExporting ? 'Exporting...' : 'Export PDF' }}
+            </button>
+          </div>
         </div>
 
         <!-- Daily Report Summary -->
@@ -245,7 +258,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { RotateCw, TrendingUp, DollarSign, Clock, AlertTriangle, FileText } from 'lucide-vue-next'
+import { RotateCw, TrendingUp, DollarSign, Clock, AlertTriangle, FileText, Download } from 'lucide-vue-next'
 import { cashReportApi } from '@/services/api-spring'
 import { useToast } from 'vue-toastification'
 import VarianceAlertsComponent from '@/components/reports/VarianceAlerts.vue'
@@ -258,6 +271,7 @@ const selectedReport = ref('daily')
 const selectedDate = ref(new Date().toISOString().split('T')[0])
 const dailyReport = ref<any>(null)
 const isLoading = ref(false)
+const isExporting = ref(false)
 
 // Methods
 const loadDailyReport = async () => {
@@ -278,6 +292,30 @@ const refreshData = async () => {
     await loadDailyReport()
   }
   toast.success('Data refreshed')
+}
+
+const exportDailyToPDF = async () => {
+  isExporting.value = true
+  try {
+    const blob = await cashReportApi.exportDailyReportToPDF(selectedDate.value)
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `daily-cash-report_${selectedDate.value}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.success('PDF report downloaded successfully')
+  } catch (error: any) {
+    console.error('Failed to export PDF:', error)
+    toast.error('Failed to export PDF report')
+  } finally {
+    isExporting.value = false
+  }
 }
 
 // Lifecycle

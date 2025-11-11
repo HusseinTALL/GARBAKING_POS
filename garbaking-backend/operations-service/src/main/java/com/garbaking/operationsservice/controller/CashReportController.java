@@ -3,13 +3,17 @@ package com.garbaking.operationsservice.controller;
 import com.garbaking.operationsservice.dto.report.*;
 import com.garbaking.operationsservice.service.CashFlowForecastService;
 import com.garbaking.operationsservice.service.CashReportService;
+import com.garbaking.operationsservice.service.PDFExportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -24,6 +28,7 @@ public class CashReportController {
 
     private final CashReportService reportService;
     private final CashFlowForecastService forecastService;
+    private final PDFExportService pdfExportService;
 
     /**
      * Get daily cash report for a specific date
@@ -160,5 +165,55 @@ public class CashReportController {
         CashFlowForecastService.CashFlowForecast forecast =
                 forecastService.generateForecast(daysAhead, historicalDays);
         return ResponseEntity.ok(forecast);
+    }
+
+    // ==================== PDF Export Endpoints ====================
+
+    /**
+     * Export daily report to PDF
+     */
+    @GetMapping("/export/daily/pdf")
+    public ResponseEntity<byte[]> exportDailyReportToPDF(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        log.info("Exporting daily report to PDF for date: {}", date);
+
+        byte[] pdfBytes = pdfExportService.exportDailyReportToPDF(date);
+
+        String filename = String.format("daily-cash-report_%s.pdf",
+                date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", filename);
+        headers.setContentLength(pdfBytes.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
+    }
+
+    /**
+     * Export variance report to PDF
+     */
+    @GetMapping("/export/variances/pdf")
+    public ResponseEntity<byte[]> exportVarianceReportToPDF(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        log.info("Exporting variance report to PDF from {} to {}", startDate, endDate);
+
+        byte[] pdfBytes = pdfExportService.exportVarianceReportToPDF(startDate, endDate);
+
+        String filename = String.format("variance-report_%s_to_%s.pdf",
+                startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
+                endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", filename);
+        headers.setContentLength(pdfBytes.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
     }
 }
