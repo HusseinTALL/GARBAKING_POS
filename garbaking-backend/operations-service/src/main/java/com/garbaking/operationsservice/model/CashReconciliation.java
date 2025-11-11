@@ -21,8 +21,9 @@ public class CashReconciliation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "session_id", nullable = false, unique = true)
-    private Long sessionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "session_id", nullable = false, unique = true)
+    private CashDrawerSession session;
 
     @Column(name = "expected_cash", nullable = false, precision = 10, scale = 2)
     private BigDecimal expectedCash;

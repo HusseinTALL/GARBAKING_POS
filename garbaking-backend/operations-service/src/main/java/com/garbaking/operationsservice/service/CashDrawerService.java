@@ -23,6 +23,7 @@ public class CashDrawerService {
     private final DenominationCountRepository denominationRepository;
     private final CashReconciliationRepository reconciliationRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final VarianceAlertService varianceAlertService;
 
     // ==================== Cash Drawer Management ====================
 
@@ -153,7 +154,7 @@ public class CashDrawerService {
         }
 
         CashReconciliation reconciliation = CashReconciliation.builder()
-                .sessionId(sessionId)
+                .session(session)
                 .expectedCash(expectedCash)
                 .countedCash(countedCash)
                 .variance(variance)
@@ -161,9 +162,17 @@ public class CashDrawerService {
                 .reconciledBy(userId)
                 .build();
 
-        reconciliationRepository.save(reconciliation);
+        reconciliation = reconciliationRepository.save(reconciliation);
 
-        log.info("Cash drawer session closed: {} Expected: {} Counted: {} Variance: {} Status: {}", 
+        // Generate variance alert if variance exceeds thresholds
+        try {
+            varianceAlertService.generateAlertIfNeeded(reconciliation);
+        } catch (Exception e) {
+            log.error("Failed to generate variance alert for session {}", sessionId, e);
+            // Don't fail the close operation if alert generation fails
+        }
+
+        log.info("Cash drawer session closed: {} Expected: {} Counted: {} Variance: {} Status: {}",
                 sessionId, expectedCash, countedCash, variance, reconciliationStatus);
 
         return session;
