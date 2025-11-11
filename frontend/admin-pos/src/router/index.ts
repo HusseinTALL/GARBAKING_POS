@@ -30,6 +30,9 @@ import TimeOff from '@/views/employees/TimeOff.vue'
 import ScheduleCalendar from '@/views/employees/ScheduleCalendar.vue'
 import EmployeeAvailability from '@/views/employees/EmployeeAvailability.vue'
 import ShiftSwap from '@/views/employees/ShiftSwap.vue'
+import PayrollDashboard from '@/views/employees/PayrollDashboard.vue'
+import PerformanceReviews from '@/views/employees/PerformanceReviews.vue'
+import TrainingCertifications from '@/views/employees/TrainingCertifications.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -252,6 +255,36 @@ const routes: RouteRecordRaw[] = [
         component: ShiftSwap,
         meta: {
           title: 'Shift Swaps',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/payroll',
+        name: 'payroll',
+        component: PayrollDashboard,
+        meta: {
+          title: 'Payroll',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/performance',
+        name: 'performance-reviews',
+        component: PerformanceReviews,
+        meta: {
+          title: 'Performance Reviews',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/training',
+        name: 'training-certifications',
+        component: TrainingCertifications,
+        meta: {
+          title: 'Training & Certifications',
           feature: 'employee-management',
           minRole: 'MANAGER'
         }
