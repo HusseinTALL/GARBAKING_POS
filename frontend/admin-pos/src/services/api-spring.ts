@@ -1753,6 +1753,39 @@ export const cashReportApi = {
   },
 
   /**
+   * Export daily report to Excel
+   */
+  async exportDailyReportToExcel(date: string) {
+    const response = await apiClient.get('/api/cash-reports/export/daily/excel', {
+      params: { date },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
+   * Export variance report to Excel
+   */
+  async exportVarianceReportToExcel(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/cash-reports/export/variances/excel', {
+      params: { startDate, endDate },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
+   * Export forecast to Excel
+   */
+  async exportForecastToExcel(daysAhead: number = 7, historicalDays: number = 30) {
+    const response = await apiClient.get('/api/cash-reports/export/forecast/excel', {
+      params: { daysAhead, historicalDays },
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
    * Get cash flow forecast
    */
   async getForecast(daysAhead: number = 7, historicalDays: number = 30) {

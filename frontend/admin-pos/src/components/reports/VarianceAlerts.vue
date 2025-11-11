@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { AlertTriangle, AlertCircle, CheckCircle, XCircle, RefreshCw, Eye, Check } from 'lucide-vue-next'
-import { varianceAlertApi } from '@/services/api-spring'
+import { AlertTriangle, AlertCircle, CheckCircle, XCircle, RefreshCw, Eye, Check, Download, FileSpreadsheet } from 'lucide-vue-next'
+import { varianceAlertApi, cashReportApi } from '@/services/api-spring'
 import { useToast } from 'vue-toastification'
 import { useAuthStore } from '@/stores/auth'
 
@@ -10,10 +10,19 @@ const authStore = useAuthStore()
 
 const alerts = ref<any[]>([])
 const isLoading = ref(false)
+const isExporting = ref(false)
 const filterStatus = ref<string>('ALL')
 const selectedAlert = ref<any>(null)
 const showResolveModal = ref(false)
 const resolutionNotes = ref('')
+
+// Date range for exports
+const today = new Date()
+const sevenDaysAgo = new Date()
+sevenDaysAgo.setDate(today.getDate() - 7)
+
+const startDate = ref(sevenDaysAgo.toISOString().split('T')[0])
+const endDate = ref(today.toISOString().split('T')[0])
 
 const statusFilters = [
   { value: 'ALL', label: 'All Alerts' },
@@ -126,6 +135,52 @@ const resolveAlert = async () => {
   }
 }
 
+const exportToPDF = async () => {
+  isExporting.value = true
+  try {
+    const blob = await cashReportApi.exportVarianceReportToPDF(startDate.value, endDate.value)
+
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `variance-report_${startDate.value}_to_${endDate.value}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.success('PDF report downloaded successfully')
+  } catch (error: any) {
+    console.error('Failed to export PDF:', error)
+    toast.error('Failed to export variance report to PDF')
+  } finally {
+    isExporting.value = false
+  }
+}
+
+const exportToExcel = async () => {
+  isExporting.value = true
+  try {
+    const blob = await cashReportApi.exportVarianceReportToExcel(startDate.value, endDate.value)
+
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `variance-report_${startDate.value}_to_${endDate.value}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Excel report downloaded successfully')
+  } catch (error: any) {
+    console.error('Failed to export Excel:', error)
+    toast.error('Failed to export variance report to Excel')
+  } finally {
+    isExporting.value = false
+  }
+}
+
 onMounted(() => {
   fetchAlerts()
 })
@@ -154,6 +209,46 @@ defineExpose({ refresh: fetchAlerts })
           class="text-gray-400 hover:text-white transition-colors disabled:opacity-50"
         >
           <RefreshCw :size="20" :class="{ 'animate-spin': isLoading }" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Export Controls -->
+    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+      <div class="flex items-end gap-3">
+        <div class="flex-1 grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+            <input
+              v-model="startDate"
+              type="date"
+              class="w-full bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+            <input
+              v-model="endDate"
+              type="date"
+              class="w-full bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        <button
+          @click="exportToPDF"
+          :disabled="isExporting"
+          class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          <Download class="w-4 h-4" />
+          {{ isExporting ? 'Exporting...' : 'Export PDF' }}
+        </button>
+        <button
+          @click="exportToExcel"
+          :disabled="isExporting"
+          class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          <FileSpreadsheet class="w-4 h-4" />
+          {{ isExporting ? 'Exporting...' : 'Export Excel' }}
         </button>
       </div>
     </div>

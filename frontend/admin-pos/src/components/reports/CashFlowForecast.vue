@@ -12,7 +12,7 @@ import {
   Legend,
   Filler
 } from 'chart.js'
-import { TrendingUp, Calendar, BarChart3, RefreshCw } from 'lucide-vue-next'
+import { TrendingUp, Calendar, BarChart3, RefreshCw, Download, FileSpreadsheet } from 'lucide-vue-next'
 import { cashReportApi } from '@/services/api-spring'
 import { useToast } from 'vue-toastification'
 
@@ -32,6 +32,7 @@ const toast = useToast()
 
 // State
 const isLoading = ref(false)
+const isExporting = ref(false)
 const forecast = ref<any>(null)
 const daysAhead = ref(7)
 const historicalDays = ref(30)
@@ -169,6 +170,29 @@ const getConfidenceLabel = (confidence: number) => {
   return 'Low'
 }
 
+const exportToExcel = async () => {
+  isExporting.value = true
+  try {
+    const blob = await cashReportApi.exportForecastToExcel(daysAhead.value, historicalDays.value)
+
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `cash-flow-forecast_${daysAhead.value}days.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Excel forecast downloaded successfully')
+  } catch (error: any) {
+    console.error('Failed to export forecast:', error)
+    toast.error('Failed to export forecast to Excel')
+  } finally {
+    isExporting.value = false
+  }
+}
+
 watch([daysAhead, historicalDays], () => {
   loadForecast()
 })
@@ -189,13 +213,24 @@ defineExpose({ refresh: loadForecast })
           <TrendingUp :size="24" class="text-blue-400" />
           Cash Flow Forecast
         </h3>
-        <button
-          @click="loadForecast"
-          :disabled="isLoading"
-          class="p-2 rounded-lg bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white transition-colors disabled:opacity-50"
-        >
-          <RefreshCw :size="16" :class="{ 'animate-spin': isLoading }" />
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="forecast"
+            @click="exportToExcel"
+            :disabled="isExporting"
+            class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+          >
+            <FileSpreadsheet :size="16" />
+            {{ isExporting ? 'Exporting...' : 'Export Excel' }}
+          </button>
+          <button
+            @click="loadForecast"
+            :disabled="isLoading"
+            class="p-2 rounded-lg bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white transition-colors disabled:opacity-50"
+          >
+            <RefreshCw :size="16" :class="{ 'animate-spin': isLoading }" />
+          </button>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">

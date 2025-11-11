@@ -52,6 +52,15 @@
               <Download class="w-4 h-4" />
               {{ isExporting ? 'Exporting...' : 'Export PDF' }}
             </button>
+            <button
+              v-if="dailyReport"
+              @click="exportDailyToExcel"
+              :disabled="isExporting"
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <FileSpreadsheet class="w-4 h-4" />
+              {{ isExporting ? 'Exporting...' : 'Export Excel' }}
+            </button>
           </div>
         </div>
 
@@ -254,7 +263,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { RotateCw, TrendingUp, DollarSign, Clock, AlertTriangle, FileText, Download } from 'lucide-vue-next'
+import { RotateCw, TrendingUp, DollarSign, Clock, AlertTriangle, FileText, Download, FileSpreadsheet } from 'lucide-vue-next'
 import { cashReportApi } from '@/services/api-spring'
 import { useToast } from 'vue-toastification'
 import VarianceAlertsComponent from '@/components/reports/VarianceAlerts.vue'
@@ -310,6 +319,30 @@ const exportDailyToPDF = async () => {
   } catch (error: any) {
     console.error('Failed to export PDF:', error)
     toast.error('Failed to export PDF report')
+  } finally {
+    isExporting.value = false
+  }
+}
+
+const exportDailyToExcel = async () => {
+  isExporting.value = true
+  try {
+    const blob = await cashReportApi.exportDailyReportToExcel(selectedDate.value)
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `daily-cash-report_${selectedDate.value}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Excel report downloaded successfully')
+  } catch (error: any) {
+    console.error('Failed to export Excel:', error)
+    toast.error('Failed to export Excel report')
   } finally {
     isExporting.value = false
   }

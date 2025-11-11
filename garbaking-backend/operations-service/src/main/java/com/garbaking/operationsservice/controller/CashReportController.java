@@ -4,6 +4,7 @@ import com.garbaking.operationsservice.dto.report.*;
 import com.garbaking.operationsservice.service.CashFlowForecastService;
 import com.garbaking.operationsservice.service.CashReportService;
 import com.garbaking.operationsservice.service.PDFExportService;
+import com.garbaking.operationsservice.service.ExcelExportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -29,6 +30,7 @@ public class CashReportController {
     private final CashReportService reportService;
     private final CashFlowForecastService forecastService;
     private final PDFExportService pdfExportService;
+    private final ExcelExportService excelExportService;
 
     /**
      * Get daily cash report for a specific date
@@ -215,5 +217,97 @@ public class CashReportController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(pdfBytes);
+    }
+
+    // ==================== Excel Export Endpoints ====================
+
+    /**
+     * Export daily report to Excel
+     */
+    @GetMapping("/export/daily/excel")
+    public ResponseEntity<byte[]> exportDailyReportToExcel(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        log.info("Exporting daily report to Excel for date: {}", date);
+
+        try {
+            byte[] excelBytes = excelExportService.exportDailyReportToExcel(date);
+
+            String filename = String.format("daily-cash-report_%s.xlsx",
+                    date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setContentLength(excelBytes.length);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelBytes);
+        } catch (Exception e) {
+            log.error("Failed to export daily report to Excel", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Export variance report to Excel
+     */
+    @GetMapping("/export/variances/excel")
+    public ResponseEntity<byte[]> exportVarianceReportToExcel(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        log.info("Exporting variance report to Excel from {} to {}", startDate, endDate);
+
+        try {
+            byte[] excelBytes = excelExportService.exportVarianceReportToExcel(startDate, endDate);
+
+            String filename = String.format("variance-report_%s_to_%s.xlsx",
+                    startDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
+                    endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setContentLength(excelBytes.length);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelBytes);
+        } catch (Exception e) {
+            log.error("Failed to export variance report to Excel", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Export forecast to Excel
+     */
+    @GetMapping("/export/forecast/excel")
+    public ResponseEntity<byte[]> exportForecastToExcel(
+            @RequestParam(defaultValue = "7") int daysAhead,
+            @RequestParam(defaultValue = "30") int historicalDays) {
+        log.info("Exporting forecast to Excel for {} days ahead based on {} historical days",
+                daysAhead, historicalDays);
+
+        try {
+            byte[] excelBytes = excelExportService.exportForecastToExcel(daysAhead, historicalDays);
+
+            String filename = String.format("cash-flow-forecast_%ddays.xlsx", daysAhead);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setContentLength(excelBytes.length);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelBytes);
+        } catch (Exception e) {
+            log.error("Failed to export forecast to Excel", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
