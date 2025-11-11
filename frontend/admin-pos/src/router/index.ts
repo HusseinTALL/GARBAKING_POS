@@ -27,6 +27,9 @@ import EmployeeList from '@/views/employees/EmployeeList.vue'
 import TimeClock from '@/views/employees/TimeClock.vue'
 import Timesheet from '@/views/employees/Timesheet.vue'
 import TimeOff from '@/views/employees/TimeOff.vue'
+import ScheduleCalendar from '@/views/employees/ScheduleCalendar.vue'
+import EmployeeAvailability from '@/views/employees/EmployeeAvailability.vue'
+import ShiftSwap from '@/views/employees/ShiftSwap.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -219,6 +222,36 @@ const routes: RouteRecordRaw[] = [
         component: TimeOff,
         meta: {
           title: 'Time Off',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/schedule',
+        name: 'schedule-calendar',
+        component: ScheduleCalendar,
+        meta: {
+          title: 'Schedule Calendar',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/availability',
+        name: 'employee-availability',
+        component: EmployeeAvailability,
+        meta: {
+          title: 'Employee Availability',
+          feature: 'employee-management',
+          minRole: 'MANAGER'
+        }
+      },
+      {
+        path: '/employees/shift-swaps',
+        name: 'shift-swaps',
+        component: ShiftSwap,
+        meta: {
+          title: 'Shift Swaps',
           feature: 'employee-management',
           minRole: 'MANAGER'
         }
