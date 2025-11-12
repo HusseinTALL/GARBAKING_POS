@@ -97,57 +97,54 @@ const buttonClasses = computed(() => {
     classes.push('w-full')
   }
 
-  // Size variants
+  // Size variants (matching Figma specs)
   const sizeClasses = {
-    sm: 'h-10 px-4 text-sm',
-    md: 'h-12 px-6 text-base',
-    lg: 'h-14 px-8 text-lg',
-    xl: 'h-16 px-10 text-xl'
+    sm: 'h-[46px] px-6 text-sm',
+    md: 'h-[54px] px-6 text-base',
+    lg: 'h-[62px] px-8 text-base uppercase', // Figma standard button size
+    xl: 'h-[70px] px-10 text-lg uppercase'
   }
   classes.push(sizeClasses[props.size])
 
-  // Rounded
+  // Rounded (matching Figma - 12px border radius)
   if (props.rounded) {
     classes.push('rounded-full')
   } else {
     const roundedClasses = {
-      sm: 'rounded-lg',
-      md: 'rounded-xl',
-      lg: 'rounded-2xl',
-      xl: 'rounded-2xl'
+      sm: 'rounded-md', // 10px
+      md: 'rounded-lg', // 12px
+      lg: 'rounded-lg', // 12px (Figma spec)
+      xl: 'rounded-xl' // 15px
     }
     classes.push(roundedClasses[props.size])
   }
 
-  // Variant styles
+  // Variant styles (matching Figma design)
   const variantClasses = {
     primary: [
-      'bg-primary-500 text-white',
-      'hover:bg-primary-400 hover:shadow-lg hover:shadow-primary-500/30',
+      'bg-primary-500 text-white font-bold',
+      'hover:bg-primary-600 hover:shadow-button',
       'focus:ring-primary-300',
-      'dark:bg-primary-600 dark:hover:bg-primary-500'
+      'active:bg-primary-700'
     ],
     secondary: [
-      'bg-gray-100 text-gray-900',
-      'hover:bg-gray-200',
-      'focus:ring-gray-300',
-      'dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700'
+      'bg-secondary-500 text-text font-bold',
+      'hover:bg-secondary-600 hover:shadow-promo',
+      'focus:ring-secondary-300'
     ],
     outline: [
-      'bg-transparent border-2 border-primary-500 text-primary-500',
-      'hover:bg-primary-50',
-      'focus:ring-primary-300',
-      'dark:border-primary-400 dark:text-primary-400 dark:hover:bg-primary-900/20'
+      'bg-transparent border-2 border text-primary-500 font-semibold',
+      'hover:bg-primary-50 hover:border-primary-600',
+      'focus:ring-primary-300'
     ],
     ghost: [
-      'bg-transparent text-primary-500',
+      'bg-transparent text-primary-500 font-semibold',
       'hover:bg-primary-50',
-      'focus:ring-primary-300',
-      'dark:text-primary-400 dark:hover:bg-primary-900/20'
+      'focus:ring-primary-300'
     ],
     cta: [
-      'bg-gradient-to-r from-primary-300 to-primary-500 text-white',
-      'hover:from-primary-400 hover:to-primary-600 hover:shadow-xl hover:shadow-primary-500/40',
+      'bg-gradient-to-r from-accent-500 to-primary-500 text-white font-bold',
+      'hover:from-accent-600 hover:to-primary-600 hover:shadow-button',
       'focus:ring-primary-300'
     ]
   }
