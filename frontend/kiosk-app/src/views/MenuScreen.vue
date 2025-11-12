@@ -133,7 +133,7 @@
               v-for="(item, index) in displayedItems"
               :key="item.id"
               @click="selectItem(item)"
-              class="group flex flex-col overflow-hidden rounded-3xl border border-neutral-100 bg-white text-left shadow-card transition-all duration-normal hover:-translate-y-2 hover:shadow-card-hover hover:scale-[1.02] animate-fadeIn"
+              class="premium-card group flex flex-col overflow-hidden rounded-3xl border border-neutral-100 bg-white text-left shadow-card transition-all duration-normal hover:-translate-y-2 hover:shadow-card-hover hover:scale-[1.02] animate-fadeIn"
               :style="{ animationDelay: `${index * 50}ms` }"
             >
               <!-- Item Image -->

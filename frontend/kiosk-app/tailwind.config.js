@@ -79,10 +79,16 @@ export default {
         'gradient-hero': 'linear-gradient(180deg, #FFC33A 0%, #F5A300 50%, #CC8000 100%)',
         'gradient-warm': 'linear-gradient(135deg, #FFD97B 0%, #FFC33A 50%, #F5A300 100%)',
 
+        // Premium brand variations
+        'gradient-premium': 'linear-gradient(135deg, #FFD97B 0%, #FFB300 25%, #F5A300 50%, #E59400 75%, #CC8000 100%)',
+        'gradient-shine': 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%)',
+        'gradient-glow': 'radial-gradient(ellipse at center, rgba(255, 179, 0, 0.4) 0%, transparent 70%)',
+
         // Overlay gradients for depth
         'gradient-overlay-dark': 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%)',
         'gradient-overlay-darker': 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.7) 100%)',
         'gradient-overlay-light': 'linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%)',
+        'gradient-overlay-top': 'linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%)',
 
         // Shimmer effects
         'gradient-shimmer': 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
@@ -90,10 +96,12 @@ export default {
         // Success/error gradients
         'gradient-success': 'linear-gradient(135deg, #3BB273 0%, #2E9359 100%)',
         'gradient-error': 'linear-gradient(135deg, #E94E3A 0%, #D32F2F 100%)',
+        'gradient-info': 'linear-gradient(135deg, #1E88E5 0%, #1565C0 100%)',
 
         // Subtle backgrounds
         'gradient-subtle': 'linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%)',
         'gradient-soft': 'linear-gradient(135deg, #FFF9E8 0%, #FFEFC1 50%, #FFD97B 100%)',
+        'gradient-soft-vertical': 'linear-gradient(180deg, #FFF9E8 0%, #FFEFC1 100%)',
       },
 
       // ============================================

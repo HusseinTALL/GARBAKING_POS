@@ -3,7 +3,7 @@
   Second screen in the kiosk flow after welcome screen
 -->
 <template>
-  <div class="language-mode-screen h-screen w-screen flex flex-col bg-brand-50">
+  <div class="language-mode-screen h-screen w-screen flex flex-col bg-gradient-soft-vertical">
     <KioskHeader
       :title="t('mode.title')"
       :show-back-button="false"
@@ -24,10 +24,10 @@
             :key="lang.code"
             @click="selectLanguage(lang.code)"
             :class="[
-              'flex flex-col items-center justify-center gap-3 p-8 rounded-3xl border-2 bg-white shadow-md transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200',
+              'premium-card flex flex-col items-center justify-center gap-3 p-8 rounded-3xl border-2 bg-white transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 hover:-translate-y-1',
               selectedLanguage === lang.code
-                ? 'border-brand-500 shadow-2xl scale-[1.03]'
-                : 'border-transparent hover:border-brand-300 hover:shadow-lg'
+                ? 'border-brand-400 bg-gradient-soft shadow-card-hover scale-[1.05]'
+                : 'border-neutral-100 hover:border-brand-200 shadow-card hover:shadow-card-hover hover:scale-[1.02]'
             ]"
           >
             <div class="text-6xl">{{ lang.flag }}</div>
@@ -46,15 +46,17 @@
           <button
             @click="selectMode('dine-in')"
             :class="[
-              'p-12 rounded-3xl border-2 transition-all duration-200 bg-white shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 flex flex-col items-center gap-4',
+              'premium-card p-12 rounded-3xl border-2 transition-all duration-300 bg-white focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 flex flex-col items-center gap-4 hover:-translate-y-2',
               selectedMode === 'dine-in'
-                ? 'border-brand-500 shadow-2xl scale-[1.03]'
-                : 'border-transparent hover:border-brand-300 hover:shadow-lg'
+                ? 'border-brand-400 bg-gradient-soft shadow-card-hover scale-[1.05]'
+                : 'border-neutral-100 hover:border-brand-200 shadow-card hover:shadow-card-hover hover:scale-[1.02]'
             ]"
           >
-            <svg class="w-24 h-24 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-            </svg>
+            <div class="p-6 bg-gradient-primary rounded-2xl shadow-button">
+              <svg class="w-24 h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+              </svg>
+            </div>
             <div class="text-3xl font-brand font-semibold text-neutral-900">{{ t('mode.dineIn') }}</div>
           </button>
 
@@ -62,15 +64,17 @@
           <button
             @click="selectMode('takeaway')"
             :class="[
-              'p-12 rounded-3xl border-2 transition-all duration-200 bg-white shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 flex flex-col items-center gap-4',
+              'premium-card p-12 rounded-3xl border-2 transition-all duration-300 bg-white focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 flex flex-col items-center gap-4 hover:-translate-y-2',
               selectedMode === 'takeaway'
-                ? 'border-brand-500 shadow-2xl scale-[1.03]'
-                : 'border-transparent hover:border-brand-300 hover:shadow-lg'
+                ? 'border-brand-400 bg-gradient-soft shadow-card-hover scale-[1.05]'
+                : 'border-neutral-100 hover:border-brand-200 shadow-card hover:shadow-card-hover hover:scale-[1.02]'
             ]"
           >
-            <svg class="w-24 h-24 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-            </svg>
+            <div class="p-6 bg-gradient-primary rounded-2xl shadow-button">
+              <svg class="w-24 h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+              </svg>
+            </div>
             <div class="text-3xl font-brand font-semibold text-neutral-900">{{ t('mode.takeaway') }}</div>
           </button>
         </div>
