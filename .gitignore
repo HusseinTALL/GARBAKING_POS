@@ -66,3 +66,17 @@ hardware/certs/
 # Testing
 test-results/
 .aider*
+
+# TypeScript build artifacts
+*.tsbuildinfo
+**/*.vue.js
+**/*.vue.d.ts
+**/src/**/*.d.ts
+**/src/**/*.js
+!**/src/**/*.config.js
+!**/src/**/*.setup.js
+
+# Gradle
+.gradle/
+**/build/
+**/.gradle/
