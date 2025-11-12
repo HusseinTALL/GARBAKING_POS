@@ -70,6 +70,33 @@ export default {
       },
 
       // ============================================
+      // GRADIENTS - Modern Depth & Visual Appeal
+      // ============================================
+      backgroundImage: {
+        // Brand gradients (golden/orange)
+        'gradient-primary': 'linear-gradient(135deg, #FFB300 0%, #F5A300 50%, #E59400 100%)',
+        'gradient-primary-radial': 'radial-gradient(circle at top right, #FFB300, #F5A300, #E59400)',
+        'gradient-hero': 'linear-gradient(180deg, #FFC33A 0%, #F5A300 50%, #CC8000 100%)',
+        'gradient-warm': 'linear-gradient(135deg, #FFD97B 0%, #FFC33A 50%, #F5A300 100%)',
+
+        // Overlay gradients for depth
+        'gradient-overlay-dark': 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%)',
+        'gradient-overlay-darker': 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.7) 100%)',
+        'gradient-overlay-light': 'linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%)',
+
+        // Shimmer effects
+        'gradient-shimmer': 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+
+        // Success/error gradients
+        'gradient-success': 'linear-gradient(135deg, #3BB273 0%, #2E9359 100%)',
+        'gradient-error': 'linear-gradient(135deg, #E94E3A 0%, #D32F2F 100%)',
+
+        // Subtle backgrounds
+        'gradient-subtle': 'linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%)',
+        'gradient-soft': 'linear-gradient(135deg, #FFF9E8 0%, #FFEFC1 50%, #FFD97B 100%)',
+      },
+
+      // ============================================
       // TYPOGRAPHY - Font System
       // ============================================
       fontFamily: {
@@ -146,16 +173,23 @@ export default {
       },
 
       // ============================================
-      // SHADOWS - Elevation System
+      // SHADOWS - Elevation System (Professional Depth)
       // ============================================
       boxShadow: {
         'none': 'none',
-        'sm': '0px 1px 3px rgba(0,0,0,0.1)',
-        'DEFAULT': '0px 4px 8px rgba(0,0,0,0.08)',
-        'md': '0px 4px 8px rgba(0,0,0,0.08)',
-        'lg': '0px 8px 16px rgba(0,0,0,0.12)',
-        'xl': '0px 16px 24px rgba(0,0,0,0.14)',
+        'sm': '0px 2px 4px rgba(0,0,0,0.06), 0px 1px 2px rgba(0,0,0,0.04)',
+        'DEFAULT': '0px 4px 12px rgba(0,0,0,0.08), 0px 2px 4px rgba(0,0,0,0.06)',
+        'md': '0px 6px 16px rgba(0,0,0,0.12), 0px 3px 6px rgba(0,0,0,0.08)',
+        'lg': '0px 10px 24px rgba(0,0,0,0.15), 0px 4px 8px rgba(0,0,0,0.1)',
+        'xl': '0px 20px 40px rgba(0,0,0,0.2), 0px 8px 16px rgba(0,0,0,0.15)',
+        '2xl': '0px 30px 60px rgba(0,0,0,0.25), 0px 12px 24px rgba(0,0,0,0.2)',
+        'inner': 'inset 0 2px 8px rgba(0,0,0,0.1)',
         'focus': '0 0 0 3px rgba(255, 217, 123, 0.5)', // brand-200 with opacity
+        // Professional card shadows with colored tints
+        'card': '0px 4px 12px rgba(245, 163, 0, 0.08), 0px 2px 4px rgba(0,0,0,0.06)',
+        'card-hover': '0px 12px 32px rgba(245, 163, 0, 0.15), 0px 6px 12px rgba(0,0,0,0.12)',
+        'button': '0px 4px 12px rgba(245, 163, 0, 0.2), 0px 2px 4px rgba(0,0,0,0.1)',
+        'button-hover': '0px 8px 24px rgba(245, 163, 0, 0.3), 0px 4px 8px rgba(0,0,0,0.15)',
       },
 
       // ============================================
@@ -209,6 +243,14 @@ export default {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-6px)' },
         },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        shine: {
+          '0%': { backgroundPosition: '-200% center' },
+          '100%': { backgroundPosition: '200% center' },
+        },
       },
       // ============================================
       // COMPONENT-SPECIFIC TOKENS
@@ -259,6 +301,22 @@ export default {
       animation: {
         'pulse-slow': 'pulse-slow 4s ease-in-out infinite',
         'bounce-gentle': 'bounce-gentle 2s infinite',
+        'float': 'float 3s ease-in-out infinite',
+        'shine': 'shine 2s ease-in-out infinite',
+      },
+
+      // ============================================
+      // BACKDROP BLUR - Glassmorphism Support
+      // ============================================
+      backdropBlur: {
+        'xs': '2px',
+        'sm': '4px',
+        'DEFAULT': '8px',
+        'md': '12px',
+        'lg': '16px',
+        'xl': '24px',
+        '2xl': '40px',
+        '3xl': '64px',
       },
     },
   },

@@ -20,7 +20,7 @@
           <button
             v-if="cartStore.itemCount > 0"
             @click="viewCart"
-            class="relative inline-flex items-center gap-4 rounded-2xl bg-brand-400 px-6 py-5 text-left text-white shadow-sm transition-all duration-normal hover:bg-brand-500 hover:shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200"
+            class="relative inline-flex items-center gap-4 rounded-2xl bg-gradient-primary px-6 py-5 text-left text-white shadow-button transition-all duration-normal hover:shadow-button-hover hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 border border-brand-600/20"
           >
             <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15">
               <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,8 +53,8 @@
               :class="[
                 'flex w-full items-center gap-4 rounded-2xl border px-4 py-4 text-left transition-all duration-normal focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200',
                 selectedCategoryId === null
-                  ? 'border-brand-200 bg-brand-50 text-brand-600'
-                  : 'border-transparent text-neutral-600 hover:bg-neutral-100'
+                  ? 'border-brand-300 bg-gradient-soft text-brand-700 shadow-md'
+                  : 'border-transparent text-neutral-600 hover:bg-neutral-100 hover:shadow-sm'
               ]"
             >
               <span :class="[
@@ -79,8 +79,8 @@
               :class="[
                 'flex w-full items-center gap-4 rounded-2xl border px-4 py-4 text-left transition-all duration-normal focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200',
                 selectedCategoryId === category.id
-                  ? 'border-brand-200 bg-brand-50 text-brand-600'
-                  : 'border-transparent text-neutral-600 hover:bg-neutral-100'
+                  ? 'border-brand-300 bg-gradient-soft text-brand-700 shadow-md'
+                  : 'border-transparent text-neutral-600 hover:bg-neutral-100 hover:shadow-sm'
               ]"
             >
               <span :class="[
@@ -133,7 +133,7 @@
               v-for="(item, index) in displayedItems"
               :key="item.id"
               @click="selectItem(item)"
-              class="group flex flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white text-left shadow-sm transition-all duration-normal hover:-translate-y-2 hover:shadow-lg animate-fadeIn"
+              class="group flex flex-col overflow-hidden rounded-3xl border border-neutral-100 bg-white text-left shadow-card transition-all duration-normal hover:-translate-y-2 hover:shadow-card-hover hover:scale-[1.02] animate-fadeIn"
               :style="{ animationDelay: `${index * 50}ms` }"
             >
               <!-- Item Image -->
@@ -142,7 +142,7 @@
                   v-if="item.imageUrl"
                   :src="item.imageUrl"
                   :alt="item.name"
-                  class="h-full w-full object-cover transition-transform duration-slow group-hover:scale-105"
+                  class="h-full w-full object-cover transition-transform duration-slow group-hover:scale-110"
                 />
                 <div v-else class="flex h-full w-full items-center justify-center text-neutral-400">
                   <svg class="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,10 +150,16 @@
                   </svg>
                 </div>
 
+                <!-- Gradient overlay for depth -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none"></div>
+
+                <!-- Interactive overlay on hover -->
+                <div class="absolute inset-0 bg-gradient-to-t from-brand-600/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+
                 <!-- Popular Badge -->
                 <div
                   v-if="item.popular"
-                  class="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-brand-600 shadow-sm backdrop-blur"
+                  class="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-sm"
                 >
                   <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
@@ -176,7 +182,7 @@
                   <span class="text-2xl font-semibold text-neutral-900">
                     {{ formatPrice(item.price) }}
                   </span>
-                  <span class="inline-flex items-center gap-2 rounded-xl bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-600 transition-colors duration-normal group-hover:bg-brand-100">
+                  <span class="inline-flex items-center gap-2 rounded-xl bg-gradient-warm px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-normal group-hover:shadow-lg group-hover:scale-105">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5"></path>
                     </svg>

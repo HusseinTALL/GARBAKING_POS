@@ -25,8 +25,9 @@
       </transition-group>
     </div>
 
-    <!-- Warm Overlay Gradient -->
-    <div class="absolute inset-0 bg-gradient-to-br from-black/70 via-brand-700/60 to-brand-500/50"></div>
+    <!-- Enhanced Warm Overlay Gradient with Depth -->
+    <div class="absolute inset-0 bg-gradient-to-br from-black/80 via-brand-700/70 to-brand-500/60"></div>
+    <div class="absolute inset-0 bg-gradient-overlay-darker"></div>
 
     <!-- Ambient Motion (Steam/Light Flare) -->
     <div class="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
@@ -38,27 +39,29 @@
     <div class="relative z-10 text-center px-8">
       <!-- Branding -->
       <div class="mb-12">
-        <h1 class="text-6xl font-brand font-extrabold tracking-tight drop-shadow-lg">
+        <h1 class="text-7xl font-brand font-extrabold tracking-tight drop-shadow-2xl text-white animate-float" style="text-shadow: 0 0 40px rgba(255, 179, 0, 0.5), 0 4px 20px rgba(0,0,0,0.8)">
           {{ t('welcome.title') }}
         </h1>
-        <p class="mt-4 text-xl opacity-90 font-light">Fresh. Fast. Delicious.</p>
-        <div class="w-24 h-1 bg-gradient-to-r from-amber-400 to-red-500 mx-auto mt-4 rounded-full"></div>
+        <p class="mt-6 text-2xl font-medium text-white/95 drop-shadow-lg">Fresh. Fast. Delicious.</p>
+        <div class="w-32 h-1.5 bg-gradient-primary mx-auto mt-6 rounded-full shadow-lg"></div>
       </div>
 
-      <!-- Glowing Tap Button -->
+      <!-- Enhanced Glowing Tap Button -->
       <div class="mb-8 animate-bounce-gentle">
         <div
-          class="relative w-48 h-48 mx-auto flex items-center justify-center rounded-full bg-white/10 border-4 border-white/50 backdrop-blur-md shadow-[0_0_40px_rgba(255,150,0,0.4)] hover:shadow-[0_0_70px_rgba(255,200,50,0.7)] transition-all duration-500"
+          class="relative w-56 h-56 mx-auto flex items-center justify-center rounded-full bg-gradient-primary border-4 border-white/80 backdrop-blur-md shadow-button-hover hover:shadow-2xl hover:scale-110 transition-all duration-500"
+          style="box-shadow: 0 0 60px rgba(255, 179, 0, 0.6), 0 0 100px rgba(255, 179, 0, 0.4), 0 8px 32px rgba(0,0,0,0.4)"
         >
+          <div class="absolute inset-0 rounded-full bg-gradient-shimmer opacity-30 animate-shine"></div>
           <svg
-            class="w-16 h-16 text-amber-300 drop-shadow-[0_0_15px_rgba(255,200,50,0.8)]"
+            class="w-20 h-20 text-white drop-shadow-2xl relative z-10"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
-          <span class="absolute bottom-[-2.5rem] text-2xl font-semibold text-amber-200 animate-pulse">
+          <span class="absolute bottom-[-3rem] text-2xl font-bold text-white drop-shadow-lg animate-pulse" style="text-shadow: 0 0 20px rgba(255, 179, 0, 0.8)">
             {{ t('welcome.touchToStart') }}
           </span>
         </div>
