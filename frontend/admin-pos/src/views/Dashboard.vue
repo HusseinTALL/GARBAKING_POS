@@ -1,4 +1,4 @@
-<!--
+66<!--
   Dashboard View - Rebuilt with Modern Dark Theme
   Main analytics dashboard showing key metrics, recent orders, and insights
   Design based on Jaegar Resto UI specifications
