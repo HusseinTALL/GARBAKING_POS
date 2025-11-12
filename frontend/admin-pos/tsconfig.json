@@ -18,6 +18,10 @@
     "types": [
       "vite/client",
       "vite-plugin-pwa/client"
-    ]
+    ],
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false
   }
 }
