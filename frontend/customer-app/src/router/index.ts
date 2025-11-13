@@ -10,6 +10,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import Welcome from '@/views/Welcome.vue'
 import Home from '@/views/Home.vue'
 import Menu from '@/views/Menu.vue'
+import SearchResults from '@/views/SearchResults.vue'
 import Cart from '@/views/Cart.vue'
 import Checkout from '@/views/Checkout.vue'
 import OrderConfirmation from '@/views/OrderConfirmation.vue'
@@ -55,6 +56,16 @@ const routes: RouteRecordRaw[] = [
       title: 'Notre Menu',
       showHeader: true,
       transition: 'slide-left'
+    }
+  },
+  {
+    path: '/search',
+    name: 'SearchResults',
+    component: SearchResults,
+    meta: {
+      title: 'Recherche',
+      showHeader: false,
+      transition: 'slide-up'
     }
   },
   {

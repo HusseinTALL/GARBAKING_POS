@@ -447,5 +447,33 @@
     "subtitle": "Based on your preferences",
     "loading": "Loading suggestions...",
     "error": "Failed to load suggestions"
+  },
+
+  "search": {
+    "placeholder": "Search for food, category...",
+    "searching": "Searching...",
+    "results": "results",
+    "resultsCount": "no results | {count} result | {count} results",
+    "noResults": "No results found",
+    "noResultsDesc": "No results for \"{query}\"",
+    "clearSearch": "Clear search",
+    "filters": "Filters",
+    "clearAll": "Clear all",
+    "applyFilters": "Apply filters",
+    "priceRange": "Price Range",
+    "min": "Min",
+    "max": "Max",
+    "dietary": "Dietary Restrictions",
+    "availableOnly": "Available items only",
+    "recent": "Recent Searches",
+    "clearHistory": "Clear history",
+    "trending": "Trending",
+    "popular": "Popular Searches",
+    "sortBy": {
+      "name": "Name",
+      "price": "Price",
+      "popularity": "Popularity",
+      "newest": "Newest"
+    }
   }
 }

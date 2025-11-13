@@ -447,5 +447,33 @@
     "subtitle": "Basé sur vos préférences",
     "loading": "Chargement des suggestions...",
     "error": "Échec du chargement des suggestions"
+  },
+
+  "search": {
+    "placeholder": "Rechercher un plat, catégorie...",
+    "searching": "Recherche en cours...",
+    "results": "résultats",
+    "resultsCount": "aucun résultat | {count} résultat | {count} résultats",
+    "noResults": "Aucun résultat trouvé",
+    "noResultsDesc": "Aucun résultat pour \"{query}\"",
+    "clearSearch": "Effacer la recherche",
+    "filters": "Filtres",
+    "clearAll": "Tout effacer",
+    "applyFilters": "Appliquer les filtres",
+    "priceRange": "Fourchette de prix",
+    "min": "Min",
+    "max": "Max",
+    "dietary": "Restrictions alimentaires",
+    "availableOnly": "Articles disponibles uniquement",
+    "recent": "Recherches récentes",
+    "clearHistory": "Effacer l'historique",
+    "trending": "Tendances",
+    "popular": "Recherches populaires",
+    "sortBy": {
+      "name": "Nom",
+      "price": "Prix",
+      "popularity": "Popularité",
+      "newest": "Nouveautés"
+    }
   }
 }
