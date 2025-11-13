@@ -51,8 +51,32 @@
       />
     </div>
 
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 dark:border-gray-800">
+      <div class="flex">
+        <button
+          @click="activeTab = 'details'"
+          class="flex-1 py-3 px-4 text-sm font-semibold border-b-2 transition-colors"
+          :class="activeTab === 'details'
+            ? 'text-primary-600 border-primary-600'
+            : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'"
+        >
+          {{ t('reviews.product_details') }}
+        </button>
+        <button
+          @click="activeTab = 'reviews'"
+          class="flex-1 py-3 px-4 text-sm font-semibold border-b-2 transition-colors"
+          :class="activeTab === 'reviews'
+            ? 'text-primary-600 border-primary-600'
+            : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'"
+        >
+          {{ t('reviews.reviews') }} ({{ reviewStats.totalReviews }})
+        </button>
+      </div>
+    </div>
+
     <!-- Product Info -->
-    <div class="p-4">
+    <div v-show="activeTab === 'details'" class="p-4">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">{{ product.name }}</h1>
 
       <div class="flex items-center gap-3 mb-3">
@@ -72,11 +96,11 @@
       <!-- Rating Stars -->
       <div class="mb-4">
         <RatingStars
-          :modelValue="product.rating || 4.5"
+          :modelValue="reviewStats.averageRating || product.rating || 4.5"
           readonly
           showValue
           showReviewCount
-          :reviewCount="product.reviewCount || 2200"
+          :reviewCount="reviewStats.totalReviews || product.reviewCount || 0"
           size="sm"
         />
       </div>
@@ -150,6 +174,36 @@
       </div>
     </div>
 
+    <!-- Reviews Tab -->
+    <div v-show="activeTab === 'reviews'" class="p-4 pb-24">
+      <!-- Write Review Button -->
+      <div v-if="!hasUserReviewed && !showReviewForm" class="mb-6">
+        <button
+          @click="showReviewForm = true"
+          class="w-full py-3 px-6 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 active:scale-95 transition-all flex items-center justify-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          <span>{{ t('reviews.write_review') }}</span>
+        </button>
+      </div>
+
+      <!-- Review Form -->
+      <div v-if="showReviewForm" class="mb-6">
+        <ReviewForm
+          :product-id="String(product.id || product.sku)"
+          :product-name="product.name"
+          show-cancel
+          @submit="handleReviewSubmit"
+          @cancel="showReviewForm = false"
+        />
+      </div>
+
+      <!-- Review List -->
+      <ReviewList :product-id="String(product.id || product.sku)" />
+    </div>
+
     <!-- Bottom CTA -->
     <div class="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-4">
       <BaseButton
@@ -166,9 +220,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { MenuItem } from '@/services/mockApi'
 import { useFavoritesStore } from '@/stores/favorites'
+import { useReviewsStore } from '@/stores/reviews'
 
 // Advanced Components
 import RatingStars from '@/components/advanced/RatingStars.vue'
@@ -178,7 +234,13 @@ import BaseChip from '@/components/base/BaseChip.vue'
 import BaseBadge from '@/components/base/BaseBadge.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 
+// Review Components
+import ReviewForm from '@/components/ReviewForm.vue'
+import ReviewList from '@/components/ReviewList.vue'
+
+const { t } = useI18n()
 const favoritesStore = useFavoritesStore()
+const reviewsStore = useReviewsStore()
 
 interface Props {
   isVisible: boolean
@@ -193,10 +255,25 @@ const emit = defineEmits<{
 }>()
 
 // State
+const activeTab = ref<'details' | 'reviews'>('details')
 const selectedSize = ref('medium')
 const selectedIngredients = ref<string[]>([])
 const quantity = ref(1)
+const showReviewForm = ref(false)
 const isFavorite = computed(() => favoritesStore.isFavorite(String(props.product.id || props.product.sku)))
+
+// Review state
+const reviewStats = computed(() => reviewsStore.reviewStats)
+const hasUserReviewed = computed(() =>
+  reviewsStore.hasUserReviewedProduct(String(props.product.id || props.product.sku))
+)
+
+// Watch for product changes to load reviews
+watch(() => props.product.id, (newId) => {
+  if (newId) {
+    reviewsStore.fetchReviewsForProduct(String(newId))
+  }
+}, { immediate: true })
 
 // Mock data - would come from product in real app
 const sizes = ref([
@@ -235,5 +312,10 @@ const addToCart = () => {
     ingredients: selectedIngredients.value
   })
   emit('close')
+}
+
+const handleReviewSubmit = (reviewId: string) => {
+  showReviewForm.value = false
+  // Optionally scroll to the new review or show a success message
 }
 </script>
