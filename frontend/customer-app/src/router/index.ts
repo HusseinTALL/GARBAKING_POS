@@ -1,24 +1,30 @@
 /**
  * Vue Router configuration for Customer App
- * Mobile-first navigation with smooth transitions
+ * Mobile-first navigation with smooth transitions and lazy loading
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
-// Import views
+// Eager load critical views for instant initial render
 import Welcome from '@/views/Welcome.vue'
 import Home from '@/views/Home.vue'
-import Menu from '@/views/Menu.vue'
-import Cart from '@/views/Cart.vue'
-import Checkout from '@/views/Checkout.vue'
-import OrderConfirmation from '@/views/OrderConfirmation.vue'
-import OrderStatus from '@/views/OrderStatus.vue'
-import About from '@/views/About.vue'
-import Favorites from '@/views/Favorites.vue'
-import Profile from '@/views/Profile.vue'
-import Vouchers from '@/views/Vouchers.vue'
-import ComponentShowcase from '@/views/ComponentShowcase.vue'
+
+// Lazy load all other views with code splitting
+// This reduces the initial bundle size and improves load performance
+const Menu = () => import('@/views/Menu.vue')
+const SearchResults = () => import('@/views/SearchResults.vue')
+const Cart = () => import('@/views/Cart.vue')
+const Checkout = () => import('@/views/Checkout.vue')
+const OrderConfirmation = () => import('@/views/OrderConfirmation.vue')
+const OrderStatus = () => import('@/views/OrderStatus.vue')
+const Orders = () => import('@/views/Orders.vue')
+const About = () => import('@/views/About.vue')
+const Favorites = () => import('@/views/Favorites.vue')
+const Profile = () => import('@/views/Profile.vue')
+const Settings = () => import('@/views/Settings.vue')
+const Vouchers = () => import('@/views/Vouchers.vue')
+const ComponentShowcase = () => import('@/views/ComponentShowcase.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -53,6 +59,16 @@ const routes: RouteRecordRaw[] = [
       title: 'Notre Menu',
       showHeader: true,
       transition: 'slide-left'
+    }
+  },
+  {
+    path: '/search',
+    name: 'SearchResults',
+    component: SearchResults,
+    meta: {
+      title: 'Recherche',
+      showHeader: false,
+      transition: 'slide-up'
     }
   },
   {
@@ -111,6 +127,16 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/orders',
+    name: 'Orders',
+    component: Orders,
+    meta: {
+      title: 'Mes Commandes',
+      showHeader: false,
+      transition: 'fade'
+    }
+  },
+  {
     path: '/about',
     name: 'About',
     component: About,
@@ -139,6 +165,16 @@ const routes: RouteRecordRaw[] = [
       title: 'Profil',
       showHeader: false,
       transition: 'fade'
+    }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
+    meta: {
+      title: 'Paramètres',
+      showHeader: false,
+      transition: 'slide-left'
     }
   },
   {
