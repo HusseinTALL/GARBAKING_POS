@@ -18,6 +18,7 @@ import Orders from '@/views/Orders.vue'
 import About from '@/views/About.vue'
 import Favorites from '@/views/Favorites.vue'
 import Profile from '@/views/Profile.vue'
+import Settings from '@/views/Settings.vue'
 import Vouchers from '@/views/Vouchers.vue'
 import ComponentShowcase from '@/views/ComponentShowcase.vue'
 
@@ -150,6 +151,16 @@ const routes: RouteRecordRaw[] = [
       title: 'Profil',
       showHeader: false,
       transition: 'fade'
+    }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
+    meta: {
+      title: 'Paramètres',
+      showHeader: false,
+      transition: 'slide-left'
     }
   },
   {
