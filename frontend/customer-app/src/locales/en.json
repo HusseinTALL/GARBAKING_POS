@@ -173,7 +173,7 @@
     "home": "Home",
     "favorites": "Favorites",
     "cart": "Cart",
-    "voucher": "Voucher",
+    "orders": "Orders",
     "profile": "Profile"
   },
 
@@ -214,6 +214,84 @@
     "ready": "Ready",
     "completed": "Completed",
     "cancelled": "Cancelled"
+  },
+
+  "orders": {
+    "title": "My Orders",
+    "subtitle": "no orders | {count} order | {count} orders",
+    "filters": "Filters",
+    "searchPlaceholder": "Search by number or item...",
+    "loading": "Loading orders...",
+    "refreshing": "Refreshing...",
+    "refresh": "Refresh orders",
+    "refreshSuccess": "Orders refreshed",
+    "retry": "Retry",
+    "clearFilters": "Clear filters",
+    "activeFilters": "no active filters | {count} active filter | {count} active filters",
+    "noCustomerPhone": "Customer phone number not available",
+    "orderNumber": "Order #{number}",
+    "moreItems": "more item | more items",
+    "total": "Total",
+    "reorder": "Reorder",
+    "details": "Details",
+    "reorderSuccess": "{count} item added to cart! | {count} items added to cart!",
+    "tabs": {
+      "all": "All",
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "status": {
+      "all": "All statuses",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "preparing": "Preparing",
+      "ready": "Ready",
+      "served": "Served",
+      "cancelled": "Cancelled"
+    },
+    "orderType": {
+      "all": "All types",
+      "dine_in": "Dine In",
+      "takeaway": "Takeaway",
+      "delivery": "Delivery"
+    },
+    "filterByStatus": "Filter by status",
+    "filterByType": "Filter by type",
+    "filterByDate": "Filter by date",
+    "from": "From",
+    "to": "To",
+    "dateRange": {
+      "today": "Today",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "allTime": "All Time"
+    },
+    "actions": {
+      "reorder": "Reorder",
+      "cancel": "Cancel",
+      "track": "Track",
+      "details": "Details",
+      "help": "Help",
+      "share": "Share",
+      "receipt": "View Receipt"
+    },
+    "shareText": "Order {number} - Status: {status}",
+    "shareSuccess": "Shared successfully",
+    "shareFailed": "Failed to share",
+    "copiedToClipboard": "Copied to clipboard",
+    "empty": {
+      "title": "No orders yet",
+      "description": "Your order history will appear here",
+      "action": "Start ordering"
+    },
+    "noResults": {
+      "title": "No results found",
+      "description": "Try adjusting your filters or search query"
+    },
+    "error": {
+      "title": "Loading error"
+    }
   },
 
   "time": {

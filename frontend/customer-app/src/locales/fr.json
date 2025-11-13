@@ -173,7 +173,7 @@
     "home": "Accueil",
     "favorites": "Favoris",
     "cart": "Panier",
-    "voucher": "Bons",
+    "orders": "Commandes",
     "profile": "Profil"
   },
 
@@ -214,6 +214,84 @@
     "ready": "Prête",
     "completed": "Terminée",
     "cancelled": "Annulée"
+  },
+
+  "orders": {
+    "title": "Mes Commandes",
+    "subtitle": "aucune commande | {count} commande | {count} commandes",
+    "filters": "Filtres",
+    "searchPlaceholder": "Rechercher par numéro ou article...",
+    "loading": "Chargement des commandes...",
+    "refreshing": "Actualisation...",
+    "refresh": "Actualiser les commandes",
+    "refreshSuccess": "Commandes actualisées",
+    "retry": "Réessayer",
+    "clearFilters": "Effacer les filtres",
+    "activeFilters": "aucun filtre actif | {count} filtre actif | {count} filtres actifs",
+    "noCustomerPhone": "Numéro de téléphone client non disponible",
+    "orderNumber": "Commande #{number}",
+    "moreItems": "autre article | autres articles",
+    "total": "Total",
+    "reorder": "Recommander",
+    "details": "Détails",
+    "reorderSuccess": "{count} article ajouté au panier ! | {count} articles ajoutés au panier !",
+    "tabs": {
+      "all": "Tout",
+      "active": "En cours",
+      "completed": "Terminées",
+      "cancelled": "Annulées"
+    },
+    "status": {
+      "all": "Tous les statuts",
+      "pending": "En attente",
+      "confirmed": "Confirmée",
+      "preparing": "En préparation",
+      "ready": "Prête",
+      "served": "Servie",
+      "cancelled": "Annulée"
+    },
+    "orderType": {
+      "all": "Tous les types",
+      "dine_in": "Sur place",
+      "takeaway": "À emporter",
+      "delivery": "Livraison"
+    },
+    "filterByStatus": "Filtrer par statut",
+    "filterByType": "Filtrer par type",
+    "filterByDate": "Filtrer par date",
+    "from": "Du",
+    "to": "Au",
+    "dateRange": {
+      "today": "Aujourd'hui",
+      "thisWeek": "Cette semaine",
+      "thisMonth": "Ce mois",
+      "allTime": "Tout le temps"
+    },
+    "actions": {
+      "reorder": "Recommander",
+      "cancel": "Annuler",
+      "track": "Suivre",
+      "details": "Détails",
+      "help": "Aide",
+      "share": "Partager",
+      "receipt": "Voir le reçu"
+    },
+    "shareText": "Commande {number} - Statut : {status}",
+    "shareSuccess": "Partagé avec succès",
+    "shareFailed": "Échec du partage",
+    "copiedToClipboard": "Copié dans le presse-papiers",
+    "empty": {
+      "title": "Aucune commande pour le moment",
+      "description": "Votre historique de commandes apparaîtra ici",
+      "action": "Commencer à commander"
+    },
+    "noResults": {
+      "title": "Aucun résultat trouvé",
+      "description": "Essayez de modifier vos filtres ou votre recherche"
+    },
+    "error": {
+      "title": "Erreur de chargement"
+    }
   },
 
   "time": {

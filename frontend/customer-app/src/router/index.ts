@@ -14,6 +14,7 @@ import Cart from '@/views/Cart.vue'
 import Checkout from '@/views/Checkout.vue'
 import OrderConfirmation from '@/views/OrderConfirmation.vue'
 import OrderStatus from '@/views/OrderStatus.vue'
+import Orders from '@/views/Orders.vue'
 import About from '@/views/About.vue'
 import Favorites from '@/views/Favorites.vue'
 import Profile from '@/views/Profile.vue'
@@ -107,6 +108,16 @@ const routes: RouteRecordRaw[] = [
       title: 'Suivi de commande',
       showHeader: true,
       showBackButton: true,
+      transition: 'fade'
+    }
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: Orders,
+    meta: {
+      title: 'Mes Commandes',
+      showHeader: false,
       transition: 'fade'
     }
   },
