@@ -1,17 +1,29 @@
 /**
  * Vue Router configuration for Customer App
  * Mobile-first navigation with smooth transitions and lazy loading
+ * Includes authentication guards and onboarding flow
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 // Eager load critical views for instant initial render
+import Splash from '@/views/Splash.vue'
+import Onboarding from '@/views/Onboarding.vue'
+import LocationPermission from '@/views/LocationPermission.vue'
 import Welcome from '@/views/Welcome.vue'
 import Home from '@/views/Home.vue'
 
+// Auth views - eager load for better UX
+import Login from '@/views/auth/Login.vue'
+import SignUp from '@/views/auth/SignUp.vue'
+import ForgotPassword from '@/views/auth/ForgotPassword.vue'
+import Verification from '@/views/auth/Verification.vue'
+
 // Lazy load all other views with code splitting
 // This reduces the initial bundle size and improves load performance
+const RestaurantDetail = () => import('@/views/RestaurantDetail.vue')
 const Menu = () => import('@/views/Menu.vue')
 const SearchResults = () => import('@/views/SearchResults.vue')
 const Cart = () => import('@/views/Cart.vue')
@@ -27,10 +39,99 @@ const Vouchers = () => import('@/views/Vouchers.vue')
 const ComponentShowcase = () => import('@/views/ComponentShowcase.vue')
 
 const routes: RouteRecordRaw[] = [
+  // Root redirect to splash
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/splash'
   },
+
+  // Splash screen (initial app load)
+  {
+    path: '/splash',
+    name: 'Splash',
+    component: Splash,
+    meta: {
+      title: 'Loading',
+      public: true,
+      showHeader: false
+    }
+  },
+
+  // Onboarding flow
+  {
+    path: '/onboarding',
+    name: 'Onboarding',
+    component: Onboarding,
+    meta: {
+      title: 'Welcome',
+      public: true,
+      showHeader: false,
+      transition: 'fade'
+    }
+  },
+
+  // Location permission
+  {
+    path: '/location-permission',
+    name: 'LocationPermission',
+    component: LocationPermission,
+    meta: {
+      title: 'Location Access',
+      public: true,
+      showHeader: false,
+      transition: 'slide-up'
+    }
+  },
+
+  // Authentication routes
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login,
+    meta: {
+      title: 'Log In',
+      public: true,
+      guestOnly: true,
+      showHeader: false,
+      transition: 'fade'
+    }
+  },
+  {
+    path: '/signup',
+    name: 'SignUp',
+    component: SignUp,
+    meta: {
+      title: 'Sign Up',
+      public: true,
+      guestOnly: true,
+      showHeader: false,
+      transition: 'fade'
+    }
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPassword,
+    meta: {
+      title: 'Forgot Password',
+      public: true,
+      showHeader: false,
+      transition: 'slide-left'
+    }
+  },
+  {
+    path: '/verification',
+    name: 'Verification',
+    component: Verification,
+    meta: {
+      title: 'Verification',
+      public: true,
+      showHeader: false,
+      transition: 'slide-left'
+    }
+  },
+
+  // Main app routes (require authentication)
   {
     path: '/welcome',
     name: 'Welcome',
@@ -47,6 +148,17 @@ const routes: RouteRecordRaw[] = [
     component: Home,
     meta: {
       title: 'Menu',
+      showHeader: false,
+      transition: 'slide-left'
+    }
+  },
+  {
+    path: '/restaurant/:id',
+    name: 'RestaurantDetail',
+    component: RestaurantDetail,
+    props: true,
+    meta: {
+      title: 'Restaurant',
       showHeader: false,
       transition: 'slide-left'
     }
@@ -207,12 +319,38 @@ const router = createRouter({
 })
 
 // Navigation guards
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // Set page title
   if (to.meta.title) {
     document.title = `${to.meta.title} - Garbaking`
   } else {
     document.title = 'Garbaking - Commande en ligne'
+  }
+
+  const authStore = useAuthStore()
+
+  // Public routes (accessible without authentication)
+  const isPublicRoute = to.meta.public === true
+
+  // Routes that should only be accessible to guests (not logged in)
+  const isGuestOnlyRoute = to.meta.guestOnly === true
+
+  // Check if user is authenticated
+  const isAuthenticated = authStore.isAuthenticated && authStore.token
+
+  // Redirect authenticated users away from guest-only pages
+  if (isGuestOnlyRoute && isAuthenticated) {
+    next('/home')
+    return
+  }
+
+  // Redirect unauthenticated users to login (except for public routes)
+  if (!isPublicRoute && !isAuthenticated) {
+    next({
+      name: 'Login',
+      query: { redirect: to.fullPath }
+    })
+    return
   }
 
   // Validate cart access
@@ -224,7 +362,7 @@ router.beforeEach((to, from, next) => {
   // Validate order-specific routes
   if (to.name === 'OrderConfirmation' || to.name === 'OrderStatus') {
     if (!to.params.orderNumber) {
-      next('/')
+      next('/home')
       return
     }
   }

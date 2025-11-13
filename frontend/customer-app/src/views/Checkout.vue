@@ -1,224 +1,274 @@
 <!--
-  Checkout and order confirmation page for customer app
-  Displays order summary, payment options, and handles order submission
+  Checkout View - Complete checkout flow
+  Features: delivery address, payment method, promo codes, delivery time, order summary
+  Integrates: AddressSelector, PaymentMethodSelector, PromoCodeInput, DeliveryOptions, OrderSummary
 -->
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 pb-32">
     <!-- Header -->
-    <div class="sticky top-0 bg-white shadow-sm z-40 safe-area-top">
+    <div class="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-40 safe-area-top">
       <div class="px-4 py-3">
         <div class="flex items-center justify-between">
           <button
             @click="$router.go(-1)"
-            :disabled="isSubmitting"
-            class="p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+            class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
-            <FontAwesomeIcon :icon="['fas', 'arrow-left']" class="text-xl text-gray-600" />
+            <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
           </button>
 
-          <h1 class="text-xl font-bold text-gray-900">Confirmation</h1>
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white">Checkout</h1>
 
           <div class="w-10"></div>
         </div>
       </div>
     </div>
 
-    <div class="px-4 py-6 pb-32">
-      <!-- Order summary -->
-      <div class="bg-white rounded-2xl p-6 shadow-sm mb-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Résumé de votre commande</h2>
-
-        <!-- Customer info -->
-        <div class="bg-gray-50 rounded-xl p-4 mb-4">
-          <div class="flex items-center space-x-3 mb-3">
-            <FontAwesomeIcon :icon="['fas', 'user']" class="text-primary-600" />
-            <div>
-              <p class="font-medium text-gray-900">{{ customerInfo.name }}</p>
-              <p v-if="customerInfo.phone" class="text-sm text-gray-600">{{ customerInfo.phone }}</p>
-            </div>
-          </div>
-
-          <div class="flex items-center space-x-3 mb-3">
-            <FontAwesomeIcon :icon="getOrderTypeIcon(customerInfo.orderType)" class="text-primary-600" />
-            <div>
-              <p class="font-medium text-gray-900">{{ getOrderTypeLabel(customerInfo.orderType) }}</p>
-              <p v-if="customerInfo.tableNumber" class="text-sm text-gray-600">Table {{ customerInfo.tableNumber }}</p>
-            </div>
-          </div>
-
-          <div v-if="customerInfo.notes" class="flex items-start space-x-3">
-            <FontAwesomeIcon :icon="['fas', 'sticky-note']" class="text-amber-600 mt-1" />
-            <div>
-              <p class="font-medium text-gray-900">Notes spéciales</p>
-              <p class="text-sm text-gray-600">{{ customerInfo.notes }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Order items -->
-        <div class="space-y-3 mb-4">
+    <!-- Main Content -->
+    <div class="px-4 py-4 space-y-4">
+      <!-- Progress Indicator -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
           <div
-            v-for="item in items"
-            :key="item.id"
-            class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl"
+            v-for="(step, index) in checkoutSteps"
+            :key="step.id"
+            class="flex items-center"
+            :class="index < checkoutSteps.length - 1 ? 'flex-1' : ''"
           >
-            <img
-              v-if="item.imageUrl"
-              :src="item.imageUrl"
-              :alt="item.name"
-              class="w-12 h-12 rounded-lg object-cover"
-            />
+            <div class="flex flex-col items-center">
+              <div
+                class="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all"
+                :class="[
+                  currentStepIndex >= index
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                ]"
+              >
+                <svg
+                  v-if="currentStepIndex > index"
+                  class="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span v-else>{{ index + 1 }}</span>
+              </div>
+              <span
+                class="text-xs mt-1 font-medium text-center"
+                :class="currentStepIndex >= index ? 'text-orange-600' : 'text-gray-500'"
+              >
+                {{ step.label }}
+              </span>
+            </div>
+
+            <!-- Connection Line -->
             <div
-              v-else
-              class="w-12 h-12 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center"
-            >
-              <FontAwesomeIcon :icon="['fas', 'utensils']" class="text-primary-400" />
-            </div>
-
-            <div class="flex-1">
-              <h4 class="font-medium text-gray-900">{{ item.name }}</h4>
-              <p class="text-sm text-gray-600">{{ formatPrice(item.price) }} × {{ item.quantity }}</p>
-              <p v-if="item.notes" class="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded mt-1">
-                {{ item.notes }}
-              </p>
-            </div>
-
-            <div class="text-right">
-              <p class="font-semibold text-primary-600">{{ formatPrice(item.price * item.quantity) }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pricing breakdown -->
-        <div class="border-t pt-4 space-y-2">
-          <div class="flex justify-between">
-            <span class="text-gray-600">Sous-total</span>
-            <span>{{ formatPrice(subtotal) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">TVA ({{ (taxRate * 100).toFixed(0) }}%)</span>
-            <span>{{ formatPrice(tax) }}</span>
-          </div>
-          <div v-if="discount > 0" class="flex justify-between text-green-600">
-            <span>Remise</span>
-            <span>-{{ formatPrice(discount) }}</span>
-          </div>
-          <div class="border-t pt-2">
-            <div class="flex justify-between text-xl font-bold">
-              <span>Total</span>
-              <span class="text-primary-600">{{ formatPrice(total) }}</span>
-            </div>
+              v-if="index < checkoutSteps.length - 1"
+              class="flex-1 h-0.5 mx-2 transition-all"
+              :class="currentStepIndex > index ? 'bg-orange-500' : 'bg-gray-200 dark:bg-gray-700'"
+            ></div>
           </div>
         </div>
       </div>
 
-      <!-- Payment method -->
-      <div class="bg-white rounded-2xl p-6 shadow-sm mb-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Mode de paiement</h3>
-
-        <div class="grid grid-cols-1 gap-3">
-          <button
-            v-for="method in paymentMethods"
-            :key="method.value"
-            @click="selectedPaymentMethod = method.value"
-            :class="[
-              'p-4 rounded-xl border-2 transition-all duration-200 text-left',
-              selectedPaymentMethod === method.value
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-200 hover:border-gray-300'
-            ]"
+      <!-- Step 1: Delivery Address -->
+      <div v-if="currentStep === 'address'">
+        <AddressSelector
+          :initialAddress="selectedAddress"
+          @select="handleAddressSelect"
+        />
+        <div class="mt-4">
+          <BaseButton
+            @click="proceedToNextStep"
+            :disabled="!selectedAddress"
+            variant="primary"
+            size="lg"
+            class="w-full"
           >
-            <div class="flex items-center space-x-3">
-              <FontAwesomeIcon :icon="method.icon" class="text-2xl" :class="method.color" />
-              <div>
-                <p class="font-medium text-gray-900">{{ method.label }}</p>
-                <p class="text-sm text-gray-600">{{ method.description }}</p>
+            Continue to Delivery Time
+          </BaseButton>
+        </div>
+      </div>
+
+      <!-- Step 2: Delivery Time -->
+      <div v-if="currentStep === 'delivery'">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm mb-4">
+          <div class="flex items-start justify-between">
+            <div class="flex items-start gap-2">
+              <svg class="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <div class="flex-1">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ selectedAddress?.street }}</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400">{{ selectedAddress?.city }}, {{ selectedAddress?.zipCode }}</p>
               </div>
             </div>
-          </button>
-        </div>
-      </div>
-
-      <!-- Estimated time -->
-      <div class="bg-white rounded-2xl p-6 shadow-sm mb-6">
-        <div class="flex items-center space-x-3">
-          <FontAwesomeIcon :icon="['fas', 'clock']" class="text-2xl text-primary-600" />
-          <div>
-            <h3 class="font-semibold text-gray-900">Temps de préparation</h3>
-            <p class="text-gray-600">Environ {{ estimatedTime }} minutes</p>
+            <button
+              @click="currentStep = 'address'"
+              class="text-sm text-orange-500 hover:text-orange-600 font-medium"
+            >
+              Change
+            </button>
           </div>
         </div>
-      </div>
 
-      <!-- Terms and conditions -->
-      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
-        <div class="flex space-x-3">
-          <FontAwesomeIcon :icon="['fas', 'info-circle']" class="text-amber-600 mt-1" />
-          <div class="text-sm text-amber-800">
-            <p class="font-medium mb-2">Conditions importantes :</p>
-            <ul class="space-y-1 list-disc list-inside">
-              <li>Le paiement se fait à la réception de la commande</li>
-              <li>Vous recevrez une notification quand votre commande sera prête</li>
-              <li>Les commandes peuvent être annulées dans les 5 minutes suivant la confirmation</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Fixed confirmation button -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 safe-area-bottom">
-      <button
-        @click="confirmOrder"
-        :disabled="!canConfirm || isSubmitting"
-        class="w-full bg-green-600 text-white font-bold py-4 px-6 rounded-2xl hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-floating"
-      >
-        <FontAwesomeIcon
-          v-if="isSubmitting"
-          :icon="['fas', 'spinner']"
-          class="animate-spin mr-3"
+        <DeliveryOptions
+          :estimatedDeliveryMinutes="30"
+          @update="handleDeliveryTimeUpdate"
         />
-        <span v-else>
-          <FontAwesomeIcon :icon="['fas', 'check']" class="mr-3" />
-        </span>
-        {{ isSubmitting ? 'Envoi en cours...' : 'Confirmer la commande' }}
-      </button>
-    </div>
 
-    <!-- Success modal -->
-    <div
-      v-if="showSuccessModal"
-      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-    >
-      <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center animate-scale-in">
-        <div class="mb-6">
-          <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FontAwesomeIcon :icon="['fas', 'check']" class="text-3xl text-green-600" />
+        <div class="mt-4 flex gap-3">
+          <BaseButton
+            @click="currentStep = 'address'"
+            variant="outline"
+            size="lg"
+            class="flex-1"
+          >
+            Back
+          </BaseButton>
+          <BaseButton
+            @click="proceedToNextStep"
+            :disabled="!deliveryTime"
+            variant="primary"
+            size="lg"
+            class="flex-1"
+          >
+            Continue to Payment
+          </BaseButton>
+        </div>
+      </div>
+
+      <!-- Step 3: Payment Method -->
+      <div v-if="currentStep === 'payment'">
+        <div class="space-y-3 mb-4">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm">
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="text-gray-600 dark:text-gray-400">Delivering to:</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ selectedAddress?.street }}</span>
+              </div>
+              <button
+                @click="currentStep = 'address'"
+                class="text-orange-500 hover:text-orange-600"
+              >
+                Edit
+              </button>
+            </div>
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-2">Commande confirmée !</h3>
-          <p class="text-gray-600 mb-4">
-            Votre commande #{{ orderNumber }} a été envoyée en cuisine.
-          </p>
-          <div class="bg-gray-50 rounded-xl p-4 mb-4">
-            <p class="text-sm text-gray-600 mb-1">Temps estimé</p>
-            <p class="text-xl font-semibold text-primary-600">{{ estimatedTime }} minutes</p>
+
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-3 shadow-sm">
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="text-gray-600 dark:text-gray-400">Delivery:</span>
+                <span class="font-medium text-gray-900 dark:text-white">
+                  {{ deliveryTime?.type === 'asap' ? 'ASAP (30-40 min)' : `Scheduled for ${deliveryTime?.time}` }}
+                </span>
+              </div>
+              <button
+                @click="currentStep = 'delivery'"
+                class="text-orange-500 hover:text-orange-600"
+              >
+                Edit
+              </button>
+            </div>
           </div>
         </div>
 
-        <div class="space-y-3">
-          <button
-            @click="trackOrder"
-            class="w-full bg-primary-600 text-white font-medium py-3 rounded-xl hover:bg-primary-700 transition-colors"
+        <PaymentMethodSelector @select="handlePaymentSelect" />
+
+        <div class="mt-4">
+          <PromoCodeInput
+            :cartTotal="cartStore.subtotal"
+            @apply="handlePromoApply"
+            @remove="handlePromoRemove"
+          />
+        </div>
+
+        <div class="mt-4 flex gap-3">
+          <BaseButton
+            @click="currentStep = 'delivery'"
+            variant="outline"
+            size="lg"
+            class="flex-1"
           >
-            Suivre ma commande
-          </button>
-          <button
-            @click="goHome"
-            class="w-full bg-gray-200 text-gray-800 font-medium py-3 rounded-xl hover:bg-gray-300 transition-colors"
+            Back
+          </BaseButton>
+          <BaseButton
+            @click="proceedToNextStep"
+            :disabled="!paymentMethod"
+            variant="primary"
+            size="lg"
+            class="flex-1"
           >
-            Retour à l'accueil
-          </button>
+            Review Order
+          </BaseButton>
+        </div>
+      </div>
+
+      <!-- Step 4: Review & Confirm -->
+      <div v-if="currentStep === 'review'" class="space-y-4">
+        <OrderSummary
+          :items="cartStore.items"
+          :subtotal="cartStore.subtotal"
+          :tax="cartStore.tax"
+          :taxRate="appStore.appConfig.taxRate"
+          :discount="cartStore.discount"
+          :deliveryFee="deliveryFee"
+          :total="cartStore.total + deliveryFee"
+          :promoCode="appliedPromoCode"
+          :estimatedDeliveryTime="estimatedDeliveryTime"
+          :deliveryAddress="selectedAddress"
+          :paymentMethod="paymentMethod"
+          :deliveryInfo="deliveryInfo"
+        />
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input
+              v-model="agreedToTerms"
+              type="checkbox"
+              class="w-5 h-5 text-orange-500 rounded focus:ring-orange-500 mt-0.5"
+            />
+            <div class="flex-1 text-sm">
+              <span class="text-gray-700 dark:text-gray-300">
+                I agree to the
+                <a href="#" class="text-orange-500 hover:text-orange-600 font-medium">Terms & Conditions</a>
+                and
+                <a href="#" class="text-orange-500 hover:text-orange-600 font-medium">Privacy Policy</a>
+              </span>
+            </div>
+          </label>
+        </div>
+
+        <div class="flex gap-3">
+          <BaseButton
+            @click="currentStep = 'payment'"
+            variant="outline"
+            size="lg"
+            class="flex-1"
+          >
+            Back
+          </BaseButton>
+          <BaseButton
+            @click="placeOrder"
+            :disabled="!agreedToTerms || isPlacingOrder"
+            :loading="isPlacingOrder"
+            variant="primary"
+            size="lg"
+            class="flex-1"
+          >
+            {{ isPlacingOrder ? 'Processing...' : `Place Order • ${formatPrice(cartStore.total + deliveryFee)}` }}
+          </BaseButton>
         </div>
       </div>
     </div>
@@ -231,10 +281,16 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useCartStore } from '@/stores/cart'
 import { useAppStore } from '@/stores/app'
-import { ordersApi } from '@/services/api'
-import { storeToRefs } from 'pinia'
-import { OrderType, PaymentMethod } from '@/types'
+import { useOrderStore } from '@/stores/order'
 import { formatCurrency } from '@/utils/currency'
+
+// Components
+import AddressSelector from '@/components/AddressSelector.vue'
+import PaymentMethodSelector from '@/components/PaymentMethodSelector.vue'
+import PromoCodeInput from '@/components/PromoCodeInput.vue'
+import DeliveryOptions from '@/components/DeliveryOptions.vue'
+import OrderSummary from '@/components/OrderSummary.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 
 const router = useRouter()
 const toast = useToast()
@@ -242,185 +298,145 @@ const toast = useToast()
 // Stores
 const cartStore = useCartStore()
 const appStore = useAppStore()
+const orderStore = useOrderStore()
 
-// Destructure store state
-const {
-  items,
-  subtotal,
-  tax,
-  discount,
-  total,
-  customerInfo
-} = storeToRefs(cartStore)
+// State
+const currentStep = ref<'address' | 'delivery' | 'payment' | 'review'>('address')
+const selectedAddress = ref<any>(null)
+const deliveryTime = ref<any>(null)
+const paymentMethod = ref<any>(null)
+const appliedPromoCode = ref<string>('')
+const agreedToTerms = ref(false)
+const isPlacingOrder = ref(false)
 
-const { appConfig } = storeToRefs(appStore)
-
-// Local state
-const isSubmitting = ref(false)
-const showSuccessModal = ref(false)
-const selectedPaymentMethod = ref<PaymentMethod>(PaymentMethod.CASH)
-const orderNumber = ref('')
+// Checkout steps
+const checkoutSteps = [
+  { id: 'address', label: 'Address' },
+  { id: 'delivery', label: 'Delivery' },
+  { id: 'payment', label: 'Payment' },
+  { id: 'review', label: 'Review' }
+]
 
 // Computed
-const taxRate = computed(() => appConfig.value.taxRate)
-
-const estimatedTime = computed(() => {
-  // Calculate estimated time based on items and order type
-  const baseTime = items.value.length * 3 // 3 minutes per item
-  const orderTypeMultiplier = customerInfo.value.orderType === OrderType.DINE_IN ? 1.2 : 1
-  return Math.max(10, Math.round(baseTime * orderTypeMultiplier))
+const currentStepIndex = computed(() => {
+  return checkoutSteps.findIndex(step => step.id === currentStep.value)
 })
 
-const paymentMethods = computed(() => [
-  {
-    value: PaymentMethod.CASH,
-    label: 'Espèces',
-    description: 'Paiement en liquide à la réception',
-    icon: ['fas', 'money-bill-wave'],
-    color: 'text-green-600'
-  },
-  {
-    value: PaymentMethod.CARD,
-    label: 'Carte bancaire',
-    description: 'Paiement par carte à la réception',
-    icon: ['fas', 'credit-card'],
-    color: 'text-blue-600'
-  },
-  {
-    value: PaymentMethod.MOBILE,
-    label: 'Mobile Money',
-    description: 'Orange Money, MTN Money, etc.',
-    icon: ['fas', 'mobile-alt'],
-    color: 'text-orange-600'
-  }
-])
+const deliveryFee = computed(() => {
+  if (cartStore.subtotal >= 30) return 0
+  return 5.00
+})
 
-const canConfirm = computed(() => {
-  return (
-    items.value.length > 0 &&
-    customerInfo.value.name.trim() !== '' &&
-    selectedPaymentMethod.value !== null
-  )
+const deliveryInfo = computed(() => {
+  if (cartStore.subtotal >= 30) {
+    return 'Free delivery on orders above $30!'
+  }
+  return `Add ${formatPrice(30 - cartStore.subtotal)} more for free delivery`
+})
+
+const estimatedDeliveryTime = computed(() => {
+  if (deliveryTime.value?.type === 'asap') {
+    return '30-40 minutes'
+  } else if (deliveryTime.value?.type === 'scheduled') {
+    return `${deliveryTime.value.date} at ${deliveryTime.value.time}`
+  }
+  return ''
 })
 
 // Methods
-const formatPrice = (amount: number): string => formatCurrency(amount)
-
-const getOrderTypeLabel = (orderType: OrderType): string => {
-  const labels = {
-    [OrderType.DINE_IN]: 'Sur place',
-    [OrderType.TAKEAWAY]: 'À emporter',
-    [OrderType.DELIVERY]: 'Livraison'
-  }
-  return labels[orderType] || orderType
+const formatPrice = (amount: number): string => {
+  return formatCurrency(amount)
 }
 
-const getOrderTypeIcon = (orderType: OrderType): string[] => {
-  const icons = {
-    [OrderType.DINE_IN]: ['fas', 'utensils'],
-    [OrderType.TAKEAWAY]: ['fas', 'shopping-bag'],
-    [OrderType.DELIVERY]: ['fas', 'motorcycle']
-  }
-  return icons[orderType] || ['fas', 'utensils']
+const handleAddressSelect = (address: any) => {
+  selectedAddress.value = address
 }
 
-const confirmOrder = async () => {
-  if (!canConfirm.value) return
+const handleDeliveryTimeUpdate = (time: any) => {
+  deliveryTime.value = time
+}
 
-  isSubmitting.value = true
+const handlePaymentSelect = (method: any) => {
+  paymentMethod.value = method
+}
+
+const handlePromoApply = (promo: any) => {
+  cartStore.applyDiscount(promo.discount)
+  appliedPromoCode.value = promo.code
+  toast.success(`Promo code "${promo.code}" applied!`)
+}
+
+const handlePromoRemove = () => {
+  cartStore.applyDiscount(0)
+  appliedPromoCode.value = ''
+  toast.info('Promo code removed')
+}
+
+const proceedToNextStep = () => {
+  const stepMap: Record<string, 'address' | 'delivery' | 'payment' | 'review'> = {
+    address: 'delivery',
+    delivery: 'payment',
+    payment: 'review'
+  }
+
+  const nextStep = stepMap[currentStep.value]
+  if (nextStep) {
+    currentStep.value = nextStep
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+const placeOrder = async () => {
+  if (!agreedToTerms.value) {
+    toast.error('Please agree to the terms and conditions')
+    return
+  }
+
+  if (!selectedAddress.value || !deliveryTime.value || !paymentMethod.value) {
+    toast.error('Please complete all checkout steps')
+    return
+  }
+
+  isPlacingOrder.value = true
 
   try {
-    // Prepare order data matching backend expectations
     const orderData = {
-      customerName: customerInfo.value.name,
-      customerPhone: customerInfo.value.phone || undefined,
-      customerEmail: undefined, // Optional for now
-      tableNumber: customerInfo.value.tableNumber || undefined,
-      orderType: customerInfo.value.orderType,
-      items: items.value.map(item => ({
-        menuItemId: item.menuItemId,
-        sku: item.sku,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        notes: item.notes || undefined
-      })),
-      notes: customerInfo.value.notes || undefined,
-      specialRequests: undefined,
-      paymentMethod: selectedPaymentMethod.value,
-      subtotal: subtotal.value,
-      taxAmount: tax.value,
-      discountAmount: discount.value,
-      deliveryFee: 0
+      items: cartStore.items,
+      subtotal: cartStore.subtotal,
+      tax: cartStore.tax,
+      discount: cartStore.discount,
+      deliveryFee: deliveryFee.value,
+      total: cartStore.total + deliveryFee.value,
+      customerInfo: cartStore.customerInfo,
+      deliveryAddress: selectedAddress.value,
+      paymentMethod: {
+        type: paymentMethod.value.type,
+        last4: paymentMethod.value.card?.last4
+      },
+      deliveryTime: deliveryTime.value,
+      promoCode: appliedPromoCode.value
     }
 
-    // Submit order
-    const response = await ordersApi.createOrder(orderData)
-
-    if (response.success && response.data?.order) {
-      orderNumber.value = response.data.order.orderNumber
-      showSuccessModal.value = true
-
-      // Clear cart after successful order
-      cartStore.clearCart()
-
-      // Show success notification
-      toast.success(`Commande #${orderNumber.value} confirmée !`)
-    } else {
-      throw new Error(response.error || 'Erreur lors de la création de la commande')
-    }
-  } catch (error: any) {
-    console.error('Order submission error:', error)
-    toast.error(error.message || 'Erreur lors de la confirmation de la commande')
+    const order = await orderStore.createOrder(orderData)
+    cartStore.clearCart()
+    await router.push(`/order-confirmation/${order.id}`)
+    toast.success('Order placed successfully!')
+  } catch (error) {
+    console.error('Failed to place order:', error)
+    toast.error('Failed to place order. Please try again.')
   } finally {
-    isSubmitting.value = false
+    isPlacingOrder.value = false
   }
-}
-
-const trackOrder = () => {
-  showSuccessModal.value = false
-  router.push(`/order-status/${orderNumber.value}`)
-}
-
-const goHome = () => {
-  showSuccessModal.value = false
-  router.push('/')
 }
 
 // Lifecycle
 onMounted(() => {
-  // Set page title
-  document.title = 'Confirmation - Garbaking'
-
-  // Redirect if cart is empty
-  if (items.value.length === 0) {
+  if (cartStore.items.length === 0) {
+    toast.info('Your cart is empty')
     router.push('/cart')
     return
   }
 
-  // Validate customer info
-  if (!customerInfo.value.name.trim()) {
-    toast.error('Informations client manquantes')
-    router.push('/cart')
-    return
-  }
+  document.title = 'Checkout - Garbaking'
 })
 </script>
-
-<style scoped>
-/* Scale animation for modal */
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-scale-in {
-  animation: scale-in 0.3s ease-out;
-}
-</style>
