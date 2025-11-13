@@ -479,6 +479,24 @@
     }
   },
 
+  "errors": {
+    "something_went_wrong": "Something Went Wrong",
+    "error_occurred_desc": "We encountered an unexpected error. Please try again or contact support if the problem persists.",
+    "error_details": "Error Details",
+    "reload_page": "Reload Page",
+    "go_home": "Go to Home",
+    "report_problem": "Report Problem",
+    "need_help": "Need help?",
+    "network_error": "Network Error",
+    "network_error_desc": "Please check your internet connection and try again.",
+    "not_found": "Page Not Found",
+    "not_found_desc": "The page you're looking for doesn't exist.",
+    "unauthorized": "Unauthorized",
+    "unauthorized_desc": "You don't have permission to access this page.",
+    "server_error": "Server Error",
+    "server_error_desc": "Our server encountered an error. Please try again later."
+  },
+
   "reviews": {
     "title": "Reviews",
     "reviews": "Reviews",

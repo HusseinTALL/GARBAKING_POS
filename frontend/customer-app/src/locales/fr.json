@@ -479,6 +479,24 @@
     }
   },
 
+  "errors": {
+    "something_went_wrong": "Une erreur s'est produite",
+    "error_occurred_desc": "Nous avons rencontré une erreur inattendue. Veuillez réessayer ou contacter le support si le problème persiste.",
+    "error_details": "Détails de l'erreur",
+    "reload_page": "Recharger la page",
+    "go_home": "Retour à l'accueil",
+    "report_problem": "Signaler un problème",
+    "need_help": "Besoin d'aide ?",
+    "network_error": "Erreur réseau",
+    "network_error_desc": "Veuillez vérifier votre connexion Internet et réessayer.",
+    "not_found": "Page introuvable",
+    "not_found_desc": "La page que vous recherchez n'existe pas.",
+    "unauthorized": "Non autorisé",
+    "unauthorized_desc": "Vous n'avez pas la permission d'accéder à cette page.",
+    "server_error": "Erreur serveur",
+    "server_error_desc": "Notre serveur a rencontré une erreur. Veuillez réessayer plus tard."
+  },
+
   "reviews": {
     "title": "Avis",
     "reviews": "Avis",
