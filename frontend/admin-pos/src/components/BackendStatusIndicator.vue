@@ -117,7 +117,7 @@ const maxRetries = 10
 const retryProgress = ref(0)
 
 let unsubscribe: (() => void) | null = null
-const progressInterval: NodeJS.Timeout | null = null
+const progressInterval: ReturnType<typeof setInterval> | null = null
 
 // Watch for status changes
 onMounted(() => {
