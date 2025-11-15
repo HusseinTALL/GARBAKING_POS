@@ -1,8 +1,17 @@
 server:
   port: 8080
+  shutdown: graceful  # Enable graceful shutdown
+  netty:
+    connection-timeout: 20000  # 20 seconds
+
 spring:
   application:
     name: api-gateway
+
+  # Lifecycle Configuration for Graceful Shutdown
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   cloud:
     gateway:
       discovery:

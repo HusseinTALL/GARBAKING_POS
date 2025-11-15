@@ -2,22 +2,35 @@ spring:
   application:
     name: user-service
 
+  # Lifecycle Configuration for Graceful Shutdown
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   # Database Configuration
   datasource:
     url: jdbc:mysql://localhost:3306/garbaking_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: rootpassword
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:rootpassword}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    # HikariCP Connection Pool Configuration
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      max-lifetime: 1800000  # 30 minutes
+      idle-timeout: 600000   # 10 minutes
+      connection-timeout: 20000  # 20 seconds
+      auto-commit: true
+      leak-detection-threshold: 60000  # 1 minute
 
   # JPA Configuration
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false  # Disabled for production performance
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
+        format_sql: false
 
   # Kafka Configuration - DISABLED for standalone mode
   # kafka:
@@ -45,6 +58,12 @@ spring:
 # Server Configuration
 server:
   port: 8081
+  shutdown: graceful  # Enable graceful shutdown
+  tomcat:
+    connection-timeout: 20000  # 20 seconds
+    threads:
+      max: 200
+      min-spare: 10
 
 # Eureka Configuration - ENABLED for microservices mode
 eureka:
@@ -60,7 +79,7 @@ eureka:
 
 # JWT Configuration
 jwt:
-  secret: your-256-bit-secret-key-for-jwt-signing-change-this-in-production
+  secret: ${JWT_SECRET:your-256-bit-secret-key-for-jwt-signing-change-this-in-production}
   expiration: 86400000  # 24 hours in milliseconds
 
 # Management Endpoints
@@ -98,3 +117,23 @@ garbaking:
     alerts:
       auth-failure-threshold: 10
       evaluation-interval: PT2M
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+  retry:
+    instances:
+      default:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - java.net.SocketTimeoutException
