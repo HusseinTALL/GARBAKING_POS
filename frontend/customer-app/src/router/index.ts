@@ -46,6 +46,8 @@ const ReviewOrder = () => import('@/views/ReviewOrder.vue')
 const Settings = () => import('@/views/Settings.vue')
 const Vouchers = () => import('@/views/Vouchers.vue')
 const QRScanner = () => import('@/views/QRScanner.vue')
+const RestaurantLocator = () => import('@/views/RestaurantLocator.vue')
+const LocationPicker = () => import('@/views/LocationPicker.vue')
 const ComponentShowcase = () => import('@/views/ComponentShowcase.vue')
 
 const routes: RouteRecordRaw[] = [
@@ -413,6 +415,26 @@ const routes: RouteRecordRaw[] = [
       title: 'Paramètres',
       showHeader: false,
       transition: 'slide-left'
+    }
+  },
+  {
+    path: '/restaurant-locator',
+    name: 'RestaurantLocator',
+    component: RestaurantLocator,
+    meta: {
+      title: 'Find Restaurants',
+      showHeader: false,
+      transition: 'slide-up'
+    }
+  },
+  {
+    path: '/location-picker',
+    name: 'LocationPicker',
+    component: LocationPicker,
+    meta: {
+      title: 'Select Location',
+      showHeader: false,
+      transition: 'slide-up'
     }
   },
   {
