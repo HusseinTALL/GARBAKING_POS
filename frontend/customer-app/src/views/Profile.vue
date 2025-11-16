@@ -56,6 +56,12 @@ const accountMenuItems = [
     icon: 'fa-bell',
     label: 'Notifications',
     route: '/notifications'
+  },
+  {
+    id: 'qr-scanner',
+    icon: 'fa-qrcode',
+    label: 'Scan QR Code',
+    route: '/qr-scanner'
   }
 ]
 

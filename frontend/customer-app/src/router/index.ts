@@ -45,6 +45,7 @@ const AddAddress = () => import('@/views/AddAddress.vue')
 const ReviewOrder = () => import('@/views/ReviewOrder.vue')
 const Settings = () => import('@/views/Settings.vue')
 const Vouchers = () => import('@/views/Vouchers.vue')
+const QRScanner = () => import('@/views/QRScanner.vue')
 const ComponentShowcase = () => import('@/views/ComponentShowcase.vue')
 
 const routes: RouteRecordRaw[] = [
@@ -349,6 +350,27 @@ const routes: RouteRecordRaw[] = [
     component: Vouchers,
     meta: {
       title: 'Mes Bons',
+      showHeader: false,
+      transition: 'fade'
+    }
+  },
+  {
+    path: '/qr-scanner',
+    name: 'QRScanner',
+    component: QRScanner,
+    meta: {
+      title: 'Scan QR Code',
+      showHeader: false,
+      transition: 'fade'
+    }
+  },
+  {
+    path: '/qr-scanner/:mode',
+    name: 'QRScannerWithMode',
+    component: QRScanner,
+    props: true,
+    meta: {
+      title: 'Scan QR Code',
       showHeader: false,
       transition: 'fade'
     }
