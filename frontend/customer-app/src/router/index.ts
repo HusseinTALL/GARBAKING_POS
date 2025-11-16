@@ -33,6 +33,7 @@ const Cart = () => import('@/views/Cart.vue')
 const Checkout = () => import('@/views/Checkout.vue')
 const OrderConfirmation = () => import('@/views/OrderConfirmation.vue')
 const OrderStatus = () => import('@/views/OrderStatus.vue')
+const OrderTracking = () => import('@/views/OrderTracking.vue')
 const Orders = () => import('@/views/Orders.vue')
 const OrderDetail = () => import('@/views/OrderDetail.vue')
 const Notifications = () => import('@/views/Notifications.vue')
@@ -276,6 +277,17 @@ const routes: RouteRecordRaw[] = [
       showHeader: true,
       showBackButton: true,
       transition: 'fade'
+    }
+  },
+  {
+    path: '/order-tracking/:orderNumber',
+    name: 'OrderTracking',
+    component: OrderTracking,
+    props: true,
+    meta: {
+      title: 'Track Order',
+      showHeader: false,
+      transition: 'slide-left'
     }
   },
   {
