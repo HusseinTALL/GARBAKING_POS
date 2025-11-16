@@ -25,6 +25,7 @@ import Verification from '@/views/auth/Verification.vue'
 // This reduces the initial bundle size and improves load performance
 const OrderTypeSelection = () => import('@/views/OrderTypeSelection.vue')
 const CategoryView = () => import('@/views/CategoryView.vue')
+const ProductDetails = () => import('@/views/ProductDetails.vue')
 const RestaurantDetail = () => import('@/views/RestaurantDetail.vue')
 const Menu = () => import('@/views/Menu.vue')
 const SearchResults = () => import('@/views/SearchResults.vue')
@@ -178,6 +179,17 @@ const routes: RouteRecordRaw[] = [
       title: 'Category',
       showHeader: false,
       transition: 'slide-left'
+    }
+  },
+  {
+    path: '/product/:id',
+    name: 'ProductDetails',
+    component: ProductDetails,
+    props: true,
+    meta: {
+      title: 'Product Details',
+      showHeader: false,
+      transition: 'slide-up'
     }
   },
   {
