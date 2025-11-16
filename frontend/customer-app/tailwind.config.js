@@ -8,89 +8,131 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Professional POS Brand Colors - McDonald's/BK inspired
+        // UI/UX 4.4 Design System - FoodHub Theme
         primary: {
           50: '#fff8e5',
-          100: '#ffecb8',
+          100: '#ffefc7',
           200: '#ffe08a',
           300: '#ffd45c',
-          400: '#ffc933',  // Warm golden yellow
-          500: '#ffbf00',  // Main brand gold
-          600: '#f5b800',
-          700: '#e6ae00',
-          800: '#d6a400',
-          900: '#c79600',
+          400: '#ffc933',
+          500: '#f59e0b',  // Main amber - primary CTA
+          600: '#d97706',  // Darker amber - gradient end
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
         },
         secondary: {
           50: '#fff0f0',
           100: '#ffd6d6',
           200: '#ffb3b3',
           300: '#ff9090',
-          400: '#ff6b6b',  // Vibrant red
-          500: '#ff4444',  // Main red accent
-          600: '#f03333',
-          700: '#e02222',
-          800: '#d01111',
-          900: '#c00000',
+          400: '#ff6b6b',
+          500: '#ef4444',  // Red - errors/logout
+          600: '#dc2626',
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#7f1d1d',
         },
         accent: {
-          50: '#e6f9f0',
-          100: '#b8efd4',
-          200: '#8ae5b8',
-          300: '#5cdb9c',
-          400: '#33d185',  // Fresh green
-          500: '#00c853',  // Success green
-          600: '#00b84a',
-          700: '#00a741',
-          800: '#009638',
-          900: '#00852f',
+          // Green for Takeaway/Success
+          green: {
+            50: '#ecfdf5',
+            100: '#d1fae5',
+            200: '#a7f3d0',
+            300: '#6ee7b7',
+            400: '#34d399',
+            500: '#10b981',
+            600: '#059669',
+            700: '#047857',
+            800: '#065f46',
+            900: '#064e3b',
+          },
+          // Purple for Dine-in/Special
+          purple: {
+            50: '#faf5ff',
+            100: '#f3e8ff',
+            200: '#e9d5ff',
+            300: '#d8b4fe',
+            400: '#c084fc',
+            500: '#a855f7',
+            600: '#9333ea',
+            700: '#7e22ce',
+            800: '#6b21a8',
+            900: '#581c87',
+          },
+          // Pink for promos
+          pink: {
+            50: '#fdf2f8',
+            100: '#fce7f3',
+            200: '#fbcfe8',
+            300: '#f9a8d4',
+            400: '#f472b6',
+            500: '#ec4899',
+            600: '#db2777',
+            700: '#be185d',
+            800: '#9d174d',
+            900: '#831843',
+          },
+          // Blue for info/tracking
+          blue: {
+            50: '#eff6ff',
+            100: '#dbeafe',
+            200: '#bfdbfe',
+            300: '#93c5fd',
+            400: '#60a5fa',
+            500: '#3b82f6',
+            600: '#2563eb',
+            700: '#1d4ed8',
+            800: '#1e40af',
+            900: '#1e3a8a',
+          }
         },
         background: {
           DEFAULT: '#FFFFFF',
-          light: '#FAFAFA',
-          warm: '#FFF9F0',  // Warm background
-          gradient: 'linear-gradient(135deg, #FFF9F0 0%, #FFFFFF 100%)',
+          light: '#faf8f3',      // Light warm background
+          warm: '#f5f1e8',       // Warm gradient end
+          gradient: 'linear-gradient(135deg, #faf8f3 0%, #f5f1e8 100%)',
         },
         text: {
-          DEFAULT: '#2C2C2C',     // Rich dark for primary text
-          secondary: '#6B6B6B',   // Medium gray
-          tertiary: '#9E9E9E',    // Light gray
-          inverse: '#FFFFFF',     // White text
+          DEFAULT: '#000000',     // Pure black for text in design
+          secondary: '#6B7280',   // Gray-600
+          tertiary: '#9CA3AF',    // Gray-400
+          inverse: '#FFFFFF',
         },
         border: {
-          DEFAULT: '#E8E8E8',
-          dark: '#CCCCCC',
-          light: '#F5F5F5',
+          DEFAULT: '#E5E7EB',     // Gray-200
+          dark: '#D1D5DB',        // Gray-300
+          light: '#F3F4F6',       // Gray-100
         },
         success: {
-          50: '#e6f9f0',
-          500: '#00c853',
-          600: '#00b84a',
-          700: '#00a741',
+          50: '#ecfdf5',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
         },
         danger: {
-          50: '#fff0f0',
-          500: '#ff4444',
-          600: '#f03333',
-          700: '#e02222',
+          50: '#fef2f2',
+          500: '#ef4444',
+          600: '#dc2626',
+          700: '#b91c1c',
         },
         warning: {
           50: '#fff8e5',
-          500: '#ffbf00',
-          600: '#f5b800',
-          700: '#e6ae00',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
         },
         gray: {
-          50: '#FAFAFA',
-          100: '#F5F5F5',
-          200: '#E8E8E8',
-          300: '#CCCCCC',
-          400: '#B8B8B8',
-          500: '#9E9E9E',
-          600: '#6B6B6B',
-          700: '#4A4A4A',
-          800: '#2C2C2C',
-          900: '#1A1A1A',
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937',
+          900: '#111827',
         }
       },
       fontFamily: {
@@ -131,11 +173,14 @@ export default {
         '4xl': '32px',
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #ffbf00 0%, #ffd45c 100%)',
-        'gradient-secondary': 'linear-gradient(135deg, #ff4444 0%, #ff6b6b 100%)',
-        'gradient-warm': 'linear-gradient(135deg, #FFF9F0 0%, #FFFFFF 100%)',
-        'gradient-card': 'linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+        'gradient-secondary': 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+        'gradient-green': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        'gradient-purple': 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
+        'gradient-warm': 'linear-gradient(135deg, #faf8f3 0%, #f5f1e8 100%)',
+        'gradient-card': 'linear-gradient(180deg, #FFFFFF 0%, #f9fafb 100%)',
         'shine': 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+        'hero-pattern': "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f59e0b' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
       },
       animation: {
         'bounce-in': 'bounceIn 0.6s ease-out',

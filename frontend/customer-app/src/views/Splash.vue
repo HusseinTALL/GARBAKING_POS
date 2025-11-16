@@ -1,70 +1,13 @@
-<!--
-  Splash.vue
-  Initial loading screen shown on app startup
-  Checks authentication and onboarding status, then navigates to appropriate screen
--->
-<template>
-  <div class="min-h-screen bg-white flex items-center justify-center relative overflow-hidden">
-    <!-- Animated radiating lines (bottom right) -->
-    <div class="absolute bottom-0 right-0 w-64 h-64 opacity-20">
-      <div
-        v-for="i in 12"
-        :key="i"
-        class="absolute bottom-0 right-0 w-1 bg-gradient-to-t from-orange-500 to-transparent origin-bottom-right"
-        :style="{
-          height: '100%',
-          transform: `rotate(${i * 15}deg)`,
-          animation: `radiateIn 1.5s ease-out ${i * 0.05}s forwards`
-        }"
-      ></div>
-    </div>
-
-    <!-- Animated radiating lines (top left) -->
-    <div class="absolute top-0 left-0 w-64 h-64 opacity-10 rotate-180">
-      <div
-        v-for="i in 12"
-        :key="i"
-        class="absolute bottom-0 right-0 w-1 bg-gradient-to-t from-orange-400 to-transparent origin-bottom-right"
-        :style="{
-          height: '100%',
-          transform: `rotate(${i * 15}deg)`,
-          animation: `radiateIn 1.5s ease-out ${i * 0.05}s forwards`
-        }"
-      ></div>
-    </div>
-
-    <!-- Logo -->
-    <div class="relative z-10 text-center animate-fadeIn">
-      <div class="mb-4">
-        <!-- Food Logo -->
-        <div class="inline-flex items-center justify-center">
-          <svg class="w-24 h-24 text-orange-500" fill="currentColor" viewBox="0 0 100 100">
-            <!-- Chef hat -->
-            <path d="M 30 40 Q 30 25 50 25 Q 70 25 70 40 L 70 50 L 30 50 Z" />
-            <rect x="28" y="48" width="44" height="8" rx="2" />
-            <!-- Letter F -->
-            <text x="42" y="72" font-size="28" font-weight="bold" fill="#2C2F3E">F</text>
-          </svg>
-        </div>
-
-        <!-- Brand Name -->
-        <h1 class="text-4xl font-bold mt-4">
-          <span class="text-gray-900">Food</span>
-        </h1>
-
-        <!-- Tagline -->
-        <p class="text-gray-500 text-sm mt-2">Delicious meals, delivered fast</p>
-      </div>
-
-      <!-- Loading indicator -->
-      <div class="flex justify-center mt-8">
-        <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
+/**
+ * Splash - App loading screen (Page 1 - UI/UX 4.4)
+ *
+ * Features:
+ * - Animated logo with branding
+ * - Loading indicator
+ * - Auto-navigation based on app state
+ */
+
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -73,7 +16,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const checkAppState = async () => {
-  // Wait minimum time for splash screen
+  // Wait minimum time for splash screen (2 seconds for animation)
   await new Promise(resolve => setTimeout(resolve, 2000))
 
   try {
@@ -116,24 +59,58 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-@keyframes radiateIn {
-  from {
-    transform-origin: bottom right;
-    scale: 0;
-    opacity: 0;
-  }
-  to {
-    transform-origin: bottom right;
-    scale: 1;
-    opacity: 1;
-  }
-}
+<template>
+  <div class="min-h-screen bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center relative overflow-hidden">
+    <!-- Background Decorative Elements -->
+    <div class="absolute inset-0 overflow-hidden">
+      <!-- Animated circles -->
+      <div class="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full animate-pulse"></div>
+      <div class="absolute -bottom-32 -left-32 w-96 h-96 bg-white/5 rounded-full animate-pulse" style="animation-delay: 0.5s"></div>
+      <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-white/5 rounded-full animate-ping"></div>
+    </div>
 
-@keyframes fadeIn {
+    <!-- Main Content -->
+    <div class="relative z-10 text-center px-6">
+      <!-- Logo Container with Animation -->
+      <div class="animate-fadeInScale mb-8">
+        <!-- Logo Circle -->
+        <div class="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+          <i class="fas fa-burger text-primary-500 text-6xl"></i>
+        </div>
+
+        <!-- App Name -->
+        <h1 class="text-white font-bold text-5xl mb-2 tracking-tight">
+          Garbaking
+        </h1>
+
+        <!-- Tagline -->
+        <p class="text-white/90 text-lg">
+          Delicious meals, delivered fast
+        </p>
+      </div>
+
+      <!-- Loading Indicator -->
+      <div class="flex justify-center mt-12 animate-fadeIn" style="animation-delay: 0.5s">
+        <div class="flex gap-2">
+          <div class="w-3 h-3 bg-white rounded-full animate-bounce"></div>
+          <div class="w-3 h-3 bg-white rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+          <div class="w-3 h-3 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+        </div>
+      </div>
+
+      <!-- Version -->
+      <p class="text-white/60 text-sm mt-8 animate-fadeIn" style="animation-delay: 1s">
+        Version 1.0.0
+      </p>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+@keyframes fadeInScale {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.8);
   }
   to {
     opacity: 1;
@@ -141,7 +118,36 @@ onMounted(() => {
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeInScale {
+  animation: fadeInScale 0.8s ease-out forwards;
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes ping {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-ping {
+  animation: ping 3s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 </style>

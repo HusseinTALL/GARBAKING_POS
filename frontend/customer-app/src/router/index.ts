@@ -23,6 +23,9 @@ import Verification from '@/views/auth/Verification.vue'
 
 // Lazy load all other views with code splitting
 // This reduces the initial bundle size and improves load performance
+const OrderTypeSelection = () => import('@/views/OrderTypeSelection.vue')
+const CategoryView = () => import('@/views/CategoryView.vue')
+const ProductDetails = () => import('@/views/ProductDetails.vue')
 const RestaurantDetail = () => import('@/views/RestaurantDetail.vue')
 const Menu = () => import('@/views/Menu.vue')
 const SearchResults = () => import('@/views/SearchResults.vue')
@@ -30,10 +33,16 @@ const Cart = () => import('@/views/Cart.vue')
 const Checkout = () => import('@/views/Checkout.vue')
 const OrderConfirmation = () => import('@/views/OrderConfirmation.vue')
 const OrderStatus = () => import('@/views/OrderStatus.vue')
+const OrderTracking = () => import('@/views/OrderTracking.vue')
 const Orders = () => import('@/views/Orders.vue')
+const OrderDetail = () => import('@/views/OrderDetail.vue')
+const Notifications = () => import('@/views/Notifications.vue')
 const About = () => import('@/views/About.vue')
 const Favorites = () => import('@/views/Favorites.vue')
 const Profile = () => import('@/views/Profile.vue')
+const EditProfile = () => import('@/views/EditProfile.vue')
+const AddAddress = () => import('@/views/AddAddress.vue')
+const ReviewOrder = () => import('@/views/ReviewOrder.vue')
 const Settings = () => import('@/views/Settings.vue')
 const Vouchers = () => import('@/views/Vouchers.vue')
 const ComponentShowcase = () => import('@/views/ComponentShowcase.vue')
@@ -133,6 +142,16 @@ const routes: RouteRecordRaw[] = [
 
   // Main app routes (require authentication)
   {
+    path: '/order-type',
+    name: 'OrderTypeSelection',
+    component: OrderTypeSelection,
+    meta: {
+      title: 'Choose Order Type',
+      showHeader: false,
+      transition: 'slide-left'
+    }
+  },
+  {
     path: '/welcome',
     name: 'Welcome',
     component: Welcome,
@@ -150,6 +169,28 @@ const routes: RouteRecordRaw[] = [
       title: 'Menu',
       showHeader: false,
       transition: 'slide-left'
+    }
+  },
+  {
+    path: '/category/:id',
+    name: 'CategoryView',
+    component: CategoryView,
+    props: true,
+    meta: {
+      title: 'Category',
+      showHeader: false,
+      transition: 'slide-left'
+    }
+  },
+  {
+    path: '/product/:id',
+    name: 'ProductDetails',
+    component: ProductDetails,
+    props: true,
+    meta: {
+      title: 'Product Details',
+      showHeader: false,
+      transition: 'slide-up'
     }
   },
   {
@@ -239,6 +280,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/order-tracking/:orderNumber',
+    name: 'OrderTracking',
+    component: OrderTracking,
+    props: true,
+    meta: {
+      title: 'Track Order',
+      showHeader: false,
+      transition: 'slide-left'
+    }
+  },
+  {
     path: '/orders',
     name: 'Orders',
     component: Orders,
@@ -246,6 +298,38 @@ const routes: RouteRecordRaw[] = [
       title: 'Mes Commandes',
       showHeader: false,
       transition: 'fade'
+    }
+  },
+  {
+    path: '/order/:id',
+    name: 'OrderDetail',
+    component: OrderDetail,
+    props: true,
+    meta: {
+      title: 'Order Details',
+      showHeader: false,
+      transition: 'slide-left'
+    }
+  },
+  {
+    path: '/review/:orderNumber',
+    name: 'ReviewOrder',
+    component: ReviewOrder,
+    props: true,
+    meta: {
+      title: 'Rate Order',
+      showHeader: false,
+      transition: 'slide-up'
+    }
+  },
+  {
+    path: '/notifications',
+    name: 'Notifications',
+    component: Notifications,
+    meta: {
+      title: 'Notifications',
+      showHeader: false,
+      transition: 'slide-left'
     }
   },
   {
@@ -277,6 +361,26 @@ const routes: RouteRecordRaw[] = [
       title: 'Profil',
       showHeader: false,
       transition: 'fade'
+    }
+  },
+  {
+    path: '/profile/edit',
+    name: 'EditProfile',
+    component: EditProfile,
+    meta: {
+      title: 'Edit Profile',
+      showHeader: false,
+      transition: 'slide-left'
+    }
+  },
+  {
+    path: '/address/add',
+    name: 'AddAddress',
+    component: AddAddress,
+    meta: {
+      title: 'Add Address',
+      showHeader: false,
+      transition: 'slide-up'
     }
   },
   {

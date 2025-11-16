@@ -1,315 +1,235 @@
-<!--
-  Order Confirmation View - Enhanced with tracking
-  Displays successful order confirmation with order details, status tracking, and delivery info
-  Integrates with order store and provides real-time status updates
--->
+<script setup lang="ts">
+/**
+ * OrderConfirmation - Order placed successfully (Page 7 - UI/UX 4.4)
+ *
+ * Features:
+ * - Success animation with checkmark
+ * - Order number display
+ * - Estimated delivery time
+ * - Order summary
+ * - Track order button
+ * - Return to home button
+ */
+
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useCartStore } from '@/stores/cart'
+import { useOrderModeStore } from '@/stores/orderMode'
+
+const router = useRouter()
+const route = useRoute()
+const cartStore = useCartStore()
+const orderModeStore = useOrderModeStore()
+
+const orderNumber = computed(() => route.params.orderNumber as string || '#12345')
+const showSuccess = ref(false)
+
+// Mock order data - replace with actual order data
+const order = ref({
+  id: orderNumber.value,
+  date: new Date().toLocaleString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }),
+  estimatedTime: '30-40 min',
+  items: [
+    {
+      id: '1',
+      name: 'Margherita Pizza',
+      quantity: 2,
+      price: 12.00
+    },
+    {
+      id: '2',
+      name: 'Classic Burger',
+      quantity: 1,
+      price: 10.00
+    }
+  ],
+  subtotal: 34.00,
+  deliveryFee: 5.00,
+  discount: 0.00,
+  total: 39.00
+})
+
+onMounted(() => {
+  // Trigger success animation
+  setTimeout(() => {
+    showSuccess.value = true
+  }, 100)
+
+  // Clear cart after order is placed
+  // cartStore.clearCart()
+})
+
+function trackOrder() {
+  router.push(`/order-tracking/${orderNumber.value}`)
+}
+
+function backToHome() {
+  router.push('/home')
+}
+
+function viewOrderDetails() {
+  router.push(`/order/${orderNumber.value}`)
+}
+</script>
+
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-green-50 to-orange-50 dark:from-gray-900 dark:to-gray-800">
-    <!-- Header -->
-    <div class="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-40 safe-area-top">
-      <div class="px-4 py-3">
-        <div class="flex items-center justify-between">
-          <button
-            @click="goToHome"
-            class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-
-          <h1 class="text-lg font-bold text-gray-900 dark:text-white">Order Confirmed</h1>
-
-          <div class="w-10"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="px-4 py-6 max-w-2xl mx-auto">
-      <!-- Success Animation -->
-      <div class="text-center mb-8">
-        <div class="relative inline-block">
-          <!-- Animated success icon -->
-          <div class="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-once">
-            <svg class="w-12 h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-            </svg>
-          </div>
-          <!-- Confetti particles -->
-          <div class="absolute inset-0 pointer-events-none">
-            <div class="confetti"></div>
-          </div>
-        </div>
-
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Order Placed!</h1>
-        <p class="text-gray-600 dark:text-gray-400">Thank you for your order. We're preparing it now.</p>
+  <div class="min-h-screen bg-gradient-warm flex flex-col">
+    <!-- Success Section -->
+    <div class="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <!-- Success Icon with Animation -->
+      <div
+        :class="[
+          'w-32 h-32 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mb-6 shadow-2xl transition-all duration-500',
+          showSuccess ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+        ]"
+      >
+        <i class="fas fa-check text-white text-6xl"></i>
       </div>
 
-      <!-- Order Details Card -->
-      <div v-if="order" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
-        <div class="flex items-start justify-between mb-4">
+      <!-- Success Message -->
+      <h1 class="text-black font-bold text-2xl mb-2 text-center">
+        Order Placed Successfully!
+      </h1>
+      <p class="text-black opacity-60 text-center mb-8">
+        Your order has been confirmed and will be delivered soon
+      </p>
+
+      <!-- Order Info Card -->
+      <div class="w-full max-w-md bg-white rounded-3xl p-6 shadow-xl mb-6">
+        <!-- Order Number -->
+        <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
           <div>
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-1">
-              Order #{{ order.orderNumber }}
-            </h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              {{ formatDate(order.createdAt) }}
-            </p>
+            <p class="text-black opacity-60 text-sm mb-1">Order Number</p>
+            <p class="text-black font-bold text-lg">{{ orderNumber }}</p>
           </div>
-          <span
-            class="px-3 py-1 rounded-full text-sm font-medium"
-            :class="getStatusClass(order.status)"
+          <button
+            @click="viewOrderDetails"
+            class="text-primary-500 text-sm font-semibold"
           >
-            {{ orderStore.getOrderStatusLabel(order.status) }}
-          </span>
+            View Details
+          </button>
         </div>
 
-        <!-- Estimated Delivery/Pickup Time -->
-        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4 mb-4">
-          <div class="flex items-center gap-3">
-            <svg class="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div class="flex-1">
-              <p class="font-semibold text-gray-900 dark:text-white">
-                {{ order.deliveryTime.type === 'asap' ? 'Estimated Delivery' : 'Scheduled Delivery' }}
-              </p>
-              <p class="text-lg font-bold text-orange-600 dark:text-orange-400">
-                {{ formatDeliveryTime(order) }}
-              </p>
-            </div>
+        <!-- Estimated Time -->
+        <div class="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
+          <div class="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-clock text-primary-500 text-xl"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-black opacity-60 text-sm mb-1">
+              {{ orderModeStore.isDelivery ? 'Estimated Delivery' : orderModeStore.isTakeaway ? 'Ready for Pickup' : 'Serving Time' }}
+            </p>
+            <p class="text-black font-bold">{{ order.estimatedTime }}</p>
           </div>
         </div>
 
-        <!-- Delivery Address -->
-        <div v-if="order.deliveryAddress" class="border-t dark:border-gray-700 pt-4 mb-4">
-          <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <div class="flex-1">
-              <p class="text-sm font-medium text-gray-900 dark:text-white">Delivery Address</p>
-              <p class="text-sm text-gray-700 dark:text-gray-300">{{ order.deliveryAddress.street }}</p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                {{ order.deliveryAddress.city }}, {{ order.deliveryAddress.zipCode }}
-              </p>
-              <p v-if="order.deliveryAddress.instructions" class="text-xs text-gray-500 dark:text-gray-500 italic mt-1">
-                {{ order.deliveryAddress.instructions }}
-              </p>
-            </div>
+        <!-- Order Date -->
+        <div class="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
+          <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-calendar text-black opacity-60 text-xl"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-black opacity-60 text-sm mb-1">Order Date</p>
+            <p class="text-black font-semibold text-sm">{{ order.date }}</p>
           </div>
         </div>
 
-        <!-- Payment Method -->
-        <div class="border-t dark:border-gray-700 pt-4">
-          <div class="flex items-center justify-between">
+        <!-- Order Summary -->
+        <div class="space-y-3 mb-4">
+          <h3 class="text-black font-bold text-sm">Order Summary</h3>
+          <div
+            v-for="item in order.items"
+            :key="item.id"
+            class="flex items-center justify-between"
+          >
             <div class="flex items-center gap-2">
-              <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-              <span class="text-sm font-medium text-gray-900 dark:text-white">Payment Method</span>
+              <span class="text-black opacity-60 text-sm">{{ item.quantity }}x</span>
+              <span class="text-black text-sm">{{ item.name }}</span>
             </div>
-            <span class="text-sm text-gray-700 dark:text-gray-300">
-              {{ formatPaymentMethod(order.paymentMethod) }}
+            <span class="text-black font-semibold text-sm">
+              ${{ (item.price * item.quantity).toFixed(2) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="pt-4 border-t border-gray-100 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-black opacity-60 text-sm">Subtotal</span>
+            <span class="text-black text-sm">${{ order.subtotal.toFixed(2) }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-black opacity-60 text-sm">
+              {{ orderModeStore.isDelivery ? 'Delivery Fee' : 'Service Fee' }}
+            </span>
+            <span class="text-black text-sm">${{ order.deliveryFee.toFixed(2) }}</span>
+          </div>
+          <div v-if="order.discount > 0" class="flex items-center justify-between">
+            <span class="text-green-500 text-sm">Discount</span>
+            <span class="text-green-500 text-sm">-${{ order.discount.toFixed(2) }}</span>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+            <span class="text-black font-bold">Total</span>
+            <span class="text-primary-500 font-bold text-xl">
+              ${{ order.total.toFixed(2) }}
             </span>
           </div>
         </div>
       </div>
 
-      <!-- Order Tracking -->
-      <div class="mb-6">
-        <OrderTracking v-if="order" :order="order" />
-      </div>
-
-      <!-- Order Items Summary -->
-      <div v-if="order" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
-        <h3 class="font-bold text-gray-900 dark:text-white mb-4">Order Items</h3>
-
-        <div class="space-y-3">
-          <div
-            v-for="item in order.items"
-            :key="item.id"
-            class="flex items-center gap-3 pb-3 border-b dark:border-gray-700 last:border-0"
-          >
-            <div class="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-              <span class="font-bold text-orange-600 dark:text-orange-400">{{ item.quantity }}×</span>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-medium text-gray-900 dark:text-white text-sm">{{ item.name }}</p>
-              <p v-if="item.notes" class="text-xs text-gray-500 dark:text-gray-500 italic">{{ item.notes }}</p>
-            </div>
-            <p class="font-semibold text-gray-900 dark:text-white">
-              {{ formatPrice(item.price * item.quantity) }}
-            </p>
-          </div>
+      <!-- Track Order Info -->
+      <div class="w-full max-w-md bg-primary-50 rounded-2xl p-4 flex items-start gap-3 mb-4">
+        <div class="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-info text-white"></i>
         </div>
-
-        <!-- Price Summary -->
-        <div class="mt-4 pt-4 border-t dark:border-gray-700 space-y-2">
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
-            <span class="text-gray-900 dark:text-white">{{ formatPrice(order.subtotal) }}</span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400">Delivery Fee</span>
-            <span class="text-gray-900 dark:text-white">{{ formatPrice(order.deliveryFee) }}</span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400">Tax</span>
-            <span class="text-gray-900 dark:text-white">{{ formatPrice(order.tax) }}</span>
-          </div>
-          <div v-if="order.discount > 0" class="flex justify-between text-sm text-green-600 dark:text-green-400">
-            <span>Discount</span>
-            <span>-{{ formatPrice(order.discount) }}</span>
-          </div>
-          <div class="flex justify-between text-lg font-bold pt-2 border-t dark:border-gray-700">
-            <span class="text-gray-900 dark:text-white">Total</span>
-            <span class="text-orange-600 dark:text-orange-400">{{ formatPrice(order.total) }}</span>
-          </div>
+        <div class="flex-1">
+          <p class="text-black font-semibold text-sm mb-1">Track Your Order</p>
+          <p class="text-black opacity-70 text-xs">
+            You can track your order status in real-time from the order tracking page
+          </p>
         </div>
       </div>
+    </div>
 
-      <!-- Action Buttons -->
-      <div class="space-y-3">
-        <BaseButton
-          @click="viewOrderDetails"
-          variant="primary"
-          size="lg"
-          class="w-full"
-        >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-          Track Order Status
-        </BaseButton>
-
-        <BaseButton
-          @click="goToHome"
-          variant="outline"
-          size="lg"
-          class="w-full"
-        >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          Back to Home
-        </BaseButton>
-      </div>
+    <!-- Action Buttons -->
+    <div class="px-6 py-6 bg-white border-t border-gray-100 space-y-3">
+      <button
+        @click="trackOrder"
+        class="w-full bg-gradient-primary text-white font-bold py-4 rounded-2xl shadow-lg"
+      >
+        <i class="fas fa-location-dot mr-2"></i>
+        Track Order
+      </button>
+      <button
+        @click="backToHome"
+        class="w-full bg-white border-2 border-gray-200 text-black font-bold py-4 rounded-2xl"
+      >
+        <i class="fas fa-home mr-2"></i>
+        Back to Home
+      </button>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useOrderStore, OrderStatus } from '@/stores/order'
-import { formatCurrency } from '@/utils/currency'
-import OrderTracking from '@/components/OrderTracking.vue'
-import BaseButton from '@/components/base/BaseButton.vue'
-
-const router = useRouter()
-const route = useRoute()
-const orderStore = useOrderStore()
-
-// State
-const order = ref<any>(null)
-
-// Computed
-const orderId = computed(() => route.params.id as string)
-
-// Methods
-const formatPrice = (amount: number): string => {
-  return formatCurrency(amount)
-}
-
-const formatDate = (date: Date): string => {
-  return new Date(date).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  })
-}
-
-const formatDeliveryTime = (order: any): string => {
-  if (order.deliveryTime.type === 'asap') {
-    return order.deliveryTime.estimatedTime || '30-40 minutes'
-  } else {
-    return `${order.deliveryTime.scheduledDate} at ${order.deliveryTime.scheduledTime}`
-  }
-}
-
-const formatPaymentMethod = (method: any): string => {
-  if (method.type === 'card' && method.last4) {
-    return `Card ending in ${method.last4}`
-  } else if (method.type === 'mobile') {
-    return 'Mobile Money'
-  } else if (method.type === 'cash') {
-    return 'Cash on Delivery'
-  }
-  return method.type
-}
-
-const getStatusClass = (status: OrderStatus): string => {
-  const classes = {
-    [OrderStatus.PENDING]: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-    [OrderStatus.CONFIRMED]: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    [OrderStatus.PREPARING]: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    [OrderStatus.READY]: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    [OrderStatus.OUT_FOR_DELIVERY]: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    [OrderStatus.DELIVERED]: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    [OrderStatus.CANCELLED]: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-  }
-  return classes[status] || classes[OrderStatus.PENDING]
-}
-
-const viewOrderDetails = () => {
-  router.push(`/orders/${orderId.value}`)
-}
-
-const goToHome = () => {
-  router.push('/')
-}
-
-// Lifecycle
-onMounted(async () => {
-  if (orderId.value) {
-    order.value = await orderStore.fetchOrderById(orderId.value)
-
-    if (!order.value) {
-      // Order not found, redirect to orders list
-      router.push('/orders')
-    }
-  }
-
-  document.title = 'Order Confirmed - Garbaking'
-})
-</script>
-
 <style scoped>
-/* Bounce animation */
-@keyframes bounce-once {
+/* Pulse animation for success icon */
+@keyframes pulse {
   0%, 100% {
-    transform: translateY(0);
+    transform: scale(1);
   }
   50% {
-    transform: translateY(-10px);
+    transform: scale(1.05);
   }
 }
 
-.animate-bounce-once {
-  animation: bounce-once 0.6s ease-out;
-}
-
-/* Confetti particles (optional decoration) */
-.confetti {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
+.w-32.h-32 {
+  animation: pulse 2s infinite;
 }
 </style>
