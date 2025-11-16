@@ -80,3 +80,4 @@ test-results/
 .gradle/
 **/build/
 **/.gradle/
+*.backup-*

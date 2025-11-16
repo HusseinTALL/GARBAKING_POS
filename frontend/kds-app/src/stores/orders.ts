@@ -302,7 +302,9 @@ export const useOrdersStore = defineStore('orders', () => {
   const connectWebSocket = () => {
     if (wsConnection.value) return
 
-    const wsUrl = `ws://localhost:8000/ws/orders?token=${authStore.token}`
+    // Use environment variable for WebSocket URL
+    const baseWsUrl = import.meta.env.VITE_WS_URL || import.meta.env.VITE_KDS_WS_URL || 'ws://localhost:8080/ws'
+    const wsUrl = `${baseWsUrl}/orders?token=${authStore.token}`
     wsConnection.value = new WebSocket(wsUrl)
 
     wsConnection.value.onopen = () => {

@@ -15,7 +15,7 @@ import type {
 } from '@/services/loyalty'
 
 export interface LoyaltyEnrollment {
-  customerId: string
+  customerId: number | string  // Updated to match backend (numeric IDs)
   customerName: string
   email: string
   phone: string
@@ -26,13 +26,13 @@ export interface LoyaltyEnrollment {
 }
 
 export interface PointsTransaction {
-  id: string
-  customerId: string
+  id: number | string  // Updated to match backend
+  customerId: number | string  // Updated to match backend
   type: 'EARN' | 'REDEEM' | 'EXPIRE' | 'ADJUST'
   points: number
   balance: number
-  orderId?: string
-  campaignId?: string
+  orderId?: number | string  // Updated to match backend
+  campaignId?: number | string  // Updated to match backend
   description: string
   createdAt: string
 }
@@ -49,7 +49,7 @@ export interface LoyaltyAnalytics {
   redemptionRate: number
   membersByTier: Record<string, number>
   topMembers: Array<{
-    customerId: string
+    customerId: number | string
     name: string
     points: number
     tier: string
@@ -57,7 +57,7 @@ export interface LoyaltyAnalytics {
   }>
   recentTransactions: PointsTransaction[]
   campaignPerformance: Array<{
-    campaignId: string
+    campaignId: number | string
     name: string
     pointsIssued: number
     participations: number
