@@ -1,12 +1,13 @@
 /**
  * Menu store for managing restaurant menu data
  * Handles categories, menu items, and filtering
+ * Integrated with Spring Boot Inventory Service via API Gateway
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useToast } from 'vue-toastification'
-import { menuApi } from '@/services/api'
+import { api, API_ENDPOINTS } from '@/services/apiConfig'
 
 export interface Category {
   id: string
@@ -136,11 +137,13 @@ export const useMenuStore = defineStore('menu', () => {
         }
       }
 
-      // Fetch from API
-      const response = await menuApi.getPublicMenu()
+      // Fetch from API Gateway → Inventory Service
+      const response = await api.get<{ categories: any[]; items?: any[] }>(
+        API_ENDPOINTS.menu.public
+      )
 
-      if (response.success && response.data) {
-        categories.value = response.data.categories.map((category: any) => ({
+      if (response && response.categories) {
+        categories.value = response.categories.map((category: any) => ({
           ...category,
           menuItems: category.menuItems || category.items || [],
           items: undefined
@@ -159,12 +162,22 @@ export const useMenuStore = defineStore('menu', () => {
           return items
         }, [])
 
+        // If response has items at root level, use those too
+        if (response.items && Array.isArray(response.items)) {
+          const rootItems = response.items.map(item => ({
+            ...item,
+            image: item.imageUrl || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'
+          }))
+          menuItems.value.push(...rootItems)
+        }
+
         // Cache the menu data
         cacheMenu({ categories: categories.value, menuItems: menuItems.value })
       } else {
-        throw new Error(response.error || 'Failed to load menu')
+        throw new Error('Invalid menu data received from server')
       }
     } catch (err: any) {
+      console.error('[Menu] Failed to fetch menu from backend:', err)
       error.value = err.message || 'Erreur lors du chargement du menu'
 
       // Try to load from cache as fallback
@@ -174,8 +187,124 @@ export const useMenuStore = defineStore('menu', () => {
         menuItems.value = cachedMenu.menuItems
         toast.warning('Menu chargé depuis le cache (mode hors ligne)')
       } else {
-        toast.error('Impossible de charger le menu')
+        toast.error('Impossible de charger le menu. Vérifiez votre connexion.')
       }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Fetch categories only from backend
+   */
+  const fetchCategories = async () => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await api.get<{ categories: Category[] }>(
+        API_ENDPOINTS.menu.categories
+      )
+
+      if (response && Array.isArray(response.categories)) {
+        categories.value = response.categories
+      } else if (Array.isArray(response)) {
+        // Handle case where response is directly an array
+        categories.value = response as Category[]
+      } else {
+        throw new Error('Invalid categories data received')
+      }
+    } catch (err: any) {
+      console.error('[Menu] Failed to fetch categories:', err)
+      error.value = err.message || 'Failed to load categories'
+      toast.error('Impossible de charger les catégories')
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Fetch a single menu item by ID from backend
+   */
+  const fetchMenuItem = async (itemId: string) => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await api.get<MenuItem>(
+        API_ENDPOINTS.menu.itemById(itemId)
+      )
+
+      if (response) {
+        // Update the item in the menuItems array if it exists
+        const index = menuItems.value.findIndex(item => item.id === itemId)
+        if (index !== -1) {
+          menuItems.value[index] = {
+            ...response,
+            image: response.imageUrl || response.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'
+          }
+        } else {
+          // Add to menuItems if not found
+          menuItems.value.push({
+            ...response,
+            image: response.imageUrl || response.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'
+          })
+        }
+
+        return response
+      } else {
+        throw new Error('Menu item not found')
+      }
+    } catch (err: any) {
+      console.error('[Menu] Failed to fetch menu item:', err)
+      error.value = err.message || 'Failed to load menu item'
+      toast.error('Impossible de charger l\'article')
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Search menu items on backend
+   */
+  const searchMenuItems = async (query: string) => {
+    if (!query.trim()) {
+      // Just update local search query for local filtering
+      searchQuery.value = query
+      return
+    }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await api.get<{ items: MenuItem[] }>(
+        API_ENDPOINTS.menu.search,
+        { params: { q: query } }
+      )
+
+      if (response && Array.isArray(response.items)) {
+        // Update menuItems with search results
+        menuItems.value = response.items.map(item => ({
+          ...item,
+          image: item.imageUrl || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'
+        }))
+      } else if (Array.isArray(response)) {
+        // Handle case where response is directly an array
+        menuItems.value = (response as MenuItem[]).map(item => ({
+          ...item,
+          image: item.imageUrl || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop'
+        }))
+      }
+
+      // Update local search query
+      searchQuery.value = query
+    } catch (err: any) {
+      console.error('[Menu] Search failed:', err)
+      error.value = err.message || 'Search failed'
+      // Fall back to local search by just updating the query
+      searchQuery.value = query
     } finally {
       isLoading.value = false
     }
@@ -306,7 +435,10 @@ export const useMenuStore = defineStore('menu', () => {
 
     // Actions
     fetchMenu,
+    fetchCategories,
+    fetchMenuItem,
     searchMenu,
+    searchMenuItems,
     selectCategory,
     clearFilters,
     toggleFavorite,
