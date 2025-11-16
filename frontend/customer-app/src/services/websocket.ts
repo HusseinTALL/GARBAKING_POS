@@ -1,219 +1,430 @@
 /**
- * WebSocket service for real-time communication using Socket.io
- * Handles order status updates, notifications, and live updates
+ * WebSocket Service - Real-time communication with Spring Boot backend
+ *
+ * Uses STOMP protocol over SockJS for compatibility with Spring WebSocket
+ *
+ * Provides:
+ * - Order status updates
+ * - Delivery tracking
+ * - Kitchen notifications
+ * - Automatic reconnection
  */
 
-import { io, Socket } from 'socket.io-client'
+import { Client, StompSubscription, IMessage } from '@stomp/stompjs'
+import SockJS from 'sockjs-client'
 import { useToast } from 'vue-toastification'
 
-interface OrderUpdateMessage {
+// WebSocket URL from environment or default
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws'
+const HTTP_WS_URL = WS_URL.replace('ws://', 'http://').replace('wss://', 'https://')
+
+export interface OrderUpdateMessage {
   orderId: string
   orderNumber: string
   status: string
   estimatedTime?: number
   kitchenNotes?: string
+  updatedAt?: string
+}
+
+export interface DeliveryUpdate {
+  orderNumber: string
+  driverName?: string
+  driverPhone?: string
+  driverLocation?: {
+    lat: number
+    lng: number
+  }
+  estimatedArrival?: string
+  status: string
 }
 
 class WebSocketService {
-  private socket: Socket | null = null
-  private isIntentionallyClosed = false
-  private listeners: Map<string, Set<(data: any) => void>> = new Map()
+  private client: Client | null = null
+  private subscriptions: Map<string, StompSubscription> = new Map()
+  private reconnectAttempts = 0
+  private maxReconnectAttempts = 10
+  private reconnectDelay = 5000 // 5 seconds
+  private isConnecting = false
+  private isConnected = false
   private toast = useToast()
 
-  constructor() {
-    // Initialize service
-  }
-
   /**
-   * Connect to Socket.io server
+   * Connect to WebSocket server using STOMP over SockJS
    */
   connect(orderNumber?: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (this.isConnected) {
+        console.log('[WebSocket] Already connected')
+        // Subscribe to order if provided
+        if (orderNumber) {
+          this.subscribeToOrder(orderNumber)
+        }
+        resolve()
+        return
+      }
+
+      if (this.isConnecting) {
+        console.log('[WebSocket] Connection in progress')
+        return
+      }
+
+      this.isConnecting = true
+
       try {
-        // Use Vite proxy - connect to same host/port as API
-        const socketUrl = window.location.origin
+        console.log('[WebSocket] Connecting to:', HTTP_WS_URL)
 
-        console.log('[Socket.io] Connecting to:', socketUrl)
+        this.client = new Client({
+          webSocketFactory: () => new SockJS(HTTP_WS_URL),
 
-        this.socket = io(socketUrl, {
-          path: '/socket.io',
-          transports: ['websocket', 'polling'],
-          reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000,
-          timeout: 10000
-        })
+          reconnectDelay: this.reconnectDelay,
+          heartbeatIncoming: 10000, // 10 seconds
+          heartbeatOutgoing: 10000,
 
-        this.isIntentionallyClosed = false
+          onConnect: () => {
+            console.log('[WebSocket] Connected to STOMP server')
+            this.isConnected = true
+            this.isConnecting = false
+            this.reconnectAttempts = 0
 
-        this.socket.on('connect', () => {
-          console.log('[Socket.io] Connected successfully, ID:', this.socket?.id)
+            // Subscribe to order updates if order number provided
+            if (orderNumber) {
+              this.subscribeToOrder(orderNumber)
+            }
 
-          // Subscribe to order updates if order number provided
-          if (orderNumber) {
-            this.subscribeToOrder(orderNumber)
+            resolve()
+          },
+
+          onDisconnect: () => {
+            console.log('[WebSocket] Disconnected from server')
+            this.isConnected = false
+            this.isConnecting = false
+            this.subscriptions.clear()
+          },
+
+          onStompError: (frame) => {
+            console.error('[WebSocket] STOMP error:', frame.headers['message'])
+            console.error('[WebSocket] Error details:', frame.body)
+            this.isConnecting = false
+            this.toast.error('Erreur de connexion WebSocket')
+            reject(new Error(frame.headers['message'] || 'STOMP connection error'))
+          },
+
+          onWebSocketError: (error) => {
+            console.error('[WebSocket] WebSocket error:', error)
+            this.isConnecting = false
+
+            // Attempt reconnection
+            if (this.reconnectAttempts < this.maxReconnectAttempts) {
+              this.reconnectAttempts++
+              const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
+              console.log(`[WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
+
+              setTimeout(() => {
+                this.connect(orderNumber)
+              }, delay)
+            } else {
+              console.error('[WebSocket] Max reconnection attempts reached')
+              this.toast.error('Impossible de se connecter au serveur')
+              reject(new Error('Max reconnection attempts reached'))
+            }
+          },
+
+          debug: (str) => {
+            if (import.meta.env.DEV) {
+              console.log('[WebSocket Debug]', str)
+            }
           }
-
-          resolve()
         })
 
-        this.socket.on('disconnect', (reason) => {
-          console.log('[Socket.io] Disconnected:', reason)
-        })
-
-        this.socket.on('connect_error', (error) => {
-          console.error('[Socket.io] Connection error:', error)
-          reject(error)
-        })
-
-        // Listen for order status updates
-        this.socket.on('order_status', (data) => {
-          console.log('[Socket.io] Order status update:', data)
-          this.handleOrderUpdate(data)
-        })
-
-        // Listen for order updates (broadcasted when status changes)
-        this.socket.on('order_updated', (data) => {
-          console.log('[Socket.io] Order updated:', data)
-          this.handleOrderUpdate(data)
-        })
-
-        // Listen for errors
-        this.socket.on('error', (error) => {
-          console.error('[Socket.io] Server error:', error)
-          this.toast.error(error.message || 'Une erreur est survenue')
-        })
-
+        this.client.activate()
       } catch (error) {
-        console.error('[Socket.io] Failed to create socket:', error)
+        console.error('[WebSocket] Failed to create connection:', error)
+        this.isConnecting = false
+        this.toast.error('Erreur lors de la connexion WebSocket')
         reject(error)
       }
     })
   }
 
   /**
-   * Disconnect from Socket.io server
+   * Disconnect from WebSocket server
    */
   disconnect(): void {
-    console.log('[Socket.io] Disconnecting...')
-    this.isIntentionallyClosed = true
+    console.log('[WebSocket] Disconnecting...')
 
-    if (this.socket) {
-      this.socket.disconnect()
-      this.socket = null
-    }
-  }
+    // Unsubscribe from all subscriptions
+    this.subscriptions.forEach(subscription => {
+      subscription.unsubscribe()
+    })
+    this.subscriptions.clear()
 
-  /**
-   * Subscribe to specific message types
-   */
-  subscribe(eventName: string, callback: (data: any) => void): () => void {
-    if (!this.listeners.has(eventName)) {
-      this.listeners.set(eventName, new Set())
+    // Deactivate client
+    if (this.client) {
+      this.client.deactivate()
+      this.client = null
     }
 
-    this.listeners.get(eventName)!.add(callback)
-
-    // Also listen on socket if connected
-    if (this.socket) {
-      this.socket.on(eventName, callback)
-    }
-
-    // Return unsubscribe function
-    return () => {
-      const callbacks = this.listeners.get(eventName)
-      if (callbacks) {
-        callbacks.delete(callback)
-        if (callbacks.size === 0) {
-          this.listeners.delete(eventName)
-        }
-      }
-
-      // Remove from socket
-      if (this.socket) {
-        this.socket.off(eventName, callback)
-      }
-    }
+    this.isConnected = false
+    this.isConnecting = false
   }
 
   /**
    * Subscribe to order updates for a specific order
    */
-  subscribeToOrder(orderNumber: string, callback?: (data: OrderUpdateMessage) => void): () => void {
-    console.log('[Socket.io] Subscribing to order:', orderNumber)
-
-    // Request order status updates
-    if (this.socket?.connected) {
-      this.socket.emit('get_order_status', orderNumber)
+  subscribeToOrder(
+    orderNumber: string,
+    callback?: (data: OrderUpdateMessage) => void
+  ): (() => void) | undefined {
+    if (!this.client || !this.isConnected) {
+      console.warn('[WebSocket] Not connected. Call connect() first.')
+      return
     }
 
-    // Subscribe to order_status and order_updated events
-    const unsubscribeFuncs: Array<() => void> = []
+    const topic = `/topic/orders/${orderNumber}`
+    const subscriptionId = `order-${orderNumber}`
 
-    if (callback) {
-      const unsubscribe1 = this.subscribe('order_status', (data) => {
-        if (data.orderNumber === orderNumber) {
-          callback(data)
+    try {
+      const subscription = this.client.subscribe(
+        topic,
+        (message: IMessage) => {
+          try {
+            const update: OrderUpdateMessage = JSON.parse(message.body)
+            console.log('[WebSocket] Order update received:', update)
+
+            // Call custom callback if provided
+            if (callback) {
+              callback(update)
+            }
+
+            // Show notification
+            this.handleOrderUpdate(update)
+          } catch (error) {
+            console.error('[WebSocket] Failed to parse order update:', error)
+          }
         }
-      })
+      )
 
-      const unsubscribe2 = this.subscribe('order_updated', (data) => {
-        if (data.orderNumber === orderNumber) {
-          callback(data)
-        }
-      })
+      this.subscriptions.set(subscriptionId, subscription)
+      console.log(`[WebSocket] Subscribed to ${topic}`)
 
-      unsubscribeFuncs.push(unsubscribe1, unsubscribe2)
-    }
-
-    // Return combined unsubscribe function
-    return () => {
-      unsubscribeFuncs.forEach(fn => fn())
+      // Return unsubscribe function
+      return () => {
+        this.unsubscribeFromOrder(orderNumber)
+      }
+    } catch (error) {
+      console.error('[WebSocket] Failed to subscribe to order:', error)
+      throw error
     }
   }
 
   /**
-   * Get connection status
+   * Subscribe to delivery tracking updates
    */
-  getConnectionStatus(): string {
-    if (!this.socket) return 'disconnected'
-    return this.socket.connected ? 'connected' : 'disconnected'
+  subscribeToDelivery(
+    orderNumber: string,
+    callback: (update: DeliveryUpdate) => void
+  ): () => void {
+    if (!this.client || !this.isConnected) {
+      throw new Error('WebSocket not connected. Call connect() first.')
+    }
+
+    const topic = `/topic/delivery/${orderNumber}`
+    const subscriptionId = `delivery-${orderNumber}`
+
+    try {
+      const subscription = this.client.subscribe(
+        topic,
+        (message: IMessage) => {
+          try {
+            const update: DeliveryUpdate = JSON.parse(message.body)
+            console.log('[WebSocket] Delivery update received:', update)
+            callback(update)
+          } catch (error) {
+            console.error('[WebSocket] Failed to parse delivery update:', error)
+          }
+        }
+      )
+
+      this.subscriptions.set(subscriptionId, subscription)
+      console.log(`[WebSocket] Subscribed to ${topic}`)
+
+      return () => {
+        this.unsubscribeFromDelivery(orderNumber)
+      }
+    } catch (error) {
+      console.error('[WebSocket] Failed to subscribe to delivery:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Subscribe to kitchen status updates
+   */
+  subscribeToKitchen(
+    orderId: string,
+    callback: (update: any) => void
+  ): () => void {
+    if (!this.client || !this.isConnected) {
+      throw new Error('WebSocket not connected. Call connect() first.')
+    }
+
+    const topic = `/topic/kitchen/${orderId}`
+    const subscriptionId = `kitchen-${orderId}`
+
+    try {
+      const subscription = this.client.subscribe(
+        topic,
+        (message: IMessage) => {
+          try {
+            const update = JSON.parse(message.body)
+            console.log('[WebSocket] Kitchen update received:', update)
+            callback(update)
+          } catch (error) {
+            console.error('[WebSocket] Failed to parse kitchen update:', error)
+          }
+        }
+      )
+
+      this.subscriptions.set(subscriptionId, subscription)
+      console.log(`[WebSocket] Subscribed to ${topic}`)
+
+      return () => {
+        this.unsubscribeFromKitchen(orderId)
+      }
+    } catch (error) {
+      console.error('[WebSocket] Failed to subscribe to kitchen:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Generic subscribe method for custom topics
+   */
+  subscribe(eventName: string, callback: (data: any) => void): () => void {
+    if (!this.client || !this.isConnected) {
+      console.warn('[WebSocket] Not connected. Cannot subscribe to:', eventName)
+      return () => {}
+    }
+
+    const topic = `/topic/${eventName}`
+    const subscriptionId = `custom-${eventName}`
+
+    try {
+      const subscription = this.client.subscribe(
+        topic,
+        (message: IMessage) => {
+          try {
+            const data = JSON.parse(message.body)
+            callback(data)
+          } catch (error) {
+            console.error('[WebSocket] Failed to parse message:', error)
+          }
+        }
+      )
+
+      this.subscriptions.set(subscriptionId, subscription)
+
+      return () => {
+        const sub = this.subscriptions.get(subscriptionId)
+        if (sub) {
+          sub.unsubscribe()
+          this.subscriptions.delete(subscriptionId)
+        }
+      }
+    } catch (error) {
+      console.error('[WebSocket] Failed to subscribe:', error)
+      return () => {}
+    }
+  }
+
+  /**
+   * Unsubscribe from order updates
+   */
+  unsubscribeFromOrder(orderNumber: string): void {
+    const subscriptionId = `order-${orderNumber}`
+    const subscription = this.subscriptions.get(subscriptionId)
+
+    if (subscription) {
+      subscription.unsubscribe()
+      this.subscriptions.delete(subscriptionId)
+      console.log(`[WebSocket] Unsubscribed from order ${orderNumber}`)
+    }
+  }
+
+  /**
+   * Unsubscribe from delivery updates
+   */
+  unsubscribeFromDelivery(orderNumber: string): void {
+    const subscriptionId = `delivery-${orderNumber}`
+    const subscription = this.subscriptions.get(subscriptionId)
+
+    if (subscription) {
+      subscription.unsubscribe()
+      this.subscriptions.delete(subscriptionId)
+      console.log(`[WebSocket] Unsubscribed from delivery ${orderNumber}`)
+    }
+  }
+
+  /**
+   * Unsubscribe from kitchen updates
+   */
+  unsubscribeFromKitchen(orderId: string): void {
+    const subscriptionId = `kitchen-${orderId}`
+    const subscription = this.subscriptions.get(subscriptionId)
+
+    if (subscription) {
+      subscription.unsubscribe()
+      this.subscriptions.delete(subscriptionId)
+      console.log(`[WebSocket] Unsubscribed from kitchen ${orderId}`)
+    }
   }
 
   /**
    * Check if connected
    */
   isConnected(): boolean {
-    return this.socket?.connected || false
+    return this.isConnected && this.client?.connected === true
   }
 
   /**
-   * Handle order status updates
+   * Get connection status
    */
-  private handleOrderUpdate(data: any): void {
-    const orderData: OrderUpdateMessage = {
-      orderId: data.id || data.orderId,
-      orderNumber: data.orderNumber,
-      status: data.status,
-      estimatedTime: data.estimatedTime,
-      kitchenNotes: data.kitchenNotes
+  getConnectionStatus(): string {
+    if (this.isConnected) return 'connected'
+    if (this.isConnecting) return 'connecting'
+    return 'disconnected'
+  }
+
+  /**
+   * Send a message to the server
+   */
+  send(destination: string, body: any): void {
+    if (!this.client || !this.isConnected) {
+      throw new Error('WebSocket not connected. Call connect() first.')
     }
 
-    // Emit to listeners
-    const callbacks = this.listeners.get('ORDER_UPDATE')
-    if (callbacks) {
-      callbacks.forEach(callback => {
-        try {
-          callback(orderData)
-        } catch (error) {
-          console.error('[Socket.io] Error in callback:', error)
-        }
+    try {
+      this.client.publish({
+        destination,
+        body: JSON.stringify(body)
       })
+      console.log(`[WebSocket] Message sent to ${destination}`)
+    } catch (error) {
+      console.error('[WebSocket] Failed to send message:', error)
+      throw error
     }
+  }
 
+  /**
+   * Handle order status updates and show notifications
+   */
+  private handleOrderUpdate(data: OrderUpdateMessage): void {
     // Show toast notification based on status
-    this.showStatusNotification(orderData)
+    this.showStatusNotification(data)
+
+    // Show browser notification if permitted
+    this.showBrowserNotification(data)
   }
 
   /**
@@ -238,6 +449,10 @@ class WebSocketService {
         type: 'success'
       },
       COMPLETED: {
+        message: `Commande #${data.orderNumber} servie. Bon appétit ! 🍽️`,
+        type: 'success'
+      },
+      SERVED: {
         message: `Commande #${data.orderNumber} servie. Bon appétit ! 🍽️`,
         type: 'success'
       },
@@ -267,28 +482,38 @@ class WebSocketService {
           this.toast.error(notification.message, toastOptions)
           break
       }
-
-      // Show browser notification if permission granted
-      this.showBrowserNotification(data, notification.message)
     }
   }
 
   /**
    * Show browser notification
    */
-  private showBrowserNotification(data: OrderUpdateMessage, message: string): void {
+  private showBrowserNotification(data: OrderUpdateMessage): void {
     if (!('Notification' in window) || Notification.permission !== 'granted') {
       return
     }
 
-    new Notification(`Garbaking - Commande #${data.orderNumber}`, {
-      body: message,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/badge-72x72.png',
-      tag: `order-${data.orderNumber}`,
-      requireInteraction: data.status === 'READY',
-      vibrate: data.status === 'READY' ? [200, 100, 200] : undefined
-    })
+    const statusMessages: Record<string, string> = {
+      PENDING: `Commande #${data.orderNumber} reçue`,
+      CONFIRMED: `Commande #${data.orderNumber} confirmée !`,
+      PREPARING: 'Votre commande est en préparation...',
+      READY: `Commande #${data.orderNumber} prête !`,
+      COMPLETED: 'Votre commande a été servie. Bon appétit !',
+      SERVED: 'Votre commande a été servie. Bon appétit !',
+      CANCELLED: `Commande #${data.orderNumber} annulée`
+    }
+
+    const message = statusMessages[data.status]
+    if (message) {
+      new Notification(`Garbaking - Commande #${data.orderNumber}`, {
+        body: message,
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/badge-72x72.png',
+        tag: `order-${data.orderNumber}`,
+        requireInteraction: data.status === 'READY',
+        vibrate: data.status === 'READY' ? [200, 100, 200] : undefined
+      })
+    }
   }
 
   /**
@@ -321,4 +546,5 @@ class WebSocketService {
 // Create singleton instance
 export const websocketService = new WebSocketService()
 
+// Also export as default
 export default websocketService
