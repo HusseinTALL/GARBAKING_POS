@@ -1,0 +1,2630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Ordering App - UI Design</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #f5f1e8 0%, #faf8f3 100%);
+            display: flex;
+            gap: 30px;
+            overflow-x: auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .phone-container {
+            flex-shrink: 0;
+            width: 375px;
+            height: 812px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            position: relative;
+            border: 12px solid #1f2937;
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .screen::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #faf8f3 0%, #f5f1e8 100%);
+        }
+        
+        .hero-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f59e0b' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        .food-card {
+            transition: transform 0.2s ease;
+        }
+        
+        .food-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 12px 24px 16px 24px;
+            z-index: 50;
+        }
+        
+        .bottom-nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .bottom-nav-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .page-content {
+            padding-bottom: 80px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Page 1: Welcome/Splash Screen -->
+    <div class="phone-container">
+        <div class="screen gradient-bg hero-pattern">
+            <div class="flex flex-col items-center justify-between h-full px-8 py-16">
+                <!-- Logo Area -->
+                <div class="flex flex-col items-center mt-12">
+                    <div class="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl mb-6">
+                        <i class="fas fa-utensils text-4xl text-white"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-black mb-2">FoodHub</h1>
+                    <p class="text-black text-sm opacity-60">Delicious food, delivered fast</p>
+                </div>
+                
+                <!-- Hero Image -->
+                <div class="relative my-8">
+                    <div class="w-72 h-72 rounded-full overflow-hidden shadow-2xl border-8 border-white">
+                        <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=800&fit=crop" 
+                             alt="Pizza" 
+                             class="w-full h-full object-cover">
+                    </div>
+                    <!-- Floating elements -->
+                    <div class="absolute -top-4 -right-4 w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+                        <i class="fas fa-fire text-2xl text-orange-500"></i>
+                    </div>
+                    <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+                        <i class="fas fa-star text-2xl text-amber-400"></i>
+                    </div>
+                </div>
+                
+                <!-- CTA Section -->
+                <div class="w-full space-y-4">
+                    <h2 class="text-2xl font-bold text-black text-center mb-2">Quick Delivery at<br>Your Doorstep</h2>
+                    <p class="text-black text-center text-sm opacity-70 mb-6">Order your favorite meals from top restaurants and get it delivered in minutes</p>
+                    
+                    <button class="w-full btn-primary text-white font-semibold py-4 rounded-2xl shadow-lg">
+                        Let's Get Started
+                    </button>
+                    
+                    <div class="flex justify-center gap-2 mt-4">
+                        <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <div class="w-6 h-2 bg-amber-500 rounded-full"></div>
+                        <div class="w-2 h-2 bg-gray-300 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2: Home/Browse Menu -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-4 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <p class="text-black text-sm opacity-60">Deliver to</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <i class="fas fa-location-dot text-amber-500"></i>
+                                <h2 class="text-black font-bold">Times Square, NY</h2>
+                                <i class="fas fa-chevron-down text-black text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-bell text-white text-xl"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-black opacity-40"></i>
+                        <input type="text" 
+                               placeholder="Search for dishes..." 
+                               class="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <button class="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-sliders text-white"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Categories -->
+                <div class="px-6 py-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-black font-bold text-lg">Explore Categories</h3>
+                        <button class="text-amber-500 text-sm font-semibold">See All</button>
+                    </div>
+                    
+                    <div class="flex gap-4 overflow-x-auto pb-2">
+                        <div class="flex-shrink-0">
+                            <div class="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg mb-2">
+                                <i class="fas fa-pizza-slice text-3xl text-white"></i>
+                            </div>
+                            <p class="text-black text-xs text-center font-medium">Pizza</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-md mb-2 border border-gray-100">
+                                <i class="fas fa-burger text-3xl text-gray-400"></i>
+                            </div>
+                            <p class="text-black text-xs text-center font-medium opacity-60">Burger</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-md mb-2 border border-gray-100">
+                                <i class="fas fa-bowl-food text-3xl text-gray-400"></i>
+                            </div>
+                            <p class="text-black text-xs text-center font-medium opacity-60">Noodles</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-md mb-2 border border-gray-100">
+                                <i class="fas fa-ice-cream text-3xl text-gray-400"></i>
+                            </div>
+                            <p class="text-black text-xs text-center font-medium opacity-60">Dessert</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Featured Banner -->
+                <div class="px-6 mb-6">
+                    <div class="bg-gradient-to-r from-orange-500 to-amber-400 rounded-3xl p-6 relative overflow-hidden shadow-xl">
+                        <div class="absolute right-0 top-0 w-32 h-32 opacity-20">
+                            <i class="fas fa-utensils text-9xl text-white transform rotate-12"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <h3 class="text-white font-bold text-xl mb-1">Get 30% Off</h3>
+                            <p class="text-white text-sm mb-4 opacity-90">On your first order</p>
+                            <button class="bg-white text-black font-semibold px-6 py-2 rounded-xl text-sm">
+                                Order Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Popular Dishes -->
+                <div class="px-6 pb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-black font-bold text-lg">Popular Dishes</h3>
+                        <button class="text-amber-500 text-sm font-semibold">View All</button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- Food Card 1 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=400&fit=crop" 
+                                     alt="Margherita Pizza" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Margherita Pizza</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs">4.8</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">20 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$12.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Food Card 2 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop" 
+                                     alt="Classic Burger" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Classic Burger</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs">4.9</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">15 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$10.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Food Card 3 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?w=400&h=400&fit=crop" 
+                                     alt="Ramen Bowl" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Spicy Ramen</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs">4.7</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">25 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$14.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <div class="flex items-center justify-around">
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-home text-amber-500 text-xl"></i>
+                            <span class="text-amber-500 text-xs font-semibold">Home</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-heart text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Favorites</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-shopping-bag text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Orders</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-user text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 3: Category View -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full pb-24">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">Pizza</h2>
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-heart text-black opacity-40"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Filter Tabs -->
+                    <div class="flex gap-3 overflow-x-auto pb-2">
+                        <button class="px-5 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-sm font-semibold whitespace-nowrap shadow-lg">
+                            All
+                        </button>
+                        <button class="px-5 py-2 bg-white text-black rounded-full text-sm font-semibold whitespace-nowrap border border-gray-200">
+                            Popular
+                        </button>
+                        <button class="px-5 py-2 bg-white text-black rounded-full text-sm font-semibold whitespace-nowrap border border-gray-200">
+                            New
+                        </button>
+                        <button class="px-5 py-2 bg-white text-black rounded-full text-sm font-semibold whitespace-nowrap border border-gray-200">
+                            Vegetarian
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Items Grid -->
+                <div class="px-6 py-6">
+                    <p class="text-black text-sm opacity-60 mb-4">24 items available</p>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Item 1 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                            <div class="relative mb-3">
+                                <div class="w-full h-32 rounded-2xl overflow-hidden">
+                                    <img src="https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=400&fit=crop" 
+                                         alt="Margherita" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+                                    <i class="fas fa-heart text-black opacity-30"></i>
+                                </button>
+                            </div>
+                            <h4 class="text-black font-bold text-sm mb-1">Margherita</h4>
+                            <div class="flex items-center gap-1 mb-2">
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <span class="text-black text-xs">4.8</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-black font-bold">$12.00</span>
+                                <button class="w-7 h-7 bg-amber-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus text-white text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Item 2 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                            <div class="relative mb-3">
+                                <div class="w-full h-32 rounded-2xl overflow-hidden">
+                                    <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop" 
+                                         alt="Pepperoni" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+                                    <i class="fas fa-heart text-amber-500"></i>
+                                </button>
+                            </div>
+                            <h4 class="text-black font-bold text-sm mb-1">Pepperoni</h4>
+                            <div class="flex items-center gap-1 mb-2">
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <span class="text-black text-xs">4.9</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-black font-bold">$14.00</span>
+                                <button class="w-7 h-7 bg-amber-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus text-white text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Item 3 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                            <div class="relative mb-3">
+                                <div class="w-full h-32 rounded-2xl overflow-hidden">
+                                    <img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&h=400&fit=crop" 
+                                         alt="BBQ Chicken" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+                                    <i class="fas fa-heart text-black opacity-30"></i>
+                                </button>
+                            </div>
+                            <h4 class="text-black font-bold text-sm mb-1">BBQ Chicken</h4>
+                            <div class="flex items-center gap-1 mb-2">
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <span class="text-black text-xs">4.7</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-black font-bold">$16.00</span>
+                                <button class="w-7 h-7 bg-amber-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus text-white text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Item 4 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                            <div class="relative mb-3">
+                                <div class="w-full h-32 rounded-2xl overflow-hidden">
+                                    <img src="https://images.unsplash.com/photo-1595708684082-a173bb3a06c5?w=400&h=400&fit=crop" 
+                                         alt="Veggie Supreme" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+                                    <i class="fas fa-heart text-black opacity-30"></i>
+                                </button>
+                                <div class="absolute top-2 left-2 px-2 py-1 bg-green-500 rounded-lg">
+                                    <span class="text-white text-xs font-bold">NEW</span>
+                                </div>
+                            </div>
+                            <h4 class="text-black font-bold text-sm mb-1">Veggie Supreme</h4>
+                            <div class="flex items-center gap-1 mb-2">
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <span class="text-black text-xs">4.6</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-black font-bold">$13.00</span>
+                                <button class="w-7 h-7 bg-amber-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus text-white text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Item 5 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                            <div class="relative mb-3">
+                                <div class="w-full h-32 rounded-2xl overflow-hidden">
+                                    <img src="https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=400&h=400&fit=crop" 
+                                         alt="Hawaiian" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+                                    <i class="fas fa-heart text-black opacity-30"></i>
+                                </button>
+                            </div>
+                            <h4 class="text-black font-bold text-sm mb-1">Hawaiian</h4>
+                            <div class="flex items-center gap-1 mb-2">
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <span class="text-black text-xs">4.5</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-black font-bold">$15.00</span>
+                                <button class="w-7 h-7 bg-amber-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus text-white text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Item 6 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                            <div class="relative mb-3">
+                                <div class="w-full h-32 rounded-2xl overflow-hidden">
+                                    <img src="https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=400&h=400&fit=crop" 
+                                         alt="Meat Lovers" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center">
+                                    <i class="fas fa-heart text-black opacity-30"></i>
+                                </button>
+                            </div>
+                            <h4 class="text-black font-bold text-sm mb-1">Meat Lovers</h4>
+                            <div class="flex items-center gap-1 mb-2">
+                                <i class="fas fa-star text-amber-400 text-xs"></i>
+                                <span class="text-black text-xs">4.8</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-black font-bold">$18.00</span>
+                                <button class="w-7 h-7 bg-amber-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus text-white text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 4: Product Details -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full flex flex-col">
+                <!-- Hero Image -->
+                <div class="relative h-96 bg-white rounded-b-3xl overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=800&fit=crop" 
+                         alt="Pepperoni Pizza" 
+                         class="w-full h-full object-cover">
+                    <div class="absolute top-8 left-6 right-6 flex items-center justify-between">
+                        <button class="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <button class="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center">
+                            <i class="fas fa-heart text-amber-500"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 px-6 py-6 overflow-y-auto">
+                    <!-- Title & Rating -->
+                    <div class="mb-4">
+                        <h2 class="text-black font-bold text-2xl mb-2">Pepperoni Pizza</h2>
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-star text-amber-400"></i>
+                                <span class="text-black font-bold">4.9</span>
+                                <span class="text-black opacity-40 text-sm">(245 reviews)</span>
+                            </div>
+                            <span class="text-black opacity-40">•</span>
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-fire text-orange-500"></i>
+                                <span class="text-black text-sm font-semibold">150 Kcal</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-6">
+                        <h3 class="text-black font-bold mb-2">Description</h3>
+                        <p class="text-black opacity-70 text-sm leading-relaxed">
+                            Classic pepperoni pizza with mozzarella cheese, tangy tomato sauce, and premium pepperoni slices. 
+                            Baked to perfection with a crispy crust and topped with Italian herbs.
+                        </p>
+                    </div>
+                    
+                    <!-- Size Selection -->
+                    <div class="mb-6">
+                        <h3 class="text-black font-bold mb-3">Size</h3>
+                        <div class="flex gap-3">
+                            <button class="flex-1 py-3 bg-white rounded-2xl border-2 border-gray-200 text-black font-semibold">
+                                Small
+                            </button>
+                            <button class="flex-1 py-3 bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl text-white font-semibold shadow-lg">
+                                Medium
+                            </button>
+                            <button class="flex-1 py-3 bg-white rounded-2xl border-2 border-gray-200 text-black font-semibold">
+                                Large
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add-ons -->
+                    <div class="mb-6">
+                        <h3 class="text-black font-bold mb-3">Add-ons</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-white rounded-2xl">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-cheese text-amber-500 text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-black font-semibold text-sm">Extra Cheese</p>
+                                        <p class="text-black opacity-60 text-xs">+$2.00</p>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="w-6 h-6 accent-amber-500 rounded">
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-white rounded-2xl">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-pepper-hot text-amber-500 text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-black font-semibold text-sm">Jalapeños</p>
+                                        <p class="text-black opacity-60 text-xs">+$1.50</p>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="w-6 h-6 accent-amber-500 rounded">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Action -->
+                <div class="px-6 py-4 bg-white border-t border-gray-100">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 bg-gray-100 rounded-2xl px-4 py-3">
+                            <button class="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                                <i class="fas fa-minus text-black"></i>
+                            </button>
+                            <span class="text-black font-bold">1</span>
+                            <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-plus text-white"></i>
+                            </button>
+                        </div>
+                        <button class="flex-1 btn-primary text-white font-bold py-4 rounded-2xl shadow-lg">
+                            Add to Cart - $14.00
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 5: Cart -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full flex flex-col">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">My Cart</h2>
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-trash-alt text-black opacity-40"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Cart Items -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Item 1 -->
+                    <div class="bg-white rounded-3xl p-4 shadow-md mb-4">
+                        <div class="flex gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop" 
+                                     alt="Pepperoni Pizza" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Pepperoni Pizza</h4>
+                                <p class="text-black opacity-60 text-xs mb-2">Medium, Extra Cheese</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$16.00</span>
+                                    <div class="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-1">
+                                        <button class="w-6 h-6 flex items-center justify-center">
+                                            <i class="fas fa-minus text-black text-xs"></i>
+                                        </button>
+                                        <span class="text-black font-bold">2</span>
+                                        <button class="w-6 h-6 flex items-center justify-center">
+                                            <i class="fas fa-plus text-black text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 2 -->
+                    <div class="bg-white rounded-3xl p-4 shadow-md mb-4">
+                        <div class="flex gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop" 
+                                     alt="Classic Burger" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Classic Burger</h4>
+                                <p class="text-black opacity-60 text-xs mb-2">No customizations</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$10.00</span>
+                                    <div class="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-1">
+                                        <button class="w-6 h-6 flex items-center justify-center">
+                                            <i class="fas fa-minus text-black text-xs"></i>
+                                        </button>
+                                        <span class="text-black font-bold">1</span>
+                                        <button class="w-6 h-6 flex items-center justify-center">
+                                            <i class="fas fa-plus text-black text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Promo Code -->
+                    <div class="bg-white rounded-3xl p-4 shadow-md mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-ticket text-amber-500 text-xl"></i>
+                            </div>
+                            <input type="text" 
+                                   placeholder="Enter promo code" 
+                                   class="flex-1 bg-transparent text-black placeholder-gray-400 focus:outline-none font-semibold">
+                            <button class="text-amber-500 font-bold text-sm">Apply</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Summary -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md">
+                        <h3 class="text-black font-bold mb-4">Order Summary</h3>
+                        <div class="space-y-3 mb-4">
+                            <div class="flex justify-between">
+                                <span class="text-black opacity-70">Subtotal</span>
+                                <span class="text-black font-semibold">$42.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-black opacity-70">Delivery Fee</span>
+                                <span class="text-black font-semibold">$3.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-black opacity-70">Discount</span>
+                                <span class="text-amber-500 font-semibold">-$5.00</span>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3 flex justify-between">
+                                <span class="text-black font-bold text-lg">Total</span>
+                                <span class="text-black font-bold text-lg">$40.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Checkout Button -->
+                <div class="px-6 py-4 bg-white border-t border-gray-100">
+                    <button class="w-full btn-primary text-white font-bold py-4 rounded-2xl shadow-lg">
+                        Proceed to Checkout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 6: Checkout -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full flex flex-col">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">Checkout</h2>
+                        <div class="w-10"></div>
+                    </div>
+                </div>
+                
+                <!-- Form Content -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Delivery Address -->
+                    <div class="mb-5">
+                        <h3 class="text-black font-bold mb-3">Delivery Address</h3>
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border-2 border-amber-500">
+                            <div class="flex items-start gap-3">
+                                <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-home text-amber-500 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-black font-bold">Home</span>
+                                        <button class="text-amber-500 text-sm font-semibold">Change</button>
+                                    </div>
+                                    <p class="text-black opacity-70 text-sm">
+                                        123 Times Square, New York, NY 10036
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Alternative Address -->
+                    <div class="mb-6">
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+                            <div class="flex items-start gap-3">
+                                <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-briefcase text-black opacity-40 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="text-black font-bold">Office</span>
+                                    <p class="text-black opacity-70 text-sm mt-1">
+                                        456 Madison Ave, New York, NY 10022
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Method -->
+                    <div class="mb-5">
+                        <h3 class="text-black font-bold mb-3">Payment Method</h3>
+                        
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border-2 border-amber-500 mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fab fa-cc-visa text-amber-500 text-2xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-black font-bold">Visa Card</p>
+                                    <p class="text-black opacity-60 text-sm">**** **** **** 4532</p>
+                                </div>
+                                <i class="fas fa-check-circle text-amber-500 text-xl"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fab fa-cc-mastercard text-black opacity-40 text-2xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-black font-bold">Mastercard</p>
+                                    <p class="text-black opacity-60 text-sm">**** **** **** 8921</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-wallet text-black opacity-40 text-2xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-black font-bold">Cash on Delivery</p>
+                                    <p class="text-black opacity-60 text-sm">Pay when you receive</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delivery Instructions -->
+                    <div class="mb-5">
+                        <h3 class="text-black font-bold mb-3">Delivery Instructions</h3>
+                        <div class="bg-white rounded-2xl p-4 shadow-sm">
+                            <textarea 
+                                placeholder="Add any special instructions..." 
+                                class="w-full bg-transparent text-black placeholder-gray-400 focus:outline-none text-sm resize-none"
+                                rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Place Order Button -->
+                <div class="px-6 py-4 bg-white border-t border-gray-100">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-black opacity-70">Total Payment</span>
+                        <span class="text-black font-bold text-2xl">$40.00</span>
+                    </div>
+                    <button class="w-full btn-primary text-white font-bold py-4 rounded-2xl shadow-lg">
+                        Place Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 7: Order Confirmation -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full flex flex-col items-center justify-center px-8">
+                <!-- Success Animation -->
+                <div class="w-32 h-32 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center shadow-2xl mb-8">
+                    <i class="fas fa-check text-6xl text-white"></i>
+                </div>
+                
+                <h2 class="text-black font-bold text-3xl mb-3 text-center">Order Placed!</h2>
+                <p class="text-black opacity-70 text-center mb-8">
+                    Your order has been successfully placed and is being prepared
+                </p>
+                
+                <!-- Order Details Card -->
+                <div class="w-full bg-white rounded-3xl p-6 shadow-xl mb-6">
+                    <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+                        <span class="text-black opacity-70 text-sm">Order ID</span>
+                        <span class="text-black font-bold">#FH-2024-1156</span>
+                    </div>
+                    <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+                        <span class="text-black opacity-70 text-sm">Estimated Delivery</span>
+                        <span class="text-black font-bold">25-30 mins</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-black opacity-70 text-sm">Total Amount</span>
+                        <span class="text-amber-500 font-bold text-xl">$40.00</span>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="w-full space-y-3">
+                    <button class="w-full btn-primary text-white font-bold py-4 rounded-2xl shadow-lg">
+                        Track Order
+                    </button>
+                    <button class="w-full bg-white text-black font-bold py-4 rounded-2xl shadow-md border border-gray-200">
+                        Back to Home
+                    </button>
+                </div>
+                
+                <!-- Thank You Message -->
+                <p class="text-black opacity-50 text-sm text-center mt-8">
+                    Thank you for choosing FoodHub!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 8: Order Tracking -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full flex flex-col">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">Track Order</h2>
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-ellipsis-vertical text-black"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Order ID -->
+                    <div class="flex items-center justify-between p-3 bg-amber-50 rounded-2xl">
+                        <span class="text-black text-sm">Order ID: <span class="font-bold">#FH-2024-1156</span></span>
+                        <span class="text-amber-500 text-xs font-bold bg-white px-3 py-1 rounded-lg">In Progress</span>
+                    </div>
+                </div>
+                
+                <!-- Map Placeholder -->
+                <div class="mx-6 my-6 h-48 bg-white rounded-3xl overflow-hidden shadow-lg relative">
+                    <div class="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-map-marked-alt text-4xl text-amber-500 mb-2"></i>
+                            <p class="text-black opacity-60 text-sm">Live tracking map</p>
+                        </div>
+                    </div>
+                    <!-- Delivery Person Marker -->
+                    <div class="absolute bottom-4 right-4 w-14 h-14 bg-amber-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center">
+                        <i class="fas fa-motorcycle text-white text-xl"></i>
+                    </div>
+                </div>
+                
+                <!-- Delivery Info -->
+                <div class="px-6 mb-6">
+                    <div class="bg-white rounded-3xl p-5 shadow-lg">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1600486913747-55e5470d6f40?w=200&h=200&fit=crop" 
+                                     alt="Driver" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold">John Anderson</h4>
+                                <div class="flex items-center gap-1 mt-1">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-sm font-semibold">4.9</span>
+                                    <span class="text-black opacity-40 text-sm">(230 deliveries)</span>
+                                </div>
+                            </div>
+                            <button class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-phone text-white text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 p-3 bg-amber-50 rounded-2xl">
+                            <i class="fas fa-motorcycle text-amber-500"></i>
+                            <span class="text-black text-sm">Arriving in <span class="font-bold">12 minutes</span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Order Status Timeline -->
+                <div class="flex-1 px-6 pb-6 overflow-y-auto">
+                    <h3 class="text-black font-bold mb-4">Order Status</h3>
+                    
+                    <div class="relative">
+                        <!-- Timeline Line -->
+                        <div class="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                        
+                        <!-- Status 1 - Completed -->
+                        <div class="relative flex gap-4 mb-6">
+                            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center z-10 flex-shrink-0">
+                                <i class="fas fa-check text-white"></i>
+                            </div>
+                            <div class="flex-1 pt-2">
+                                <h4 class="text-black font-bold mb-1">Order Confirmed</h4>
+                                <p class="text-black opacity-60 text-sm">Your order has been confirmed</p>
+                                <span class="text-black opacity-40 text-xs">10:30 AM</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status 2 - Completed -->
+                        <div class="relative flex gap-4 mb-6">
+                            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center z-10 flex-shrink-0">
+                                <i class="fas fa-check text-white"></i>
+                            </div>
+                            <div class="flex-1 pt-2">
+                                <h4 class="text-black font-bold mb-1">Preparing Food</h4>
+                                <p class="text-black opacity-60 text-sm">Restaurant is preparing your meal</p>
+                                <span class="text-black opacity-40 text-xs">10:35 AM</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status 3 - In Progress -->
+                        <div class="relative flex gap-4 mb-6">
+                            <div class="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center z-10 flex-shrink-0 animate-pulse">
+                                <i class="fas fa-motorcycle text-white"></i>
+                            </div>
+                            <div class="flex-1 pt-2">
+                                <h4 class="text-black font-bold mb-1">On the Way</h4>
+                                <p class="text-black opacity-60 text-sm">Driver is heading to your location</p>
+                                <span class="text-amber-500 text-xs font-semibold">In Progress</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Status 4 - Pending -->
+                        <div class="relative flex gap-4">
+                            <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center z-10 flex-shrink-0">
+                                <i class="fas fa-home text-black opacity-40"></i>
+                            </div>
+                            <div class="flex-1 pt-2">
+                                <h4 class="text-black font-bold opacity-40 mb-1">Delivered</h4>
+                                <p class="text-black opacity-40 text-sm">Order will be delivered soon</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 9: Favorites -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full pb-24">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-black font-bold text-2xl">Favorites</h2>
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-sliders text-black"></i>
+                        </button>
+                    </div>
+                    <p class="text-black opacity-60 text-sm mt-2">12 saved items</p>
+                </div>
+                
+                <!-- Favorites List -->
+                <div class="px-6 py-6 space-y-4">
+                    <!-- Favorite Item 1 -->
+                    <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                        <div class="flex gap-4">
+                            <div class="w-28 h-28 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop" 
+                                     alt="Pepperoni Pizza" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div>
+                                        <h4 class="text-black font-bold mb-1">Pepperoni Pizza</h4>
+                                        <p class="text-black opacity-60 text-xs mb-2">Pizza Palace</p>
+                                    </div>
+                                    <button class="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-heart text-amber-500"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs font-semibold">4.9</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">20 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$14.00</span>
+                                    <button class="px-4 py-2 bg-amber-500 rounded-xl text-white text-xs font-bold">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Favorite Item 2 -->
+                    <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                        <div class="flex gap-4">
+                            <div class="w-28 h-28 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?w=400&h=400&fit=crop" 
+                                     alt="Spicy Ramen" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div>
+                                        <h4 class="text-black font-bold mb-1">Spicy Ramen</h4>
+                                        <p class="text-black opacity-60 text-xs mb-2">Noodle House</p>
+                                    </div>
+                                    <button class="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-heart text-amber-500"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs font-semibold">4.7</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">25 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$14.00</span>
+                                    <button class="px-4 py-2 bg-amber-500 rounded-xl text-white text-xs font-bold">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Favorite Item 3 -->
+                    <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                        <div class="flex gap-4">
+                            <div class="w-28 h-28 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop" 
+                                     alt="Classic Burger" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div>
+                                        <h4 class="text-black font-bold mb-1">Classic Burger</h4>
+                                        <p class="text-black opacity-60 text-xs mb-2">Burger Junction</p>
+                                    </div>
+                                    <button class="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-heart text-amber-500"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs font-semibold">4.8</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">15 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$10.00</span>
+                                    <button class="px-4 py-2 bg-amber-500 rounded-xl text-white text-xs font-bold">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Favorite Item 4 -->
+                    <div class="food-card bg-white rounded-3xl p-4 shadow-md">
+                        <div class="flex gap-4">
+                            <div class="w-28 h-28 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop" 
+                                     alt="Fresh Salad" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div>
+                                        <h4 class="text-black font-bold mb-1">Fresh Garden Salad</h4>
+                                        <p class="text-black opacity-60 text-xs mb-2">Healthy Bowl</p>
+                                    </div>
+                                    <button class="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-heart text-amber-500"></i>
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs font-semibold">4.6</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">10 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$8.00</span>
+                                    <button class="px-4 py-2 bg-amber-500 rounded-xl text-white text-xs font-bold">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <div class="flex items-center justify-around">
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-home text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Home</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-heart text-amber-500 text-xl"></i>
+                            <span class="text-amber-500 text-xs font-semibold">Favorites</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-shopping-bag text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Orders</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-user text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 10: Vouchers -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full pb-24">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">My Vouchers</h2>
+                        <div class="w-10"></div>
+                    </div>
+                    
+                    <!-- Tabs -->
+                    <div class="flex gap-3">
+                        <button class="flex-1 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-2xl text-sm font-semibold shadow-lg">
+                            Available (5)
+                        </button>
+                        <button class="flex-1 py-3 bg-gray-100 text-black rounded-2xl text-sm font-semibold">
+                            Used (12)
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Vouchers List -->
+                <div class="px-6 py-6 space-y-4">
+                    <!-- Voucher 1 -->
+                    <div class="relative bg-gradient-to-r from-amber-400 to-orange-500 rounded-3xl p-6 shadow-xl overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 opacity-20">
+                            <i class="fas fa-gift text-9xl text-white transform rotate-12"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h3 class="text-white font-bold text-2xl mb-1">30% OFF</h3>
+                                    <p class="text-white text-sm opacity-90">On orders above $25</p>
+                                </div>
+                                <div class="w-14 h-14 bg-white rounded-full flex items-center justify-center">
+                                    <i class="fas fa-percent text-amber-500 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="px-3 py-1 bg-white bg-opacity-30 rounded-lg">
+                                    <span class="text-white text-xs font-bold">WELCOME30</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-white text-xs opacity-80">Valid until Dec 31, 2024</span>
+                                <button class="px-5 py-2 bg-white text-amber-500 rounded-xl text-sm font-bold">
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Voucher 2 -->
+                    <div class="relative bg-white rounded-3xl p-6 shadow-md overflow-hidden border-2 border-dashed border-amber-300">
+                        <div class="absolute top-0 right-0 w-24 h-24 opacity-5">
+                            <i class="fas fa-utensils text-9xl text-black"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h3 class="text-black font-bold text-2xl mb-1">Free Delivery</h3>
+                                    <p class="text-black opacity-70 text-sm">No minimum order</p>
+                                </div>
+                                <div class="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-motorcycle text-amber-500 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="px-3 py-1 bg-amber-50 rounded-lg">
+                                    <span class="text-black text-xs font-bold">FREEDEL</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-black text-xs opacity-60">Valid until Nov 30, 2024</span>
+                                <button class="px-5 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl text-sm font-bold">
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Voucher 3 -->
+                    <div class="relative bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl p-6 shadow-xl overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 opacity-20">
+                            <i class="fas fa-star text-9xl text-white transform rotate-12"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h3 class="text-white font-bold text-2xl mb-1">Buy 1 Get 1</h3>
+                                    <p class="text-white text-sm opacity-90">On selected pizzas</p>
+                                </div>
+                                <div class="w-14 h-14 bg-white rounded-full flex items-center justify-center">
+                                    <i class="fas fa-pizza-slice text-purple-500 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="px-3 py-1 bg-white bg-opacity-30 rounded-lg">
+                                    <span class="text-white text-xs font-bold">BOGO24</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-white text-xs opacity-80">Valid until Nov 20, 2024</span>
+                                <button class="px-5 py-2 bg-white text-purple-500 rounded-xl text-sm font-bold">
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Voucher 4 -->
+                    <div class="relative bg-white rounded-3xl p-6 shadow-md overflow-hidden border-2 border-dashed border-green-300">
+                        <div class="absolute top-0 right-0 w-24 h-24 opacity-5">
+                            <i class="fas fa-leaf text-9xl text-black"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h3 class="text-black font-bold text-2xl mb-1">$5 Off</h3>
+                                    <p class="text-black opacity-70 text-sm">On healthy meals</p>
+                                </div>
+                                <div class="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-heart text-green-500 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="px-3 py-1 bg-green-50 rounded-lg">
+                                    <span class="text-black text-xs font-bold">HEALTHY5</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-black text-xs opacity-60">Valid until Dec 15, 2024</span>
+                                <button class="px-5 py-2 bg-green-500 text-white rounded-xl text-sm font-bold">
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 11: Profile -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full pb-24">
+                <!-- Header with Avatar -->
+                <div class="px-6 pt-8 pb-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-b-3xl">
+                    <div class="flex items-center gap-4">
+                        <div class="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-xl">
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop" 
+                                 alt="Profile" 
+                                 class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="text-white font-bold text-2xl mb-1">Michael Chen</h2>
+                            <p class="text-white opacity-90 text-sm"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3c51555f545d5950125f5459527c59515d5550125f5351">[email&#160;protected]</a></p>
+                        </div>
+                        <button class="w-10 h-10 bg-white bg-opacity-30 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-pen text-white"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="grid grid-cols-3 gap-3 mt-6">
+                        <div class="bg-white bg-opacity-20 rounded-2xl p-3 text-center">
+                            <p class="text-white font-bold text-xl">156</p>
+                            <p class="text-white text-xs opacity-90">Orders</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-2xl p-3 text-center">
+                            <p class="text-white font-bold text-xl">12</p>
+                            <p class="text-white text-xs opacity-90">Favorites</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-2xl p-3 text-center">
+                            <p class="text-white font-bold text-xl">5</p>
+                            <p class="text-white text-xs opacity-90">Vouchers</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Menu Options -->
+                <div class="px-6 py-6 space-y-3">
+                    <!-- Account Settings -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm">
+                        <button class="w-full flex items-center gap-4">
+                            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-user text-amber-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <h3 class="text-black font-bold">Account Settings</h3>
+                                <p class="text-black opacity-60 text-xs">Update your profile info</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-black opacity-30"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Delivery Addresses -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm">
+                        <button class="w-full flex items-center gap-4">
+                            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-location-dot text-amber-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <h3 class="text-black font-bold">Delivery Addresses</h3>
+                                <p class="text-black opacity-60 text-xs">Manage your addresses</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-black opacity-30"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Payment Methods -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm">
+                        <button class="w-full flex items-center gap-4">
+                            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-credit-card text-amber-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <h3 class="text-black font-bold">Payment Methods</h3>
+                                <p class="text-black opacity-60 text-xs">Add or edit payment cards</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-black opacity-30"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Order History -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm">
+                        <button class="w-full flex items-center gap-4">
+                            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-clock-rotate-left text-amber-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <h3 class="text-black font-bold">Order History</h3>
+                                <p class="text-black opacity-60 text-xs">View past orders</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-black opacity-30"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Notifications -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm">
+                        <button class="w-full flex items-center gap-4">
+                            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-bell text-amber-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <h3 class="text-black font-bold">Notifications</h3>
+                                <p class="text-black opacity-60 text-xs">Manage notifications</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-black opacity-30"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Help & Support -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm">
+                        <button class="w-full flex items-center gap-4">
+                            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-headset text-amber-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <h3 class="text-black font-bold">Help & Support</h3>
+                                <p class="text-black opacity-60 text-xs">Get help or contact us</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-black opacity-30"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Logout -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border-2 border-red-100">
+                        <button class="w-full flex items-center gap-4">
+                            <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-right-from-bracket text-red-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <h3 class="text-red-500 font-bold">Logout</h3>
+                                <p class="text-black opacity-60 text-xs">Sign out of your account</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- App Version -->
+                <div class="text-center px-6 pb-6">
+                    <p class="text-black opacity-40 text-xs">FoodHub v1.0.0</p>
+                </div>
+                
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <div class="flex items-center justify-around">
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-home text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Home</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-heart text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Favorites</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-shopping-bag text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Orders</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-user text-amber-500 text-xl"></i>
+                            <span class="text-amber-500 text-xs font-semibold">Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 12: Restaurant Details -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full pb-24">
+                <!-- Hero Image -->
+                <div class="relative h-56 overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop" 
+                         alt="Restaurant" 
+                         class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div class="absolute top-8 left-6 right-6 flex items-center justify-between">
+                        <button class="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <div class="flex gap-2">
+                            <button class="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center">
+                                <i class="fas fa-share text-black"></i>
+                            </button>
+                            <button class="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center">
+                                <i class="fas fa-heart text-black opacity-40"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Restaurant Info -->
+                <div class="px-6 py-6">
+                    <div class="bg-white rounded-3xl p-6 shadow-lg -mt-16 relative z-10 mb-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <h2 class="text-black font-bold text-2xl mb-2">Pizza Palace</h2>
+                                <p class="text-black opacity-60 text-sm mb-3">Italian, Pizza, Pasta</p>
+                            </div>
+                            <div class="flex items-center gap-1 bg-amber-50 px-3 py-2 rounded-xl">
+                                <i class="fas fa-star text-amber-500"></i>
+                                <span class="text-black font-bold">4.8</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                            <div class="text-center">
+                                <div class="flex items-center justify-center gap-1 mb-1">
+                                    <i class="fas fa-clock text-amber-500 text-sm"></i>
+                                    <span class="text-black font-bold text-sm">20-30</span>
+                                </div>
+                                <p class="text-black opacity-60 text-xs">Min</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="flex items-center justify-center gap-1 mb-1">
+                                    <i class="fas fa-motorcycle text-amber-500 text-sm"></i>
+                                    <span class="text-black font-bold text-sm">$2.50</span>
+                                </div>
+                                <p class="text-black opacity-60 text-xs">Delivery</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="flex items-center justify-center gap-1 mb-1">
+                                    <i class="fas fa-location-dot text-amber-500 text-sm"></i>
+                                    <span class="text-black font-bold text-sm">2.5</span>
+                                </div>
+                                <p class="text-black opacity-60 text-xs">Km</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab Navigation -->
+                    <div class="flex gap-3 mb-6">
+                        <button class="flex-1 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-2xl font-semibold shadow-lg">
+                            Menu
+                        </button>
+                        <button class="flex-1 py-3 bg-white text-black rounded-2xl font-semibold border border-gray-200">
+                            Reviews
+                        </button>
+                        <button class="flex-1 py-3 bg-white text-black rounded-2xl font-semibold border border-gray-200">
+                            Info
+                        </button>
+                    </div>
+                    
+                    <!-- Menu Items -->
+                    <h3 class="text-black font-bold text-lg mb-4">Popular Items</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=400&fit=crop" 
+                                     alt="Margherita" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Margherita Pizza</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs">4.8</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$12.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop" 
+                                     alt="Pepperoni" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Pepperoni Pizza</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs">4.9</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$14.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 13: Search Results -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full pb-24">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center gap-3 mb-4">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <div class="relative flex-1">
+                            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-black opacity-40"></i>
+                            <input type="text" 
+                                   value="pizza" 
+                                   class="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-2xl text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Tags -->
+                    <div class="flex gap-2 overflow-x-auto pb-2">
+                        <button class="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs font-semibold whitespace-nowrap shadow-lg">
+                            All
+                        </button>
+                        <button class="px-4 py-2 bg-white text-black rounded-full text-xs font-semibold whitespace-nowrap border border-gray-200">
+                            Restaurants
+                        </button>
+                        <button class="px-4 py-2 bg-white text-black rounded-full text-xs font-semibold whitespace-nowrap border border-gray-200">
+                            Dishes
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Results -->
+                <div class="px-6 py-6">
+                    <p class="text-black text-sm opacity-60 mb-4">Found 18 results for "pizza"</p>
+                    
+                    <!-- Restaurant Result -->
+                    <div class="bg-white rounded-3xl p-4 shadow-md mb-4">
+                        <div class="flex gap-4 mb-3">
+                            <div class="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=400&fit=crop" 
+                                     alt="Pizza Palace" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div>
+                                        <h4 class="text-black font-bold mb-1">Pizza Palace</h4>
+                                        <p class="text-black opacity-60 text-xs">Italian, Pizza</p>
+                                    </div>
+                                    <div class="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg">
+                                        <i class="fas fa-star text-amber-500 text-xs"></i>
+                                        <span class="text-black text-xs font-bold">4.8</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs text-black opacity-60">
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-clock"></i>
+                                <span>20-30 min</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-motorcycle"></i>
+                                <span>$2.50</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Food Items -->
+                    <div class="space-y-4">
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=400&fit=crop" 
+                                     alt="Margherita" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Margherita Pizza</h4>
+                                <p class="text-black opacity-60 text-xs mb-2">Pizza Palace</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$12.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=400&fit=crop" 
+                                     alt="Pepperoni" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Pepperoni Pizza</h4>
+                                <p class="text-black opacity-60 text-xs mb-2">Pizza Palace</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$14.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&h=400&fit=crop" 
+                                     alt="BBQ Chicken" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">BBQ Chicken Pizza</h4>
+                                <p class="text-black opacity-60 text-xs mb-2">Pizza Palace</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$16.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <div class="flex items-center justify-around">
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-home text-amber-500 text-xl"></i>
+                            <span class="text-amber-500 text-xs font-semibold">Home</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-heart text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Favorites</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-shopping-bag text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Orders</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-user text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 14: Notifications -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full pb-24">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">Notifications</h2>
+                        <button class="text-amber-500 text-sm font-semibold">Clear All</button>
+                    </div>
+                </div>
+                
+                <!-- Notifications List -->
+                <div class="px-6 py-6 space-y-3">
+                    <!-- Today -->
+                    <p class="text-black text-sm font-bold opacity-60 mb-3">Today</p>
+                    
+                    <!-- Notification 1 - Order Update -->
+                    <div class="bg-white rounded-3xl p-4 shadow-sm border-l-4 border-green-500">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Order Delivered!</h4>
+                                <p class="text-black opacity-70 text-sm mb-2">
+                                    Your order #FH-2024-1155 has been delivered successfully
+                                </p>
+                                <span class="text-black opacity-40 text-xs">2 hours ago</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notification 2 - Promo -->
+                    <div class="bg-white rounded-3xl p-4 shadow-sm border-l-4 border-amber-500">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-gift text-amber-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Special Offer! 🎉</h4>
+                                <p class="text-black opacity-70 text-sm mb-2">
+                                    Get 30% off on your next order. Use code SPECIAL30
+                                </p>
+                                <span class="text-black opacity-40 text-xs">4 hours ago</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notification 3 - Order Update -->
+                    <div class="bg-white rounded-3xl p-4 shadow-sm border-l-4 border-blue-500">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-motorcycle text-blue-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Order On The Way</h4>
+                                <p class="text-black opacity-70 text-sm mb-2">
+                                    John is delivering your order. Arriving in 15 mins
+                                </p>
+                                <span class="text-black opacity-40 text-xs">5 hours ago</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Yesterday -->
+                    <p class="text-black text-sm font-bold opacity-60 mb-3 mt-6">Yesterday</p>
+                    
+                    <!-- Notification 4 - Review Reminder -->
+                    <div class="bg-white rounded-3xl p-4 shadow-sm border-l-4 border-purple-500">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-star text-purple-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Rate Your Order</h4>
+                                <p class="text-black opacity-70 text-sm mb-2">
+                                    How was your Pepperoni Pizza from Pizza Palace?
+                                </p>
+                                <span class="text-black opacity-40 text-xs">Yesterday</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notification 5 - New Restaurant -->
+                    <div class="bg-white rounded-3xl p-4 shadow-sm border-l-4 border-orange-500">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-store text-orange-500 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">New Restaurant Available</h4>
+                                <p class="text-black opacity-70 text-sm mb-2">
+                                    Burger Junction is now delivering in your area
+                                </p>
+                                <span class="text-black opacity-40 text-xs">Yesterday</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <div class="flex items-center justify-around">
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-home text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Home</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-heart text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Favorites</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-shopping-bag text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Orders</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-user text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 15: Order History -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full pb-24">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">Order History</h2>
+                        <div class="w-10"></div>
+                    </div>
+                    
+                    <!-- Status Tabs -->
+                    <div class="flex gap-2 overflow-x-auto pb-2">
+                        <button class="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs font-semibold whitespace-nowrap shadow-lg">
+                            All Orders
+                        </button>
+                        <button class="px-4 py-2 bg-white text-black rounded-full text-xs font-semibold whitespace-nowrap border border-gray-200">
+                            In Progress
+                        </button>
+                        <button class="px-4 py-2 bg-white text-black rounded-full text-xs font-semibold whitespace-nowrap border border-gray-200">
+                            Completed
+                        </button>
+                        <button class="px-4 py-2 bg-white text-black rounded-full text-xs font-semibold whitespace-nowrap border border-gray-200">
+                            Cancelled
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Orders List -->
+                <div class="px-6 py-6 space-y-4">
+                    <!-- Order 1 - In Progress -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="text-black font-bold mb-1">#FH-2024-1156</h4>
+                                <p class="text-black opacity-60 text-xs">Nov 16, 2024 • 10:30 AM</p>
+                            </div>
+                            <span class="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-xs font-bold">In Progress</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
+                            <div class="w-16 h-16 rounded-xl overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=200&fit=crop" 
+                                     alt="Pizza" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h5 class="text-black font-semibold text-sm mb-1">Pepperoni Pizza</h5>
+                                <p class="text-black opacity-60 text-xs">2x items</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-black font-bold text-lg">$40.00</span>
+                            <button class="px-5 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl text-sm font-bold">
+                                Track Order
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Order 2 - Delivered -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="text-black font-bold mb-1">#FH-2024-1155</h4>
+                                <p class="text-black opacity-60 text-xs">Nov 15, 2024 • 7:15 PM</p>
+                            </div>
+                            <span class="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-xs font-bold">Delivered</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
+                            <div class="w-16 h-16 rounded-xl overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&h=200&fit=crop" 
+                                     alt="Burger" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h5 class="text-black font-semibold text-sm mb-1">Classic Burger</h5>
+                                <p class="text-black opacity-60 text-xs">3x items</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-black font-bold text-lg">$32.00</span>
+                            <div class="flex gap-2">
+                                <button class="px-4 py-2 bg-gray-100 text-black rounded-xl text-sm font-bold">
+                                    Reorder
+                                </button>
+                                <button class="px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-bold">
+                                    Rate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order 3 - Delivered -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="text-black font-bold mb-1">#FH-2024-1154</h4>
+                                <p class="text-black opacity-60 text-xs">Nov 14, 2024 • 1:20 PM</p>
+                            </div>
+                            <span class="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-xs font-bold">Delivered</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
+                            <div class="w-16 h-16 rounded-xl overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?w=200&h=200&fit=crop" 
+                                     alt="Ramen" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h5 class="text-black font-semibold text-sm mb-1">Spicy Ramen</h5>
+                                <p class="text-black opacity-60 text-xs">1x item</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-black font-bold text-lg">$18.00</span>
+                            <button class="px-5 py-2 bg-gray-100 text-black rounded-xl text-sm font-bold">
+                                Reorder
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <div class="flex items-center justify-around">
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-home text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Home</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-heart text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Favorites</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-shopping-bag text-amber-500 text-xl"></i>
+                            <span class="text-amber-500 text-xs font-semibold">Orders</span>
+                        </button>
+                        <button class="bottom-nav-btn">
+                            <i class="fas fa-user text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 16: Order Detail -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full flex flex-col">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">Order Details</h2>
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-receipt text-black"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Status -->
+                    <div class="bg-gradient-to-br from-green-400 to-green-500 rounded-3xl p-6 text-center shadow-xl mb-6">
+                        <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-check text-green-500 text-3xl"></i>
+                        </div>
+                        <h3 class="text-white font-bold text-xl mb-2">Order Delivered</h3>
+                        <p class="text-white text-sm opacity-90">Nov 15, 2024 at 7:45 PM</p>
+                    </div>
+                    
+                    <!-- Order Info -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md mb-4">
+                        <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+                            <span class="text-black opacity-70 text-sm">Order ID</span>
+                            <span class="text-black font-bold">#FH-2024-1155</span>
+                        </div>
+                        <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+                            <span class="text-black opacity-70 text-sm">Order Date</span>
+                            <span class="text-black font-semibold text-sm">Nov 15, 2024 • 7:15 PM</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-black opacity-70 text-sm">Delivery Address</span>
+                            <span class="text-black font-semibold text-sm text-right">123 Times Square, NY</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Items -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md mb-4">
+                        <h4 class="text-black font-bold mb-4">Order Items</h4>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-16 h-16 rounded-xl overflow-hidden">
+                                    <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&h=200&fit=crop" 
+                                         alt="Burger" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex-1">
+                                    <h5 class="text-black font-semibold text-sm mb-1">Classic Burger</h5>
+                                    <p class="text-black opacity-60 text-xs">Qty: 2</p>
+                                </div>
+                                <span class="text-black font-bold">$20.00</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-3">
+                                <div class="w-16 h-16 rounded-xl overflow-hidden">
+                                    <img src="https://images.unsplash.com/photo-1576702813149-f0511c5cad82?w=200&h=200&fit=crop" 
+                                         alt="Fries" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex-1">
+                                    <h5 class="text-black font-semibold text-sm mb-1">French Fries</h5>
+                                    <p class="text-black opacity-60 text-xs">Qty: 1</p>
+                                </div>
+                                <span class="text-black font-bold">$5.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Summary -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md mb-4">
+                        <h4 class="text-black font-bold mb-4">Payment Summary</h4>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-black opacity-70 text-sm">Subtotal</span>
+                                <span class="text-black font-semibold text-sm">$25.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-black opacity-70 text-sm">Delivery Fee</span>
+                                <span class="text-black font-semibold text-sm">$3.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-black opacity-70 text-sm">Tax</span>
+                                <span class="text-black font-semibold text-sm">$2.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-black opacity-70 text-sm">Discount</span>
+                                <span class="text-green-500 font-semibold text-sm">-$3.00</span>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3 flex justify-between">
+                                <span class="text-black font-bold">Total</span>
+                                <span class="text-black font-bold text-lg">$27.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Driver Info -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md mb-4">
+                        <h4 class="text-black font-bold mb-4">Driver Information</h4>
+                        
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-full overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1600486913747-55e5470d6f40?w=200&h=200&fit=crop" 
+                                     alt="Driver" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h5 class="text-black font-bold mb-1">John Anderson</h5>
+                                <div class="flex items-center gap-1">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-sm font-semibold">4.9</span>
+                                </div>
+                            </div>
+                            <button class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-phone text-white"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="px-6 py-4 bg-white border-t border-gray-100">
+                    <div class="flex gap-3">
+                        <button class="flex-1 py-4 bg-gray-100 text-black font-bold rounded-2xl">
+                            Reorder
+                        </button>
+                        <button class="flex-1 btn-primary text-white font-bold py-4 rounded-2xl shadow-lg">
+                            Rate & Review
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 17: Edit Profile -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full flex flex-col">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">Edit Profile</h2>
+                        <button class="text-amber-500 font-bold text-sm">Save</button>
+                    </div>
+                </div>
+                
+                <!-- Form Content -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Profile Photo -->
+                    <div class="flex flex-col items-center mb-8">
+                        <div class="relative">
+                            <div class="w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-xl">
+                                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop" 
+                                     alt="Profile" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <button class="absolute bottom-0 right-0 w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center shadow-lg">
+                                <i class="fas fa-camera text-white"></i>
+                            </button>
+                        </div>
+                        <button class="mt-3 text-amber-500 font-semibold text-sm">Change Photo</button>
+                    </div>
+                    
+                    <!-- Form Fields -->
+                    <div class="space-y-4">
+                        <!-- Full Name -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Full Name</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <input type="text" 
+                                       value="Michael Chen" 
+                                       class="w-full bg-transparent text-black focus:outline-none">
+                            </div>
+                        </div>
+                        
+                        <!-- Email -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Email</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <input type="email" 
+                                       value="michael.chen@email.com" 
+                                       class="w-full bg-transparent text-black focus:outline-none">
+                            </div>
+                        </div>
+                        
+                        <!-- Phone Number -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Phone Number</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <input type="tel" 
+                                       value="+1 (555) 123-4567" 
+                                       class="w-full bg-transparent text-black focus:outline-none">
+                            </div>
+                        </div>
+                        
+                        <!-- Birthday -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Birthday</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <input type="date" 
+                                       value="1990-05-15" 
+                                       class="w-full bg-transparent text-black focus:outline-none">
+                            </div>
+                        </div>
+                        
+                        <!-- Gender -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Gender</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <select class="w-full bg-transparent text-black focus:outline-none">
+                                    <option>Male</option>
+                                    <option>Female</option>
+                                    <option>Other</option>
+                                    <option>Prefer not to say</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Bio -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Bio</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <textarea 
+                                    class="w-full bg-transparent text-black focus:outline-none resize-none" 
+                                    rows="3"
+                                    placeholder="Tell us about yourself...">Food lover and pizza enthusiast 🍕</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Save Button -->
+                <div class="px-6 py-4 bg-white border-t border-gray-100">
+                    <button class="w-full btn-primary text-white font-bold py-4 rounded-2xl shadow-lg">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 18: Add Address -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full flex flex-col">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">Add New Address</h2>
+                        <div class="w-10"></div>
+                    </div>
+                </div>
+                
+                <!-- Map Preview -->
+                <div class="mx-6 mt-6 h-48 bg-white rounded-3xl overflow-hidden shadow-lg relative">
+                    <div class="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-map-marked-alt text-4xl text-amber-500 mb-2"></i>
+                            <p class="text-black opacity-60 text-sm">Select location on map</p>
+                        </div>
+                    </div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                        <i class="fas fa-location-dot text-5xl text-amber-500"></i>
+                    </div>
+                </div>
+                
+                <!-- Form Content -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Address Type -->
+                    <div class="mb-6">
+                        <label class="text-black text-sm font-semibold mb-3 block">Address Type</label>
+                        <div class="flex gap-3">
+                            <button class="flex-1 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-2xl font-semibold shadow-lg flex items-center justify-center gap-2">
+                                <i class="fas fa-home"></i>
+                                <span>Home</span>
+                            </button>
+                            <button class="flex-1 py-3 bg-white text-black rounded-2xl font-semibold border border-gray-200 flex items-center justify-center gap-2">
+                                <i class="fas fa-briefcase"></i>
+                                <span>Work</span>
+                            </button>
+                            <button class="flex-1 py-3 bg-white text-black rounded-2xl font-semibold border border-gray-200 flex items-center justify-center gap-2">
+                                <i class="fas fa-ellipsis"></i>
+                                <span>Other</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Fields -->
+                    <div class="space-y-4">
+                        <!-- Label -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Label</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <input type="text" 
+                                       placeholder="e.g. Home, Office" 
+                                       class="w-full bg-transparent text-black placeholder-gray-400 focus:outline-none">
+                            </div>
+                        </div>
+                        
+                        <!-- Street Address -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Street Address</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <input type="text" 
+                                       placeholder="Enter street address" 
+                                       class="w-full bg-transparent text-black placeholder-gray-400 focus:outline-none">
+                            </div>
+                        </div>
+                        
+                        <!-- Apt/Suite -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Apt/Suite/Floor (Optional)</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <input type="text" 
+                                       placeholder="Apt 4B" 
+                                       class="w-full bg-transparent text-black placeholder-gray-400 focus:outline-none">
+                            </div>
+                        </div>
+                        
+                        <!-- City & ZIP -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-black text-sm font-semibold mb-2 block">City</label>
+                                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                    <input type="text" 
+                                           placeholder="City" 
+                                           class="w-full bg-transparent text-black placeholder-gray-400 focus:outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-black text-sm font-semibold mb-2 block">ZIP Code</label>
+                                <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                    <input type="text" 
+                                           placeholder="10001" 
+                                           class="w-full bg-transparent text-black placeholder-gray-400 focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Delivery Instructions -->
+                        <div>
+                            <label class="text-black text-sm font-semibold mb-2 block">Delivery Instructions (Optional)</label>
+                            <div class="bg-white rounded-2xl p-4 shadow-sm">
+                                <textarea 
+                                    class="w-full bg-transparent text-black placeholder-gray-400 focus:outline-none resize-none" 
+                                    rows="3"
+                                    placeholder="e.g. Ring bell twice, Leave at door"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Save Button -->
+                <div class="px-6 py-4 bg-white border-t border-gray-100">
+                    <button class="w-full btn-primary text-white font-bold py-4 rounded-2xl shadow-lg">
+                        Save Address
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 19: Reviews & Ratings -->
+    <div class="phone-container">
+        <div class="screen gradient-bg">
+            <div class="h-full flex flex-col">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-arrow-left text-black"></i>
+                        </button>
+                        <h2 class="text-black font-bold text-lg">Rate Your Order</h2>
+                        <div class="w-10"></div>
+                    </div>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Order Info -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md mb-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-20 h-20 rounded-2xl overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&h=200&fit=crop" 
+                                     alt="Burger" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Classic Burger</h4>
+                                <p class="text-black opacity-60 text-sm">from Burger Junction</p>
+                                <p class="text-black opacity-40 text-xs mt-1">Order #FH-2024-1155</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rating Food Quality -->
+                    <div class="bg-white rounded-3xl p-6 shadow-md mb-4">
+                        <h3 class="text-black font-bold mb-4 text-center">How was your food?</h3>
+                        <div class="flex justify-center gap-3 mb-4">
+                            <button class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-amber-500"></i>
+                            </button>
+                            <button class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-amber-500"></i>
+                            </button>
+                            <button class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-amber-500"></i>
+                            </button>
+                            <button class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-amber-500"></i>
+                            </button>
+                            <button class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-gray-300"></i>
+                            </button>
+                        </div>
+                        <p class="text-center text-black font-bold">Excellent!</p>
+                    </div>
+                    
+                    <!-- Rating Delivery -->
+                    <div class="bg-white rounded-3xl p-6 shadow-md mb-4">
+                        <h3 class="text-black font-bold mb-4 text-center">How was the delivery?</h3>
+                        <div class="flex justify-center gap-3 mb-4">
+                            <button class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-amber-500"></i>
+                            </button>
+                            <button class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-amber-500"></i>
+                            </button>
+                            <button class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-amber-500"></i>
+                            </button>
+                            <button class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-amber-500"></i>
+                            </button>
+                            <button class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-3xl text-amber-500"></i>
+                            </button>
+                        </div>
+                        <p class="text-center text-black font-bold">Perfect!</p>
+                    </div>
+                    
+                    <!-- Review Text -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md mb-4">
+                        <h3 class="text-black font-bold mb-3">Write a review (Optional)</h3>
+                        <textarea 
+                            class="w-full bg-gray-50 rounded-2xl p-4 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" 
+                            rows="4"
+                            placeholder="Share your experience..."></textarea>
+                    </div>
+                    
+                    <!-- Quick Tags -->
+                    <div class="bg-white rounded-3xl p-5 shadow-md">
+                        <h3 class="text-black font-bold mb-3">Quick feedback</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="px-4 py-2 bg-amber-50 text-amber-700 rounded-full text-sm font-semibold border-2 border-amber-500">
+                                Delicious
+                            </button>
+                            <button class="px-4 py-2 bg-gray-100 text-black rounded-full text-sm font-semibold border-2 border-transparent">
+                                Fast Delivery
+                            </button>
+                            <button class="px-4 py-2 bg-gray-100 text-black rounded-full text-sm font-semibold border-2 border-transparent">
+                                Hot & Fresh
+                            </button>
+                            <button class="px-4 py-2 bg-gray-100 text-black rounded-full text-sm font-semibold border-2 border-transparent">
+                                Great Packaging
+                            </button>
+                            <button class="px-4 py-2 bg-gray-100 text-black rounded-full text-sm font-semibold border-2 border-transparent">
+                                Good Portion
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="px-6 py-4 bg-white border-t border-gray-100">
+                    <button class="w-full btn-primary text-white font-bold py-4 rounded-2xl shadow-lg">
+                        Submit Review
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

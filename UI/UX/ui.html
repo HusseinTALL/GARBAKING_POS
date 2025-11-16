@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Ordering App - UI Design</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .mobile-frame {
+            width: 375px;
+            height: 812px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden;
+            position: relative;
+            margin: 0 20px;
+            flex-shrink: 0;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .gradient-orange {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .gradient-green {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .gradient-peach {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+        
+        .hover-lift {
+            transition: transform 0.2s ease;
+        }
+        
+        .hover-lift:active {
+            transform: translateY(-2px);
+        }
+        
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .pulse-slow {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    
+    <!-- Information Architecture Plan -->
+    <div class="max-w-6xl mx-auto mb-12 bg-white rounded-2xl p-8 card-shadow">
+        <h1 class="text-3xl font-bold mb-6" style="color: black;">Restaurant Ordering App - Functional & Information Architecture</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <h3 class="text-lg font-semibold mb-3" style="color: black;">Core Features</h3>
+                <ul class="space-y-2 text-sm" style="color: black;">
+                    <li>• Browse menu by categories</li>
+                    <li>• Search and filter dishes</li>
+                    <li>• View detailed product information</li>
+                    <li>• Add/remove items to cart</li>
+                    <li>• Apply vouchers and discounts</li>
+                    <li>• Real-time order tracking</li>
+                    <li>• Save favorite dishes</li>
+                    <li>• User profile management</li>
+                    <li>• Order history</li>
+                    <li>• Push notifications for order status</li>
+                </ul>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-semibold mb-3" style="color: black;">Page Structure</h3>
+                <ol class="space-y-2 text-sm" style="color: black;">
+                    <li>1. Welcome/Splash Screen</li>
+                    <li>2. Home/Menu Browse</li>
+                    <li>3. Category View</li>
+                    <li>4. Product Detail</li>
+                    <li>5. Shopping Cart</li>
+                    <li>6. Checkout & Payment</li>
+                    <li>7. Order Confirmation</li>
+                    <li>8. Order Tracking</li>
+                    <li>9. Favorites</li>
+                    <li>10. Vouchers</li>
+                    <li>11. Profile</li>
+                    <li>12. Order History</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="text-lg font-semibold mb-3" style="color: black;">Design Principles</h3>
+            <p class="text-sm" style="color: black;">Elegant minimalism with soft gradients, generous white space, subtle shadows, and refined micro-interactions. Focus on intuitive navigation and seamless user experience with clear visual hierarchy.</p>
+        </div>
+    </div>
+    
+    <!-- Mobile Screens Container -->
+    <div class="flex overflow-x-auto pb-8 gap-6">
+        
+        <!-- Page 1: Welcome/Splash Screen -->
+        <div class="mobile-frame">
+            <div class="w-full h-full gradient-bg flex flex-col items-center justify-between p-8 animate-fade-in">
+                <!-- Logo Area -->
+                <div class="flex-1 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="w-32 h-32 bg-white rounded-3xl flex items-center justify-center mb-6 card-shadow pulse-slow">
+                            <i class="fas fa-utensils text-6xl" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                        </div>
+                        <h1 class="text-4xl font-bold mb-3" style="color: white;">FoodHub</h1>
+                        <p class="text-lg opacity-90" style="color: white;">Delicious meals, delivered fast</p>
+                    </div>
+                </div>
+                
+                <!-- Illustration Area -->
+                <div class="mb-8">
+                    <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop" 
+                         alt="Food" 
+                         class="w-72 h-56 object-cover rounded-3xl card-shadow">
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="w-full space-y-4">
+                    <button class="w-full bg-white py-4 rounded-2xl font-semibold hover-lift card-shadow" style="color: black;">
+                        Get Started
+                    </button>
+                    <button class="w-full border-2 border-white py-4 rounded-2xl font-semibold hover-lift" style="color: white;">
+                        Sign In
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 2: Home/Menu Browse -->
+        <div class="mobile-frame">
+            <div class="w-full h-full bg-gray-50 flex flex-col">
+                <!-- Header -->
+                <div class="bg-white px-6 pt-8 pb-6 card-shadow">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <p class="text-sm opacity-60" style="color: black;">Deliver to</p>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-map-marker-alt text-sm" style="color: black;"></i>
+                                <h2 class="text-lg font-semibold" style="color: black;">Main Street, 123</h2>
+                                <i class="fas fa-chevron-down text-xs" style="color: black;"></i>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user" style="color: white;"></i>
+                            </div>
+                            <div class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                                <span class="text-xs font-bold" style="color: white;">3</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 opacity-40" style="color: black;"></i>
+                        <input type="text" 
+                               placeholder="Search dishes, restaurants..." 
+                               class="w-full pl-12 pr-12 py-4 bg-gray-100 rounded-2xl text-sm outline-none"
+                               style="color: black;">
+                        <i class="fas fa-sliders-h absolute right-4 top-1/2 transform -translate-y-1/2" style="color: black;"></i>
+                    </div>
+                </div>
+                
+                <!-- Content Area -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Categories -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-4" style="color: black;">Categories</h3>
+                        <div class="flex gap-3 overflow-x-auto pb-2">
+                            <div class="flex-shrink-0 text-center hover-lift">
+                                <div class="w-20 h-20 gradient-orange rounded-2xl flex items-center justify-center mb-2 card-shadow">
+                                    <i class="fas fa-pizza-slice text-2xl" style="color: white;"></i>
+                                </div>
+                                <p class="text-xs font-medium" style="color: black;">Pizza</p>
+                            </div>
+                            <div class="flex-shrink-0 text-center hover-lift">
+                                <div class="w-20 h-20 gradient-green rounded-2xl flex items-center justify-center mb-2 card-shadow">
+                                    <i class="fas fa-hamburger text-2xl" style="color: white;"></i>
+                                </div>
+                                <p class="text-xs font-medium" style="color: black;">Burgers</p>
+                            </div>
+                            <div class="flex-shrink-0 text-center hover-lift">
+                                <div class="w-20 h-20 gradient-peach rounded-2xl flex items-center justify-center mb-2 card-shadow">
+                                    <i class="fas fa-ice-cream text-2xl" style="color: white;"></i>
+                                </div>
+                                <p class="text-xs font-medium" style="color: black;">Desserts</p>
+                            </div>
+                            <div class="flex-shrink-0 text-center hover-lift">
+                                <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-2xl flex items-center justify-center mb-2 card-shadow">
+                                    <i class="fas fa-coffee text-2xl" style="color: white;"></i>
+                                </div>
+                                <p class="text-xs font-medium" style="color: black;">Drinks</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Popular Now -->
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold" style="color: black;">Popular Now</h3>
+                            <a href="#" class="text-sm font-medium" style="color: #667eea;">See All</a>
+                        </div>
+                        
+                        <!-- Food Card 1 -->
+                        <div class="bg-white rounded-3xl p-4 mb-4 card-shadow hover-lift">
+                            <div class="flex gap-4">
+                                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=200&fit=crop" 
+                                     alt="Pizza"
+                                     class="w-28 h-28 object-cover rounded-2xl flex-shrink-0">
+                                <div class="flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-start justify-between mb-1">
+                                            <h4 class="font-semibold text-base" style="color: black;">Margherita Pizza</h4>
+                                            <button class="hover-lift">
+                                                <i class="far fa-heart" style="color: black;"></i>
+                                            </button>
+                                        </div>
+                                        <p class="text-xs opacity-60 mb-2" style="color: black;">Classic Italian pizza</p>
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <div class="flex items-center gap-1">
+                                                <i class="fas fa-star text-xs" style="color: #FFA500;"></i>
+                                                <span class="text-xs font-medium" style="color: black;">4.8</span>
+                                            </div>
+                                            <span class="text-xs opacity-40" style="color: black;">•</span>
+                                            <span class="text-xs opacity-60" style="color: black;">25-30 min</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-lg font-bold" style="color: black;">$12.99</span>
+                                        <button class="w-9 h-9 gradient-bg rounded-xl flex items-center justify-center hover-lift">
+                                            <i class="fas fa-plus text-sm" style="color: white;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Food Card 2 -->
+                        <div class="bg-white rounded-3xl p-4 mb-4 card-shadow hover-lift">
+                            <div class="flex gap-4">
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&h=200&fit=crop" 
+                                     alt="Burger"
+                                     class="w-28 h-28 object-cover rounded-2xl flex-shrink-0">
+                                <div class="flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-start justify-between mb-1">
+                                            <h4 class="font-semibold text-base" style="color: black;">Cheese Burger</h4>
+                                            <button class="hover-lift">
+                                                <i class="fas fa-heart" style="color: #f5576c;"></i>
+                                            </button>
+                                        </div>
+                                        <p class="text-xs opacity-60 mb-2" style="color: black;">Juicy beef patty</p>
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <div class="flex items-center gap-1">
+                                                <i class="fas fa-star text-xs" style="color: #FFA500;"></i>
+                                                <span class="text-xs font-medium" style="color: black;">4.9</span>
+                                            </div>
+                                            <span class="text-xs opacity-40" style="color: black;">•</span>
+                                            <span class="text-xs opacity-60" style="color: black;">15-20 min</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-lg font-bold" style="color: black;">$9.99</span>
+                                        <button class="w-9 h-9 gradient-bg rounded-xl flex items-center justify-center hover-lift">
+                                            <i class="fas fa-plus text-sm" style="color: white;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Navigation -->
+                <div class="bg-white px-6 py-4 card-shadow">
+                    <div class="flex items-center justify-around">
+                        <button class="flex flex-col items-center gap-1 hover-lift">
+                            <i class="fas fa-home text-xl" style="color: #667eea;"></i>
+                            <span class="text-xs font-medium" style="color: #667eea;">Home</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-1 hover-lift opacity-40">
+                            <i class="fas fa-heart text-xl" style="color: black;"></i>
+                            <span class="text-xs font-medium" style="color: black;">Favorites</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-1 hover-lift opacity-40 relative">
+                            <i class="fas fa-shopping-bag text-xl" style="color: black;"></i>
+                            <div class="absolute -top-1 right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                                <span class="text-xs font-bold" style="color: white;">2</span>
+                            </div>
+                            <span class="text-xs font-medium" style="color: black;">Cart</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-1 hover-lift opacity-40">
+                            <i class="fas fa-user text-xl" style="color: black;"></i>
+                            <span class="text-xs font-medium" style="color: black;">Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Page Information -->
+    <div class="max-w-6xl mx-auto mt-8 bg-white rounded-2xl p-6 card-shadow">
+        <h3 class="text-lg font-semibold mb-4" style="color: black;">Generated Pages</h3>
+        <div class="grid grid-cols-2 gap-4 text-sm" style="color: black;">
+            <div>
+                <p class="font-semibold">Page 1: Welcome/Splash Screen</p>
+                <p class="opacity-60">Brand introduction with call-to-action buttons</p>
+            </div>
+            <div>
+                <p class="font-semibold">Page 2: Home/Menu Browse</p>
+                <p class="opacity-60">Category navigation, search, and popular dishes</p>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>
