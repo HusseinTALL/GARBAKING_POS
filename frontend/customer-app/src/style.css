@@ -151,7 +151,7 @@ textarea:focus {
 }
 
 .card-product {
-  @apply bg-white rounded-3xl shadow-card hover:shadow-card-hover transition-all duration-400 cursor-pointer border border-gray-100;
+  @apply bg-white rounded-3xl shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer border border-gray-100;
   background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%);
   transform-origin: center;
 }
@@ -181,7 +181,7 @@ textarea:focus {
 }
 
 .badge-success {
-  @apply bg-accent-500 text-white shadow-sm;
+  @apply bg-success-500 text-white shadow-sm;
 }
 
 .badge-warning {
@@ -189,7 +189,7 @@ textarea:focus {
 }
 
 .badge-danger {
-  @apply bg-secondary-500 text-white shadow-sm;
+  @apply bg-danger-500 text-white shadow-sm;
 }
 
 /* Loading animations */

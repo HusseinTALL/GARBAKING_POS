@@ -1,72 +1,58 @@
 <!--
-  BottomNavigation - Main navigation bar (UI/UX 4.4 Design)
-  Simple 4-icon navigation with Font Awesome icons
+  BottomNavigation - Professional bottom navigation with smooth animations
+  Features: Floating design, animated indicator, micro-interactions, glassmorphism
 -->
 
 <template>
-  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 safe-area-bottom z-50">
-    <div class="max-w-md mx-auto px-6 py-3 pb-safe-bottom">
-      <nav class="flex items-center justify-around">
-        <!-- Home -->
-        <button
-          @click="navigateTo('home')"
-          :class="[
-            'flex flex-col items-center gap-1 transition-all duration-200 active:scale-95',
-            currentTab === 'home' ? 'text-primary-500' : 'text-black opacity-40'
-          ]"
-        >
-          <i class="fas fa-home text-xl"></i>
-          <span class="text-xs font-semibold">{{ t('navigation.home') }}</span>
-        </button>
-
-        <!-- Favorites -->
-        <button
-          @click="navigateTo('favorites')"
-          :class="[
-            'flex flex-col items-center gap-1 transition-all duration-200 active:scale-95',
-            currentTab === 'favorites' ? 'text-primary-500' : 'text-black opacity-40'
-          ]"
-        >
-          <i class="fas fa-heart text-xl"></i>
-          <span class="text-xs font-semibold">{{ t('navigation.favorites') }}</span>
-        </button>
-
-        <!-- Orders -->
-        <button
-          @click="navigateTo('orders')"
-          :class="[
-            'flex flex-col items-center gap-1 transition-all duration-200 active:scale-95',
-            currentTab === 'orders' ? 'text-primary-500' : 'text-black opacity-40'
-          ]"
-        >
-          <i class="fas fa-shopping-bag text-xl"></i>
-          <span class="text-xs font-semibold">{{ t('navigation.orders') }}</span>
-        </button>
-
-        <!-- Profile -->
-        <button
-          @click="navigateTo('profile')"
-          :class="[
-            'flex flex-col items-center gap-1 transition-all duration-200 active:scale-95',
-            currentTab === 'profile' ? 'text-primary-500' : 'text-black opacity-40'
-          ]"
-        >
-          <i class="fas fa-user text-xl"></i>
-          <span class="text-xs font-semibold">{{ t('navigation.profile') }}</span>
-        </button>
+  <div class="fixed bottom-0 left-0 right-0 pb-safe z-50 pointer-events-none">
+    <div class="max-w-md mx-auto px-4 pb-4 pointer-events-auto">
+      <!-- Floating Navigation Container -->
+      <nav class="relative bg-white/95 backdrop-blur-xl rounded-[24px] shadow-nav border border-white/20">
+        <!-- Animated Indicator Background -->
+        <div 
+          class="absolute top-1/2 -translate-y-1/2 h-12 bg-gradient-to-br from-primary-500/10 to-primary-600/10 rounded-[16px] transition-all duration-500 ease-out"
+          :style="indicatorStyle"
+        />
+        
+        <!-- Navigation Items -->
+        <div class="relative flex items-center justify-around px-2 py-3">
+          <NavItem
+            v-for="item in navItems"
+            :key="item.id"
+            :icon="item.icon"
+            :label="t(item.label)"
+            :active="currentTab === item.id"
+            @click="navigateTo(item.id)"
+          />
+        </div>
       </nav>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import NavItem from './NavItem.vue'
 
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
+
+interface NavigationItem {
+  id: string
+  icon: string
+  label: string
+  route: string
+}
+
+const navItems: NavigationItem[] = [
+  { id: 'home', icon: 'fa-house', label: 'navigation.home', route: '/home' },
+  { id: 'favorites', icon: 'fa-heart', label: 'navigation.favorites', route: '/favorites' },
+  { id: 'orders', icon: 'fa-bag-shopping', label: 'navigation.orders', route: '/orders' },
+  { id: 'profile', icon: 'fa-user', label: 'navigation.profile', route: '/profile' }
+]
 
 // Determine current tab from route
 const currentTab = computed(() => {
@@ -78,24 +64,24 @@ const currentTab = computed(() => {
   return 'home'
 })
 
-// Navigation handlers
-const navigateTo = (tab: string) => {
-  const routes: Record<string, string> = {
-    home: '/home',
-    favorites: '/favorites',
-    orders: '/orders',
-    profile: '/profile'
+// Calculate indicator position
+const indicatorStyle = computed(() => {
+  const index = navItems.findIndex(item => item.id === currentTab.value)
+  const itemWidth = 100 / navItems.length
+  const left = index * itemWidth + itemWidth / 2
+  
+  return {
+    left: `${left}%`,
+    transform: 'translate(-50%, -50%)',
+    width: '64px'
   }
+})
 
-  const targetRoute = routes[tab]
-  if (targetRoute && route.path !== targetRoute) {
-    router.push(targetRoute)
+// Navigation handler
+const navigateTo = (tab: string) => {
+  const item = navItems.find(i => i.id === tab)
+  if (item && route.path !== item.route) {
+    router.push(item.route)
   }
 }
 </script>
-
-<style scoped>
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-</style>

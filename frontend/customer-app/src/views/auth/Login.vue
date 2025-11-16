@@ -224,6 +224,21 @@ const validateForm = () => {
 }
 
 const handleLogin = async () => {
+  // DEVELOPMENT MODE: Set mock authentication without backend
+  // Set a mock user and token to bypass auth guards
+  authStore.setUser({
+    id: 'dev-user-001',
+    name: 'Dev User',
+    email: formData.email || 'dev@garbaking.com',
+    phone: '+224 123 456 789',
+    avatar: 'https://ui-avatars.com/api/?name=Dev+User&background=f59e0b&color=fff'
+  })
+  authStore.setToken('dev-mock-token-12345')
+
+  // Navigate to home page
+  router.push('/home')
+
+  /* TODO: Re-enable when backend is ready
   if (!validateForm()) return
 
   try {
@@ -239,11 +254,26 @@ const handleLogin = async () => {
     console.error('Login error:', error)
     // Error is handled by the store
   }
+  */
 }
 
 const handleSocialLogin = (provider: string) => {
-  // TODO: Implement social login
+  // DEVELOPMENT MODE: Set mock authentication for social login
   console.log('Social login with:', provider)
+
+  authStore.setUser({
+    id: 'dev-user-001',
+    name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+    email: `dev@${provider}.com`,
+    phone: '+224 123 456 789',
+    avatar: 'https://ui-avatars.com/api/?name=Social+User&background=f59e0b&color=fff'
+  })
+  authStore.setToken('dev-mock-social-token-12345')
+
+  router.push('/home')
+
+  /* TODO: Re-enable when social auth is ready
   alert(`Social login with ${provider} - Coming soon!`)
+  */
 }
 </script>
