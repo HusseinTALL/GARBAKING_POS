@@ -1,392 +1,283 @@
-<!--
-  Orders View - Main orders list page
-  Displays order history with filters, search, and status tabs
--->
-
-<template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
-    <!-- Header -->
-    <div class="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-40 safe-area-top">
-      <div class="px-4 py-4">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ $t('orders.title') }}
-        </h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          {{ $t('orders.subtitle', { count: orderStore.orders.length }) }}
-        </p>
-      </div>
-
-      <!-- Status tabs -->
-      <div class="px-4 pb-3">
-        <div class="flex gap-2 overflow-x-auto no-scrollbar">
-          <button
-            v-for="tab in statusTabs"
-            :key="tab.value"
-            @click="selectTab(tab.value)"
-            class="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap"
-            :class="getTabClass(tab.value)"
-          >
-            <span class="flex items-center gap-2">
-              {{ tab.label }}
-              <span
-                v-if="tab.count > 0"
-                class="px-2 py-0.5 rounded-full text-xs font-bold"
-                :class="getTabCountClass(tab.value)"
-              >
-                {{ tab.count }}
-              </span>
-            </span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Content -->
-    <div class="px-4 py-6">
-      <!-- Filters (collapsible) -->
-      <div class="mb-6">
-        <button
-          @click="showFilters = !showFilters"
-          class="w-full flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm mb-4"
-        >
-          <div class="flex items-center gap-2">
-            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-            </svg>
-            <span class="font-medium text-gray-900 dark:text-white">
-              {{ $t('orders.filters') }}
-            </span>
-            <span
-              v-if="hasActiveFilters"
-              class="px-2 py-0.5 rounded-full text-xs font-bold bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
-            >
-              {{ activeFilterCount }}
-            </span>
-          </div>
-          <svg
-            class="w-5 h-5 text-gray-400 transition-transform"
-            :class="{ 'rotate-180': showFilters }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </button>
-
-        <transition name="slide-down">
-          <div v-if="showFilters" class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <OrderFilters
-              v-model="filters"
-              @search="handleSearch"
-            />
-          </div>
-        </transition>
-      </div>
-
-      <!-- Loading state -->
-      <div v-if="orderStore.isLoading && !orderStore.hasOrders" class="text-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-        <p class="text-gray-600 dark:text-gray-400">{{ $t('orders.loading') }}</p>
-      </div>
-
-      <!-- Error state -->
-      <div v-else-if="orderStore.error" class="text-center py-12">
-        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          {{ $t('orders.error.title') }}
-        </h3>
-        <p class="text-gray-600 dark:text-gray-400 mb-4">{{ orderStore.error }}</p>
-        <button
-          @click="refreshOrders"
-          class="bg-primary-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-primary-700 transition-colors"
-        >
-          {{ $t('orders.retry') }}
-        </button>
-      </div>
-
-      <!-- Empty state -->
-      <div v-else-if="!orderStore.hasOrders" class="text-center py-12">
-        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          {{ $t('orders.empty.title') }}
-        </h3>
-        <p class="text-gray-600 dark:text-gray-400 mb-4">
-          {{ $t('orders.empty.description') }}
-        </p>
-        <button
-          @click="$router.push('/home')"
-          class="bg-primary-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-primary-700 transition-colors"
-        >
-          {{ $t('orders.empty.action') }}
-        </button>
-      </div>
-
-      <!-- Filtered empty state -->
-      <div v-else-if="displayedOrders.length === 0" class="text-center py-12">
-        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-        </div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-          {{ $t('orders.noResults.title') }}
-        </h3>
-        <p class="text-gray-600 dark:text-gray-400 mb-4">
-          {{ $t('orders.noResults.description') }}
-        </p>
-        <button
-          @click="clearFilters"
-          class="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300"
-        >
-          {{ $t('orders.clearFilters') }}
-        </button>
-      </div>
-
-      <!-- Orders list -->
-      <div v-else class="space-y-4">
-        <OrderCard
-          v-for="order in displayedOrders"
-          :key="order.id"
-          :order="order"
-          @click="viewOrderDetails"
-          @reorder="handleReorder"
-          @view-details="viewOrderDetails"
-        />
-
-        <!-- Refresh button -->
-        <button
-          @click="refreshOrders"
-          :disabled="orderStore.isLoading"
-          class="w-full py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-        >
-          <svg
-            class="w-5 h-5"
-            :class="{ 'animate-spin': orderStore.isLoading }"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          {{ orderStore.isLoading ? $t('orders.refreshing') : $t('orders.refresh') }}
-        </button>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useToast } from 'vue-toastification'
-import { useOrderStore } from '@/stores/order'
-import { useCartStore } from '@/stores/cart'
-import type { Order, OrderFilters as OrderFiltersType } from '@/stores/order'
+/**
+ * Orders - Order history (Page 15 - UI/UX 4.4)
+ *
+ * Features:
+ * - Status filter tabs (All, Delivered, In Progress, Cancelled)
+ * - Order cards with order details
+ * - Reorder and Track buttons
+ * - Empty state
+ * - Bottom navigation
+ */
 
-// Components
-import OrderCard from '@/components/OrderCard.vue'
-import OrderFilters from '@/components/OrderFilters.vue'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import BottomNavigation from '@/components/BottomNavigation.vue'
 
 const router = useRouter()
-const { t } = useI18n()
-const toast = useToast()
 
-// Stores
-const orderStore = useOrderStore()
-const cartStore = useCartStore()
+const statusFilter = ref('All')
+const statusTabs = ['All', 'Delivered', 'In Progress', 'Cancelled']
 
-// Local state
-const showFilters = ref(false)
-const selectedTab = ref<'all' | 'active' | 'completed' | 'cancelled'>('all')
-const filters = ref<OrderFiltersType>({
-  status: 'ALL',
-  orderType: 'ALL'
-})
-
-// Computed
-const statusTabs = computed(() => [
+// Mock orders - replace with actual order store
+const orders = ref([
   {
-    value: 'all',
-    label: t('orders.tabs.all'),
-    count: orderStore.orders.length
+    id: '12345',
+    orderNumber: '#12345',
+    date: 'Dec 15, 2024',
+    status: 'Delivered',
+    items: [
+      { name: 'Classic Burger', quantity: 2 },
+      { name: 'Coca Cola', quantity: 1 }
+    ],
+    total: 29.00,
+    restaurant: 'Garbaking Restaurant',
+    deliveredAt: '2:30 PM'
   },
   {
-    value: 'active',
-    label: t('orders.tabs.active'),
-    count: orderStore.activeOrders.length
+    id: '12346',
+    orderNumber: '#12346',
+    date: 'Dec 16, 2024',
+    status: 'In Progress',
+    items: [
+      { name: 'Margherita Pizza', quantity: 1 },
+      { name: 'Caesar Salad', quantity: 1 }
+    ],
+    total: 23.00,
+    restaurant: 'Pizza Palace',
+    estimatedTime: '25 min'
   },
   {
-    value: 'completed',
-    label: t('orders.tabs.completed'),
-    count: orderStore.completedOrders.length
+    id: '12347',
+    orderNumber: '#12347',
+    date: 'Dec 14, 2024',
+    status: 'Cancelled',
+    items: [
+      { name: 'Spicy Ramen', quantity: 1 }
+    ],
+    total: 14.00,
+    restaurant: 'Noodle House',
+    cancelledReason: 'Out of stock'
   },
   {
-    value: 'cancelled',
-    label: t('orders.tabs.cancelled'),
-    count: orderStore.cancelledOrders.length
+    id: '12348',
+    orderNumber: '#12348',
+    date: 'Dec 13, 2024',
+    status: 'Delivered',
+    items: [
+      { name: 'Cheeseburger', quantity: 1 },
+      { name: 'Fries', quantity: 1 }
+    ],
+    total: 18.00,
+    restaurant: 'Burger House',
+    deliveredAt: '1:15 PM'
   }
 ])
 
-const displayedOrders = computed(() => {
-  let orders: Order[]
+const filteredOrders = computed(() => {
+  if (statusFilter.value === 'All') {
+    return orders.value
+  }
+  return orders.value.filter(order => order.status === statusFilter.value)
+})
 
-  // Filter by tab
-  switch (selectedTab.value) {
-    case 'active':
-      orders = orderStore.activeOrders
-      break
-    case 'completed':
-      orders = orderStore.completedOrders
-      break
-    case 'cancelled':
-      orders = orderStore.cancelledOrders
-      break
+const hasOrders = computed(() => filteredOrders.value.length > 0)
+
+function selectStatus(status: string) {
+  statusFilter.value = status
+}
+
+function getStatusColor(status: string): string {
+  switch (status) {
+    case 'Delivered':
+      return 'bg-green-50 text-green-600 border-green-200'
+    case 'In Progress':
+      return 'bg-primary-50 text-primary-600 border-primary-200'
+    case 'Cancelled':
+      return 'bg-red-50 text-red-600 border-red-200'
     default:
-      orders = orderStore.filteredOrders
-  }
-
-  return orders
-})
-
-const hasActiveFilters = computed(() => {
-  return (
-    (filters.value.status && filters.value.status !== 'ALL') ||
-    (filters.value.orderType && filters.value.orderType !== 'ALL') ||
-    filters.value.dateRange ||
-    (filters.value.searchQuery && filters.value.searchQuery.trim() !== '')
-  )
-})
-
-const activeFilterCount = computed(() => {
-  let count = 0
-  if (filters.value.status && filters.value.status !== 'ALL') count++
-  if (filters.value.orderType && filters.value.orderType !== 'ALL') count++
-  if (filters.value.dateRange) count++
-  if (filters.value.searchQuery && filters.value.searchQuery.trim() !== '') count++
-  return count
-})
-
-// Methods
-function selectTab(tab: 'all' | 'active' | 'completed' | 'cancelled') {
-  selectedTab.value = tab
-
-  // Reset filters when switching tabs
-  if (tab !== 'all') {
-    orderStore.clearFilters()
-    filters.value = {
-      status: 'ALL',
-      orderType: 'ALL'
-    }
+      return 'bg-gray-50 text-gray-600 border-gray-200'
   }
 }
 
-function getTabClass(tab: string): string {
-  const isActive = selectedTab.value === tab
-  if (isActive) {
-    return 'bg-primary-600 text-white shadow-md'
-  }
-  return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+function viewOrderDetails(orderId: string) {
+  router.push(`/order/${orderId}`)
 }
 
-function getTabCountClass(tab: string): string {
-  const isActive = selectedTab.value === tab
-  if (isActive) {
-    return 'bg-white/20 text-white'
-  }
-  return 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+function trackOrder(orderId: string) {
+  router.push(`/order-tracking/${orderId}`)
 }
 
-function handleSearch(query: string) {
-  orderStore.setSearchQuery(query)
+function reorder(order: any) {
+  // TODO: Add items to cart
+  console.log('Reorder:', order)
+  router.push('/cart')
 }
-
-function clearFilters() {
-  orderStore.clearFilters()
-  filters.value = {
-    status: 'ALL',
-    orderType: 'ALL'
-  }
-}
-
-async function refreshOrders() {
-  const customerPhone = cartStore.customerInfo.phone
-  if (customerPhone) {
-    await orderStore.fetchOrderHistory(customerPhone)
-    toast.success(t('orders.refreshSuccess'))
-  } else {
-    toast.warning(t('orders.noCustomerPhone'))
-  }
-}
-
-function viewOrderDetails(order: Order) {
-  router.push(`/order-status/${order.orderNumber}`)
-}
-
-function handleReorder(order: Order) {
-  const itemCount = orderStore.reorderOrder(order)
-  toast.success(t('orders.reorderSuccess', { count: itemCount }))
-  router.push('/home')
-}
-
-// Watch filters and update store
-import { watch } from 'vue'
-watch(filters, (newFilters) => {
-  orderStore.setFilters(newFilters)
-}, { deep: true })
-
-// Lifecycle
-onMounted(async () => {
-  // Fetch orders if customer phone is available
-  const customerPhone = cartStore.customerInfo.phone
-  if (customerPhone && !orderStore.hasOrders) {
-    await orderStore.fetchOrderHistory(customerPhone)
-  }
-})
 </script>
 
+<template>
+  <div class="min-h-screen bg-gradient-warm pb-24">
+    <!-- Header -->
+    <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+      <h2 class="text-black font-bold text-lg text-center mb-4">My Orders</h2>
+
+      <!-- Status Tabs -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar">
+        <button
+          v-for="status in statusTabs"
+          :key="status"
+          @click="selectStatus(status)"
+          :class="[
+            'flex-shrink-0 px-6 py-3 rounded-2xl font-semibold text-sm transition-all',
+            statusFilter === status
+              ? 'bg-gradient-primary text-white shadow-lg'
+              : 'bg-gray-100 text-black'
+          ]"
+        >
+          {{ status }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Orders List -->
+    <div class="px-6 py-6">
+      <div v-if="hasOrders" class="space-y-4">
+        <div
+          v-for="order in filteredOrders"
+          :key="order.id"
+          class="bg-white rounded-3xl p-5 shadow-md"
+        >
+          <!-- Order Header -->
+          <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+            <div>
+              <p class="text-black font-bold text-lg">{{ order.orderNumber }}</p>
+              <p class="text-black opacity-60 text-sm">{{ order.date }}</p>
+            </div>
+
+            <div
+              :class="[
+                'px-4 py-2 rounded-xl border-2 font-semibold text-sm',
+                getStatusColor(order.status)
+              ]"
+            >
+              {{ order.status }}
+            </div>
+          </div>
+
+          <!-- Restaurant Name -->
+          <div class="flex items-center gap-2 mb-3">
+            <i class="fas fa-store text-black opacity-40"></i>
+            <p class="text-black font-semibold">{{ order.restaurant }}</p>
+          </div>
+
+          <!-- Order Items -->
+          <div class="space-y-2 mb-4">
+            <div
+              v-for="(item, index) in order.items"
+              :key="index"
+              class="flex items-center justify-between"
+            >
+              <p class="text-black opacity-60 text-sm">
+                {{ item.quantity }}x {{ item.name }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Total -->
+          <div class="flex items-center justify-between mb-4 pt-4 border-t border-gray-100">
+            <p class="text-black font-semibold">Total</p>
+            <p class="text-primary-500 font-bold text-lg">${{ order.total.toFixed(2) }}</p>
+          </div>
+
+          <!-- Additional Info -->
+          <div v-if="order.status === 'Delivered'" class="mb-4">
+            <div class="flex items-center gap-2 text-green-600 text-sm">
+              <i class="fas fa-check-circle"></i>
+              <span>Delivered at {{ order.deliveredAt }}</span>
+            </div>
+          </div>
+
+          <div v-else-if="order.status === 'In Progress'" class="mb-4">
+            <div class="flex items-center gap-2 text-primary-500 text-sm">
+              <i class="fas fa-clock"></i>
+              <span>Est. {{ order.estimatedTime }}</span>
+            </div>
+          </div>
+
+          <div v-else-if="order.status === 'Cancelled'" class="mb-4">
+            <div class="flex items-center gap-2 text-red-500 text-sm">
+              <i class="fas fa-times-circle"></i>
+              <span>{{ order.cancelledReason }}</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-3">
+            <button
+              v-if="order.status === 'In Progress'"
+              @click="trackOrder(order.id)"
+              class="flex-1 bg-gradient-primary text-white font-semibold py-3 rounded-2xl"
+            >
+              <i class="fas fa-location-dot mr-2"></i>
+              Track Order
+            </button>
+
+            <button
+              v-else
+              @click="viewOrderDetails(order.id)"
+              class="flex-1 bg-white border-2 border-gray-200 text-black font-semibold py-3 rounded-2xl"
+            >
+              View Details
+            </button>
+
+            <button
+              v-if="order.status === 'Delivered'"
+              @click="reorder(order)"
+              class="flex-1 bg-gradient-primary text-white font-semibold py-3 rounded-2xl"
+            >
+              <i class="fas fa-redo mr-2"></i>
+              Reorder
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else class="flex flex-col items-center justify-center py-20 px-6">
+        <div class="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+          <i class="fas fa-receipt text-gray-300 text-6xl"></i>
+        </div>
+
+        <h3 class="text-black font-bold text-xl mb-2 text-center">
+          No Orders Yet
+        </h3>
+        <p class="text-black opacity-60 text-center mb-8 max-w-xs">
+          {{ statusFilter === 'All' ? 'Start ordering your favorite dishes' : `No ${statusFilter.toLowerCase()} orders` }}
+        </p>
+
+        <button
+          v-if="statusFilter === 'All'"
+          @click="router.push('/home')"
+          class="bg-gradient-primary text-white font-semibold px-8 py-4 rounded-2xl shadow-lg"
+        >
+          <i class="fas fa-utensils mr-2"></i>
+          Browse Menu
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <BottomNavigation />
+  </div>
+</template>
+
 <style scoped>
-.no-scrollbar::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-.no-scrollbar {
+.hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.3s ease;
-  max-height: 1000px;
-  overflow: hidden;
-}
-
-.slide-down-enter-from,
-.slide-down-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>
