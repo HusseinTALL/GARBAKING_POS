@@ -1,12 +1,13 @@
 /**
  * Order Store - State management for orders
  * Manages order history, filtering, sorting, and real-time updates
+ * Integrated with Spring Boot Order Service via API Gateway
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Order, OrderStatus, OrderType, LoadingState } from '@/types'
-import { ordersApi } from '@/services/api'
+import { api, API_ENDPOINTS } from '@/services/apiConfig'
 import { useCartStore } from './cart'
 
 export interface OrderFilters {
@@ -125,9 +126,78 @@ export const useOrderStore = defineStore('order', () => {
   )
 
   // Actions
+
+  /**
+   * Create a new order
+   */
+  async function createOrder(orderData: {
+    items: Array<{
+      menuItemId: string
+      quantity: number
+      customizations?: string[]
+      notes?: string
+    }>
+    deliveryAddress?: {
+      street: string
+      city: string
+      coordinates?: { lat: number; lng: number }
+    }
+    paymentMethod: string
+    notes?: string
+    orderType?: string
+    customerName?: string
+    customerPhone?: string
+    customerEmail?: string
+  }) {
+    loadingState.value = 'loading'
+    error.value = null
+
+    try {
+      const response = await api.post<{ order: Order; orderNumber: string }>(
+        API_ENDPOINTS.orders.create,
+        {
+          items: orderData.items.map(item => ({
+            menuItemId: item.menuItemId,
+            quantity: item.quantity,
+            customizations: item.customizations || [],
+            notes: item.notes
+          })),
+          deliveryAddress: orderData.deliveryAddress,
+          paymentMethod: orderData.paymentMethod,
+          notes: orderData.notes,
+          orderType: orderData.orderType || 'DELIVERY',
+          customerName: orderData.customerName,
+          customerPhone: orderData.customerPhone,
+          customerEmail: orderData.customerEmail
+        }
+      )
+
+      if (response && response.order) {
+        currentOrder.value = response.order
+
+        // Add to orders list
+        orders.value.unshift(response.order)
+
+        loadingState.value = 'success'
+
+        return response
+      } else {
+        throw new Error('Invalid response from server')
+      }
+    } catch (err: any) {
+      console.error('[Order] Failed to create order:', err)
+      error.value = err.message || 'Failed to create order'
+      loadingState.value = 'error'
+      throw err
+    }
+  }
+
+  /**
+   * Fetch order history for a customer
+   */
   async function fetchOrderHistory(customerPhone: string) {
     if (!customerPhone) {
-      console.warn('No customer phone provided for order history')
+      console.warn('[Order] No customer phone provided for order history')
       return
     }
 
@@ -135,11 +205,14 @@ export const useOrderStore = defineStore('order', () => {
     error.value = null
 
     try {
-      const response = await ordersApi.getCustomerOrderHistory(customerPhone)
+      const response = await api.get<{ orders: Order[]; count: number }>(
+        API_ENDPOINTS.orders.history,
+        { params: { phone: customerPhone } }
+      )
 
-      if (response.success && response.data) {
+      if (response && Array.isArray(response.orders)) {
         // Transform orders to ensure consistent data structure
-        const transformedOrders = (response.data.orders || []).map((order: any) => ({
+        const transformedOrders = response.orders.map((order: any) => ({
           ...order,
           orderItems: (order.items || order.orderItems || []).map((item: any) => ({
             ...item,
@@ -161,52 +234,69 @@ export const useOrderStore = defineStore('order', () => {
         orders.value = transformedOrders
         loadingState.value = 'success'
 
-        console.log(`Loaded ${orders.value.length} orders for ${customerPhone}`)
+        console.log(`[Order] Loaded ${orders.value.length} orders for ${customerPhone}`)
+      } else if (Array.isArray(response)) {
+        // Handle case where response is directly an array
+        orders.value = response as Order[]
+        loadingState.value = 'success'
       } else {
-        throw new Error(response.error || 'Failed to fetch order history')
+        throw new Error('Invalid order history data received')
       }
     } catch (err: any) {
+      console.error('[Order] Failed to fetch order history:', err)
       error.value = err.message || 'Failed to load order history'
       loadingState.value = 'error'
-      console.error('Error fetching order history:', err)
     }
   }
 
+  /**
+   * Fetch order by order number (for tracking)
+   */
   async function fetchOrderByNumber(orderNumber: string) {
     loadingState.value = 'loading'
     error.value = null
 
     try {
-      const response = await ordersApi.trackOrder(orderNumber)
+      const response = await api.get<Order>(
+        API_ENDPOINTS.orders.track(orderNumber)
+      )
 
-      if (response.success && response.data?.order) {
-        currentOrder.value = response.data.order
+      if (response) {
+        currentOrder.value = response
 
         // Update in orders list if it exists
         const index = orders.value.findIndex(o => o.orderNumber === orderNumber)
         if (index !== -1) {
-          orders.value[index] = response.data.order
+          orders.value[index] = response
         } else {
           // Add to beginning of orders list
-          orders.value.unshift(response.data.order)
+          orders.value.unshift(response)
         }
 
         loadingState.value = 'success'
+        return response
       } else {
-        throw new Error(response.error || 'Order not found')
+        throw new Error('Order not found')
       }
     } catch (err: any) {
+      console.error('[Order] Failed to fetch order:', err)
       error.value = err.message || 'Failed to load order'
       loadingState.value = 'error'
-      console.error('Error fetching order:', err)
+      throw err
     }
   }
 
+  /**
+   * Cancel an order
+   */
   async function cancelOrder(orderNumber: string, reason: string = 'Cancelled by customer') {
     try {
-      const response = await ordersApi.cancelOrder(orderNumber, reason)
+      const response = await api.post<{ order: Order; message: string }>(
+        API_ENDPOINTS.orders.cancel(orderNumber),
+        { reason }
+      )
 
-      if (response.success) {
+      if (response && response.order) {
         // Update order status in store
         const order = orders.value.find(o => o.orderNumber === orderNumber)
         if (order) {
@@ -217,11 +307,13 @@ export const useOrderStore = defineStore('order', () => {
           currentOrder.value.status = 'CANCELLED' as OrderStatus
         }
 
+        console.log(`[Order] Order ${orderNumber} cancelled successfully`)
         return true
       } else {
-        throw new Error(response.error || 'Failed to cancel order')
+        throw new Error('Failed to cancel order')
       }
     } catch (err: any) {
+      console.error('[Order] Failed to cancel order:', err)
       error.value = err.message || 'Failed to cancel order'
       throw err
     }
@@ -329,6 +421,7 @@ export const useOrderStore = defineStore('order', () => {
     recentOrders,
 
     // Actions
+    createOrder,
     fetchOrderHistory,
     fetchOrderByNumber,
     cancelOrder,

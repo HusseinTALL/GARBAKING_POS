@@ -187,64 +187,78 @@ const searchMenuItems = async (query: string) => {
 
 ---
 
-## 🚧 Phase 3: Order Integration (Next)
+## ✅ Phase 3: Order Integration (Complete)
 
-### Files to Update
+### Files Updated
 
-#### **`src/stores/order.ts`**
+#### **`src/stores/order.ts`** (Updated - 437 lines)
 
-**Current Status:** Using mock data
+**Status:** ✅ Complete
 
-**Required Changes:**
-1. Import `api` and `API_ENDPOINTS`
-2. Update `createOrder()` to call `/api/orders`
-3. Update `fetchOrders()` to call `/api/orders/history`
-4. Update `trackOrder()` to call `/api/orders/:id/track`
-5. Update `cancelOrder()` to call `/api/orders/:id/cancel`
+**Changes Made:**
+1. ✅ Updated imports to use `apiConfig`
+2. ✅ Added `createOrder()` to call `/api/orders`
+3. ✅ Updated `fetchOrderHistory()` to call `/api/orders/history`
+4. ✅ Updated `fetchOrderByNumber()` to call `/api/orders/{id}/track`
+5. ✅ Updated `cancelOrder()` to call `/api/orders/{id}/cancel`
+6. ✅ Maintained order filtering and sorting functionality
+7. ✅ Added comprehensive error handling
 
-**Example Implementation:**
+**Key Methods Integrated:**
+
 ```typescript
-const createOrder = async (orderData: CreateOrderRequest) => {
-  loading.value = true
-  try {
-    const response = await api.post<OrderResponse>(
-      API_ENDPOINTS.orders.create,
-      {
-        items: orderData.items,
-        deliveryAddress: orderData.address,
-        paymentMethod: orderData.paymentMethod,
-        notes: orderData.notes
-      }
-    )
+// Create new order
+const createOrder = async (orderData: {
+  items: Array<{ menuItemId: string; quantity: number; notes?: string }>
+  deliveryAddress?: { street: string; city: string; coordinates?: { lat: number; lng: number } }
+  paymentMethod: string
+  notes?: string
+}) => {
+  const response = await api.post<{ order: Order; orderNumber: string }>(
+    API_ENDPOINTS.orders.create,
+    { ...orderData }
+  )
+  currentOrder.value = response.order
+  orders.value.unshift(response.order)
+  return response
+}
 
-    currentOrder.value = response.order
-    return response
-  } catch (error) {
-    console.error('[Order] Failed to create order:', error)
-    throw error
-  } finally {
-    loading.value = false
-  }
+// Fetch order history for a customer
+const fetchOrderHistory = async (customerPhone: string) => {
+  const response = await api.get<{ orders: Order[]; count: number }>(
+    API_ENDPOINTS.orders.history,
+    { params: { phone: customerPhone } }
+  )
+  orders.value = response.orders || response
+}
+
+// Fetch/track single order
+const fetchOrderByNumber = async (orderNumber: string) => {
+  const response = await api.get<Order>(
+    API_ENDPOINTS.orders.track(orderNumber)
+  )
+  currentOrder.value = response
+  return response
+}
+
+// Cancel order
+const cancelOrder = async (orderNumber: string, reason: string) => {
+  const response = await api.post<{ order: Order; message: string }>(
+    API_ENDPOINTS.orders.cancel(orderNumber),
+    { reason }
+  )
+  // Update order status in store
+  const order = orders.value.find(o => o.orderNumber === orderNumber)
+  if (order) order.status = 'CANCELLED'
+  return true
 }
 ```
 
-**Backend Endpoint:** `POST /api/orders`
-
-**Request Body:**
-```json
-{
-  "items": [
-    { "menuItemId": 1, "quantity": 2, "customizations": [] }
-  ],
-  "deliveryAddress": {
-    "street": "123 Main St",
-    "city": "Conakry",
-    "coordinates": { "lat": 9.5092, "lng": -13.7122 }
-  },
-  "paymentMethod": "CASH",
-  "notes": "Extra cheese please"
-}
-```
+**Backend Endpoints:**
+- `POST /api/orders` - Create new order
+- `GET /api/orders/history?phone={phone}` - Get customer order history
+- `GET /api/orders/{id}/track` - Track order status
+- `POST /api/orders/{id}/cancel` - Cancel order
 
 ---
 
@@ -342,12 +356,12 @@ onUnmounted(() => {
 | **Auth Store** | ✅ Complete | `/api/auth/*` | 100% |
 | **API Config** | ✅ Complete | All endpoints mapped | 100% |
 | **Menu Store** | ✅ Complete | `/api/menu/*` | 100% |
-| **Order Store** | ⏳ Pending | `/api/orders/*` | 0% |
+| **Order Store** | ✅ Complete | `/api/orders/*` | 100% |
 | **Payment** | ⏳ Pending | `/api/payments/*` | 0% |
 | **WebSocket** | ⏳ Pending | `ws://localhost:8080/ws` | 0% |
 | **Analytics** | ⏳ Pending | `/api/analytics/*` | 0% |
 
-**Overall Progress:** 37.5% (3/8 components)
+**Overall Progress:** 50% (4/8 components)
 
 ---
 
@@ -500,7 +514,7 @@ public void initializeBucket() {
 
 ### Immediate (This Session)
 1. ✅ Update Menu Store with Inventory Service integration
-2. ⏳ Update Order Store with Order Service integration
+2. ✅ Update Order Store with Order Service integration
 3. ⏳ Create WebSocket service for real-time updates
 4. ⏳ Test end-to-end order flow
 
@@ -620,14 +634,15 @@ VITE_ENABLE_WEBSOCKET=true
 - [x] Handle errors with fallback to cache
 - [x] Commit changes
 
-### Phase 3: Order Integration ⏳
-- [ ] Update order store
-- [ ] Implement create order
-- [ ] Implement order history
-- [ ] Implement order tracking
-- [ ] Test order flow
-- [ ] Handle payment
-- [ ] Commit changes
+### Phase 3: Order Integration ✅
+- [x] Update order store
+- [x] Implement createOrder() method
+- [x] Update fetchOrderHistory() method
+- [x] Update fetchOrderByNumber() for tracking
+- [x] Update cancelOrder() method
+- [x] Maintain filtering and sorting functionality
+- [x] Handle errors and loading states
+- [x] Commit changes
 
 ### Phase 4: WebSocket ⏳
 - [ ] Create websocket service
@@ -640,9 +655,19 @@ VITE_ENABLE_WEBSOCKET=true
 
 ---
 
-**Status:** ✅ Phase 2 Complete
-**Next:** Phase 3 - Order Integration
-**Overall Progress:** 37.5% Complete (3/8 components)
+**Status:** ✅ Phase 3 Complete
+**Next:** Phase 4 - WebSocket Integration
+**Overall Progress:** 50% Complete (4/8 components)
+
+**Completed Integrations:**
+- ✅ Auth Store (User Service)
+- ✅ Menu Store (Inventory Service)
+- ✅ Order Store (Order Service)
+
+**Remaining:**
+- ⏳ WebSocket (Real-time updates)
+- ⏳ Payment (Payment processing)
+- ⏳ Analytics (User stats & recommendations)
 
 ---
 
