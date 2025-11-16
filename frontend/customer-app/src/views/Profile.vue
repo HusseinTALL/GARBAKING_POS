@@ -1,158 +1,210 @@
-<!--
-  Profile View - User profile and order history
-  Shows customer information and past orders
--->
+<script setup lang="ts">
+/**
+ * Profile - User profile and settings (Page 11 - UI/UX 4.4)
+ *
+ * Features:
+ * - User profile card with photo and stats
+ * - Account settings menu
+ * - Help & support options
+ * - Logout button
+ * - Bottom navigation
+ */
+
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import BottomNavigation from '@/components/BottomNavigation.vue'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+// Mock user data - replace with actual auth store
+const user = ref({
+  name: 'John Doe',
+  email: 'john.doe@example.com',
+  phone: '+1 (555) 123-4567',
+  photo: 'https://i.pravatar.cc/150?img=12',
+  stats: {
+    orders: 24,
+    points: 1250,
+    vouchers: 3
+  }
+})
+
+// Menu items
+const accountMenuItems = [
+  {
+    id: 'edit-profile',
+    icon: 'fa-user-edit',
+    label: 'Edit Profile',
+    route: '/profile/edit'
+  },
+  {
+    id: 'addresses',
+    icon: 'fa-location-dot',
+    label: 'My Addresses',
+    route: '/addresses'
+  },
+  {
+    id: 'payment',
+    icon: 'fa-credit-card',
+    label: 'Payment Methods',
+    route: '/payment-methods'
+  },
+  {
+    id: 'notifications',
+    icon: 'fa-bell',
+    label: 'Notifications',
+    route: '/notifications'
+  }
+]
+
+const supportMenuItems = [
+  {
+    id: 'help',
+    icon: 'fa-circle-question',
+    label: 'Help Center',
+    route: '/help'
+  },
+  {
+    id: 'contact',
+    icon: 'fa-headset',
+    label: 'Contact Us',
+    route: '/contact'
+  },
+  {
+    id: 'about',
+    icon: 'fa-info-circle',
+    label: 'About',
+    route: '/about'
+  },
+  {
+    id: 'terms',
+    icon: 'fa-file-contract',
+    label: 'Terms & Privacy',
+    route: '/terms'
+  }
+]
+
+function navigateTo(route: string) {
+  router.push(route)
+}
+
+function logout() {
+  // TODO: Implement logout
+  console.log('Logout')
+  // authStore.logout()
+  router.push('/login')
+}
+</script>
 
 <template>
-  <div class="min-h-screen bg-white pb-20">
+  <div class="min-h-screen bg-gradient-warm pb-24">
     <!-- Header -->
-    <header class="sticky top-0 z-20 bg-white border-b border-gray-100">
-      <div class="max-w-md mx-auto px-4 py-4">
-        <div class="flex items-center justify-between">
-          <h1 class="text-2xl font-bold text-text-DEFAULT">Profile</h1>
+    <div class="px-6 pt-8 pb-6 bg-white rounded-b-3xl shadow-sm">
+      <h2 class="text-black font-bold text-lg text-center">Profile</h2>
+    </div>
 
-          <!-- Language Toggle -->
+    <!-- Content -->
+    <div class="px-6 py-6 space-y-6">
+      <!-- User Profile Card -->
+      <div class="bg-gradient-primary rounded-3xl p-6 shadow-xl">
+        <div class="flex items-center gap-4 mb-5">
+          <div class="relative">
+            <img
+              :src="user.photo"
+              :alt="user.name"
+              class="w-20 h-20 rounded-full object-cover border-4 border-white"
+            />
+            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
+          </div>
+
+          <div class="flex-1">
+            <h3 class="text-white font-bold text-xl mb-1">{{ user.name }}</h3>
+            <p class="text-white opacity-90 text-sm mb-1">{{ user.email }}</p>
+            <p class="text-white opacity-80 text-xs">{{ user.phone }}</p>
+          </div>
+
           <button
-            @click="toggleLanguage"
-            class="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+            @click="navigateTo('/profile/edit')"
+            class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center"
           >
-            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
-            </svg>
-            <span class="text-sm font-medium text-gray-700">{{ currentLocale === 'fr' ? 'FR' : 'EN' }}</span>
+            <i class="fas fa-pen text-white"></i>
+          </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-3 pt-5 border-t border-white/20">
+          <div class="text-center">
+            <p class="text-white font-bold text-2xl mb-1">{{ user.stats.orders }}</p>
+            <p class="text-white opacity-80 text-xs">Orders</p>
+          </div>
+          <div class="text-center">
+            <p class="text-white font-bold text-2xl mb-1">{{ user.stats.points }}</p>
+            <p class="text-white opacity-80 text-xs">Points</p>
+          </div>
+          <div class="text-center">
+            <p class="text-white font-bold text-2xl mb-1">{{ user.stats.vouchers }}</p>
+            <p class="text-white opacity-80 text-xs">Vouchers</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Settings -->
+      <div class="bg-white rounded-3xl p-5 shadow-md">
+        <h3 class="text-black font-bold mb-4">Account Settings</h3>
+
+        <div class="space-y-1">
+          <button
+            v-for="item in accountMenuItems"
+            :key="item.id"
+            @click="navigateTo(item.route)"
+            class="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors"
+          >
+            <div class="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0">
+              <i :class="`fas ${item.icon} text-primary-500 text-lg`"></i>
+            </div>
+            <span class="flex-1 text-left text-black font-semibold">{{ item.label }}</span>
+            <i class="fas fa-chevron-right text-black opacity-30 text-sm"></i>
           </button>
         </div>
       </div>
-    </header>
 
-    <!-- Main content -->
-    <main class="max-w-md mx-auto px-4 py-6">
-      <!-- User Info Card -->
-      <div class="bg-gradient-to-br from-primary-400 to-primary-600 rounded-3xl p-6 mb-6 text-white">
-        <div class="flex items-center gap-4 mb-4">
-          <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-          </div>
-          <div>
-            <h2 class="text-xl font-bold">{{ customerName || 'Guest User' }}</h2>
-            <p class="text-white/80 text-sm">{{ customerPhone || 'No phone number' }}</p>
-          </div>
-        </div>
+      <!-- Help & Support -->
+      <div class="bg-white rounded-3xl p-5 shadow-md">
+        <h3 class="text-black font-bold mb-4">Help & Support</h3>
 
-        <div class="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-white/20">
-          <div class="text-center">
-            <p class="text-2xl font-bold">{{ totalOrders }}</p>
-            <p class="text-white/80 text-xs">Orders</p>
-          </div>
-          <div class="text-center">
-            <p class="text-2xl font-bold">0</p>
-            <p class="text-white/80 text-xs">Points</p>
-          </div>
-          <div class="text-center">
-            <p class="text-2xl font-bold">0</p>
-            <p class="text-white/80 text-xs">Vouchers</p>
-          </div>
+        <div class="space-y-1">
+          <button
+            v-for="item in supportMenuItems"
+            :key="item.id"
+            @click="navigateTo(item.route)"
+            class="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors"
+          >
+            <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <i :class="`fas ${item.icon} text-black opacity-60 text-lg`"></i>
+            </div>
+            <span class="flex-1 text-left text-black font-semibold">{{ item.label }}</span>
+            <i class="fas fa-chevron-right text-black opacity-30 text-sm"></i>
+          </button>
         </div>
       </div>
 
-      <!-- Quick Actions -->
-      <div class="grid grid-cols-2 gap-3 mb-6">
-        <button
-          @click="goToHome"
-          class="bg-background-gray rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-gray-200 transition-colors"
-        >
-          <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-          </svg>
-          <span class="text-sm font-semibold text-text-DEFAULT">New Order</span>
-        </button>
-
-        <button
-          @click="goToVouchers"
-          class="bg-background-gray rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-gray-200 transition-colors"
-        >
-          <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-          </svg>
-          <span class="text-sm font-semibold text-text-DEFAULT">My Vouchers</span>
-        </button>
-      </div>
-
-      <!-- Order History Section -->
-      <div class="mb-4">
-        <h3 class="text-lg font-bold text-text-DEFAULT mb-3">Order History</h3>
-      </div>
-
-      <!-- Order History Component -->
-      <OrderHistory />
-    </main>
+      <!-- Logout Button -->
+      <button
+        @click="logout"
+        class="w-full bg-white border-2 border-red-500 text-red-500 font-bold py-4 rounded-2xl flex items-center justify-center gap-2"
+      >
+        <i class="fas fa-right-from-bracket"></i>
+        Logout
+      </button>
+    </div>
 
     <!-- Bottom Navigation -->
     <BottomNavigation />
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useToast } from 'vue-toastification'
-import { useCartStore } from '@/stores/cart'
-import { ordersApi } from '@/services/api'
-import { setLocale, getCurrentLocale } from '@/plugins/i18n'
-import BottomNavigation from '@/components/BottomNavigation.vue'
-import OrderHistory from '@/components/OrderHistory.vue'
-
-const router = useRouter()
-const cartStore = useCartStore()
-const toast = useToast()
-const { t, locale } = useI18n()
-
-// Get customer info from cart store
-const customerName = computed(() => cartStore.customerInfo.name || 'Guest User')
-const customerPhone = computed(() => cartStore.customerInfo.phone || '')
-
-// Total orders count
-const totalOrders = ref(0)
-
-// Current locale
-const currentLocale = computed(() => locale.value)
-
-// Toggle language between French and English
-const toggleLanguage = () => {
-  const newLocale = currentLocale.value === 'fr' ? 'en' : 'fr'
-  setLocale(newLocale)
-
-  const languageName = newLocale === 'fr' ? 'Français' : 'English'
-  toast.success(`Language changed to ${languageName}`)
-}
-
-// Fetch total orders count
-const fetchOrderCount = async () => {
-  if (!customerPhone.value) return
-
-  try {
-    const response = await ordersApi.getCustomerOrderHistory(customerPhone.value)
-    if (response.success && response.data) {
-      totalOrders.value = response.data.count || 0
-    }
-  } catch (error) {
-    console.error('Error fetching order count:', error)
-  }
-}
-
-const goToHome = () => {
-  router.push('/home')
-}
-
-const goToVouchers = () => {
-  router.push('/vouchers')
-}
-
-// Lifecycle
-onMounted(() => {
-  fetchOrderCount()
-})
-</script>
+<style scoped>
+/* Add any component-specific styles */
+</style>
