@@ -15,10 +15,10 @@
         <div class="flex items-center space-x-2">
           <div :class="[
             'w-3 h-3 rounded-full',
-            menuStore.isLoading ? 'bg-secondary-500 animate-pulse' : 'bg-success-500'
+            menuStore.loading ? 'bg-secondary-500 animate-pulse' : 'bg-success-500'
           ]"></div>
           <span class="text-sm text-text-light">
-            {{ menuStore.isLoading ? 'Loading...' : `${availableItems.length} items` }}
+            {{ menuStore.loading ? 'Loading...' : `${availableItems.length} items` }}
           </span>
         </div>
       </div>
@@ -66,7 +66,7 @@
     <!-- Menu Items Grid -->
     <div class="flex-1 min-h-0 overflow-y-auto p-4">
       <!-- Loading -->
-      <div v-if="menuStore.isLoading" class="flex items-center justify-center h-64">
+      <div v-if="menuStore.loading" class="flex items-center justify-center h-64">
         <div class="text-center">
           <Loader2 class="animate-spin w-8 h-8 text-primary-500 mb-4" />
           <p class="text-text-light">Loading menu items...</p>
@@ -234,7 +234,7 @@ const notification = useNotificationStore()
 
 // Reactive data
 const searchQuery = ref('')
-const selectedCategory = ref<string | null>(null)
+const selectedCategory = ref<number | null>(null)
 const selectedItem = ref<MenuItem | null>(null)
 const modalQuantity = ref(1)
 const specialInstructions = ref('')

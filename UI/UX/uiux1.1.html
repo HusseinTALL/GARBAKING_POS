@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Ordering App - UI Design</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #f5f1e8 0%, #faf8f3 100%);
+            display: flex;
+            gap: 30px;
+            overflow-x: auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .phone-container {
+            flex-shrink: 0;
+            width: 375px;
+            height: 812px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            position: relative;
+            border: 12px solid #1f2937;
+        }
+        
+        .screen {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .screen::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #faf8f3 0%, #f5f1e8 100%);
+        }
+        
+        .hero-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f59e0b' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        .food-card {
+            transition: transform 0.2s ease;
+        }
+        
+        .food-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+        }
+        .screen {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 90px; /* space for bottom nav */
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Page 1: Welcome/Splash Screen -->
+    <div class="phone-container relative">
+        <div class="screen gradient-bg hero-pattern">
+            <div class="flex flex-col items-center justify-between h-full px-8 py-16">
+                <!-- Logo Area -->
+                <div class="flex flex-col items-center mt-12">
+                    <div class="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl mb-6">
+                        <i class="fas fa-utensils text-4xl text-white"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-black mb-2">FoodHub</h1>
+                    <p class="text-black text-sm opacity-60">Delicious food, delivered fast</p>
+                </div>
+                
+                <!-- Hero Image -->
+                <div class="relative my-8">
+                    <div class="w-72 h-72 rounded-full overflow-hidden shadow-2xl border-8 border-white">
+                        <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=800&fit=crop" 
+                             alt="Pizza" 
+                             class="w-full h-full object-cover">
+                    </div>
+                    <!-- Floating elements -->
+                    <div class="absolute -top-4 -right-4 w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+                        <i class="fas fa-fire text-2xl text-orange-500"></i>
+                    </div>
+                    <div class="absolute -bottom-4 -left-4 w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+                        <i class="fas fa-star text-2xl text-amber-400"></i>
+                    </div>
+                </div>
+                
+                <!-- CTA Section -->
+                <div class="w-full space-y-4">
+                    <h2 class="text-2xl font-bold text-black text-center mb-2">Quick Delivery at<br>Your Doorstep</h2>
+                    <p class="text-black text-center text-sm opacity-70 mb-6">Order your favorite meals from top restaurants and get it delivered in minutes</p>
+                    
+                    <button class="w-full btn-primary text-white font-semibold py-4 rounded-2xl shadow-lg">
+                        Let's Get Started
+                    </button>
+                    
+                    <div class="flex justify-center gap-2 mt-4">
+                        <div class="w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <div class="w-6 h-2 bg-amber-500 rounded-full"></div>
+                        <div class="w-2 h-2 bg-gray-300 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2: Home/Browse Menu -->
+    <div class="phone-container relative">
+        <div class="screen gradient-bg">
+            <div class="h-full">
+                <!-- Header -->
+                <div class="px-6 pt-8 pb-4 bg-white rounded-b-3xl shadow-sm">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <p class="text-black text-sm opacity-60">Deliver to</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <i class="fas fa-location-dot text-amber-500"></i>
+                                <h2 class="text-black font-bold">Times Square, NY</h2>
+                                <i class="fas fa-chevron-down text-black text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-bell text-white text-xl"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-black opacity-40"></i>
+                        <input type="text" 
+                               placeholder="Search for dishes..." 
+                               class="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <button class="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-sliders text-white"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Categories -->
+                <div class="px-6 py-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-black font-bold text-lg">Explore Categories</h3>
+                        <button class="text-amber-500 text-sm font-semibold">See All</button>
+                    </div>
+                    
+                    <div class="flex gap-4 overflow-x-auto pb-2">
+                        <div class="flex-shrink-0">
+                            <div class="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg mb-2">
+                                <i class="fas fa-pizza-slice text-3xl text-white"></i>
+                            </div>
+                            <p class="text-black text-xs text-center font-medium">Pizza</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-md mb-2 border border-gray-100">
+                                <i class="fas fa-burger text-3xl text-gray-400"></i>
+                            </div>
+                            <p class="text-black text-xs text-center font-medium opacity-60">Burger</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-md mb-2 border border-gray-100">
+                                <i class="fas fa-bowl-food text-3xl text-gray-400"></i>
+                            </div>
+                            <p class="text-black text-xs text-center font-medium opacity-60">Noodles</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-md mb-2 border border-gray-100">
+                                <i class="fas fa-ice-cream text-3xl text-gray-400"></i>
+                            </div>
+                            <p class="text-black text-xs text-center font-medium opacity-60">Dessert</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Featured Banner -->
+                <div class="px-6 mb-6">
+                    <div class="bg-gradient-to-r from-orange-500 to-amber-400 rounded-3xl p-6 relative overflow-hidden shadow-xl">
+                        <div class="absolute right-0 top-0 w-32 h-32 opacity-20">
+                            <i class="fas fa-utensils text-9xl text-white transform rotate-12"></i>
+                        </div>
+                        <div class="relative z-10">
+                            <h3 class="text-white font-bold text-xl mb-1">Get 30% Off</h3>
+                            <p class="text-white text-sm mb-4 opacity-90">On your first order</p>
+                            <button class="bg-white text-black font-semibold px-6 py-2 rounded-xl text-sm">
+                                Order Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Popular Dishes -->
+                <div class="px-6 pb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-black font-bold text-lg">Popular Dishes</h3>
+                        <button class="text-amber-500 text-sm font-semibold">View All</button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- Food Card 1 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&h=400&fit=crop" 
+                                     alt="Margherita Pizza" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Margherita Pizza</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs">4.8</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">20 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$12.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Food Card 2 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop" 
+                                     alt="Classic Burger" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Classic Burger</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs">4.9</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">15 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$10.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Food Card 3 -->
+                        <div class="food-card bg-white rounded-3xl p-4 shadow-md flex items-center gap-4">
+                            <div class="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
+                                <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?w=400&h=400&fit=crop" 
+                                     alt="Ramen Bowl" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-black font-bold mb-1">Spicy Ramen</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                                    <span class="text-black text-xs">4.7</span>
+                                    <span class="text-black text-xs opacity-40">•</span>
+                                    <i class="fas fa-clock text-black opacity-40 text-xs"></i>
+                                    <span class="text-black text-xs opacity-60">25 min</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-black font-bold text-lg">$14.00</span>
+                                    <button class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Navigation -->
+                <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4">
+                    <div class="flex items-center justify-around">
+                        <button class="flex flex-col items-center gap-1">
+                            <i class="fas fa-home text-amber-500 text-xl"></i>
+                            <span class="text-amber-500 text-xs font-semibold">Home</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-1">
+                            <i class="fas fa-heart text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Favorites</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-1">
+                            <i class="fas fa-shopping-bag text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Orders</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-1">
+                            <i class="fas fa-user text-black opacity-40 text-xl"></i>
+                            <span class="text-black opacity-40 text-xs">Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

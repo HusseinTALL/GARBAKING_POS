@@ -1,9 +1,19 @@
 server:
   port: 8761
+  shutdown: graceful  # Enable graceful shutdown
+  tomcat:
+    connection-timeout: 20000  # 20 seconds
+    threads:
+      max: 200
+      min-spare: 10
 
 spring:
   application:
     name: discovery-server
+
+  # Lifecycle Configuration for Graceful Shutdown
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 eureka:
   instance:

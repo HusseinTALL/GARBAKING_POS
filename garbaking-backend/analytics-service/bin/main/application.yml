@@ -1,9 +1,20 @@
 server:
   port: 8086
+  shutdown: graceful  # Enable graceful shutdown
+  tomcat:
+    connection-timeout: 20000  # 20 seconds
+    threads:
+      max: 200
+      min-spare: 10
 
 spring:
   application:
     name: analytics-service
+
+  # Lifecycle Configuration for Graceful Shutdown
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   cloud:
     config:
       enabled: false
@@ -55,3 +66,23 @@ garbaking:
     environment: local
     alerts:
       evaluation-interval: PT5M
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+  retry:
+    instances:
+      default:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - java.net.SocketTimeoutException

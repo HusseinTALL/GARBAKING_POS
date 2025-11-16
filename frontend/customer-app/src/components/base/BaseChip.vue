@@ -100,38 +100,38 @@ const chipClasses = computed(() => {
 
   // Size classes
   const sizeClasses = {
-    sm: 'text-xs px-2.5 py-1 h-7',
-    md: 'text-sm px-3 py-1.5 h-8',
-    lg: 'text-base px-4 py-2 h-10'
+    sm: 'text-xs px-3 py-1.5 h-8',
+    md: 'text-sm px-4 py-2.5 h-11 font-bold',
+    lg: 'text-base px-5 py-3 h-12 font-bold'
   }
   classes.push(sizeClasses[props.size])
 
-  // Always rounded
-  classes.push('rounded-full')
+  // Always rounded with shadow
+  classes.push('rounded-2xl shadow-card hover:shadow-card-hover')
 
   // Base variant styles
   const variantClasses = {
     default: {
       normal: [
-        'bg-gray-100 text-gray-700',
-        'hover:bg-gray-200',
-        'dark:bg-gray-700 dark:text-gray-200',
-        'dark:hover:bg-gray-600'
+        'bg-white text-gray-700 border-2 border-gray-200',
+        'hover:bg-gray-50 hover:border-gray-300',
+        'dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700',
+        'dark:hover:bg-gray-700'
       ],
       selected: [
-        'bg-gray-700 text-white',
+        'bg-gradient-primary text-gray-900 border-2 border-primary-400 shadow-button',
         'dark:bg-gray-200 dark:text-gray-900'
       ]
     },
     primary: {
       normal: [
-        'bg-primary-100 text-primary-700',
-        'hover:bg-primary-200',
-        'dark:bg-primary-900/30 dark:text-primary-300',
-        'dark:hover:bg-primary-900/50'
+        'bg-white text-gray-700 border-2 border-gray-200',
+        'hover:bg-gray-50 hover:border-gray-300',
+        'dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700',
+        'dark:hover:bg-gray-700'
       ],
       selected: [
-        'bg-primary-500 text-white',
+        'bg-gradient-primary text-gray-900 border-2 border-primary-400 shadow-button',
         'dark:bg-primary-600'
       ]
     },

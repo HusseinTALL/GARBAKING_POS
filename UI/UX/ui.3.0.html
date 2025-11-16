@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Ordering App - Premium UI Design</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Outfit', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .mobile-frame {
+            width: 375px;
+            height: 812px;
+            background: white;
+            border-radius: 45px;
+            box-shadow: 0 30px 90px rgba(0,0,0,0.2), 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+            margin: 0 20px;
+            flex-shrink: 0;
+            border: 8px solid #1a1a1a;
+        }
+        
+        .gradient-primary {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FFA07A 100%);
+        }
+        
+        .gradient-secondary {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+        
+        .gradient-accent {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        }
+        
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card-premium {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+        }
+        
+        .hover-scale {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-scale:active {
+            transform: scale(0.97);
+        }
+        
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        .animate-slide-up {
+            animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-scale-in {
+            animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .blob-shape {
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .badge-glow {
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+        }
+        
+        .category-chip {
+            transition: all 0.3s ease;
+        }
+        
+        .category-chip:active {
+            transform: scale(0.95);
+        }
+        
+        .food-card-img {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .food-card:hover .food-card-img {
+            transform: scale(1.05);
+        }
+        
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+    
+    <!-- Information Architecture Plan -->
+    <div class="max-w-6xl mx-auto mb-12 bg-white rounded-3xl p-8 card-premium">
+        <h1 class="text-4xl font-bold mb-2 text-gradient">FoodHub Premium</h1>
+        <p class="text-gray-600 mb-8">Restaurant Ordering App - Functional & Information Architecture</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 gradient-accent rounded-xl flex items-center justify-center">
+                        <i class="fas fa-star" style="color: white;"></i>
+                    </div>
+                    <h3 class="text-xl font-bold" style="color: black;">Core Features</h3>
+                </div>
+                <ul class="space-y-2.5 text-sm" style="color: black;">
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Browse menu by categories</li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Smart search and filter dishes</li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Detailed product information</li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Dynamic cart management</li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Vouchers and discounts</li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Real-time order tracking</li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Save favorite dishes</li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Profile management</li>
+                </ul>
+            </div>
+            
+            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-layer-group" style="color: white;"></i>
+                    </div>
+                    <h3 class="text-xl font-bold" style="color: black;">App Structure</h3>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs" style="color: black;">
+                    <div class="bg-white rounded-lg p-2 card-premium">1. Welcome Screen</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">2. Home/Browse</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">3. Category View</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">4. Product Detail</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">5. Shopping Cart</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">6. Checkout</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">7. Order Status</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">8. Tracking</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">9. Favorites</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">10. Vouchers</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">11. Profile</div>
+                    <div class="bg-white rounded-lg p-2 card-premium">12. History</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6">
+            <h3 class="text-lg font-bold mb-3 flex items-center gap-2" style="color: black;">
+                <i class="fas fa-palette text-gradient"></i>
+                Design Philosophy
+            </h3>
+            <p class="text-sm leading-relaxed" style="color: black;">
+                Premium minimalism with sophisticated glassmorphism effects, fluid animations, and attention to micro-interactions. 
+                Warm coral-orange gradient palette creating an appetizing and inviting atmosphere. Generous white space, 
+                refined typography, and seamless transitions deliver an exceptional user experience.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Mobile Screens Container -->
+    <div class="flex overflow-x-auto pb-8 gap-6">
+        
+        <!-- Page 1: Welcome/Splash Screen -->
+        <div class="mobile-frame">
+            <div class="w-full h-full gradient-primary relative overflow-hidden">
+                <!-- Decorative Blobs -->
+                <div class="absolute top-20 -right-20 w-64 h-64 bg-white opacity-10 blob-shape animate-float"></div>
+                <div class="absolute bottom-20 -left-20 w-64 h-64 bg-white opacity-10 blob-shape animate-float" style="animation-delay: 1s;"></div>
+                
+                <!-- Content -->
+                <div class="relative z-10 w-full h-full flex flex-col items-center justify-between p-8 pt-20 pb-12">
+                    <!-- Logo Section -->
+                    <div class="text-center animate-scale-in">
+                        <div class="w-28 h-28 bg-white rounded-[32px] flex items-center justify-center mb-6 card-premium shimmer mx-auto">
+                            <i class="fas fa-fire text-5xl text-gradient"></i>
+                        </div>
+                        <h1 class="text-5xl font-bold mb-3 tracking-tight" style="color: white;">FoodHub</h1>
+                        <p class="text-lg font-light opacity-90" style="color: white;">Your favorite meals,<br>delivered in minutes</p>
+                    </div>
+                    
+                    <!-- Hero Image with Glass Card -->
+                    <div class="animate-slide-up">
+                        <div class="glass-dark rounded-[40px] p-2 backdrop-blur-xl">
+                            <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&h=400&fit=crop&q=80" 
+                                 alt="Delicious Food" 
+                                 class="w-80 h-64 object-cover rounded-[32px]">
+                        </div>
+                        
+                        <!-- Floating Badge -->
+                        <div class="glass-card rounded-2xl px-6 py-3 -mt-6 mx-auto w-fit badge-glow animate-scale-in" style="animation-delay: 0.3s;">
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-accent flex items-center justify-center">
+                                        <i class="fas fa-star text-xs" style="color: white;"></i>
+                                    </div>
+                                    <div class="w-8 h-8 rounded-full bg-gradient-accent flex items-center justify-center -ml-2">
+                                        <i class="fas fa-star text-xs" style="color: white;"></i>
+                                    </div>
+                                    <div class="w-8 h-8 rounded-full bg-gradient-accent flex items-center justify-center -ml-2">
+                                        <i class="fas fa-star text-xs" style="color: white;"></i>
+                                    </div>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-xs font-semibold" style="color: black;">4.8 Rating</p>
+                                    <p class="text-xs opacity-60" style="color: black;">12K+ Reviews</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="w-full space-y-4 animate-slide-up" style="animation-delay: 0.2s;">
+                        <button class="w-full glass-card py-5 rounded-[24px] font-bold text-lg hover-scale relative overflow-hidden" style="color: black;">
+                            <span class="relative z-10">Get Started</span>
+                            <div class="absolute inset-0 bg-gradient-accent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                        </button>
+                        <button class="w-full border-2 border-white/30 glass-dark py-5 rounded-[24px] font-semibold text-lg hover-scale" style="color: white;">
+                            Already have an account
+                        </button>
+                        
+                        <!-- Social Login -->
+                        <div class="flex items-center gap-4 pt-4">
+                            <div class="flex-1 h-px bg-white/20"></div>
+                            <span class="text-sm font-medium opacity-70" style="color: white;">Or continue with</span>
+                            <div class="flex-1 h-px bg-white/20"></div>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button class="flex-1 glass-dark py-4 rounded-2xl hover-scale">
+                                <i class="fab fa-google text-xl" style="color: white;"></i>
+                            </button>
+                            <button class="flex-1 glass-dark py-4 rounded-2xl hover-scale">
+                                <i class="fab fa-apple text-xl" style="color: white;"></i>
+                            </button>
+                            <button class="flex-1 glass-dark py-4 rounded-2xl hover-scale">
+                                <i class="fab fa-facebook text-xl" style="color: white;"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 2: Home/Menu Browse -->
+        <div class="mobile-frame">
+            <div class="w-full h-full bg-gray-50 flex flex-col">
+                <!-- Premium Header -->
+                <div class="bg-white px-6 pt-12 pb-6">
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                <p class="text-xs font-medium text-green-600">Delivering now</p>
+                            </div>
+                            <p class="text-sm opacity-50 mb-1" style="color: black;">Current Location</p>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-map-marker-alt text-lg" style="color: #FF6B6B;"></i>
+                                <div>
+                                    <h2 class="text-base font-bold" style="color: black;">Downtown Plaza</h2>
+                                    <p class="text-xs opacity-60" style="color: black;">123 Main Street</p>
+                                </div>
+                                <i class="fas fa-chevron-down text-xs ml-1" style="color: black;"></i>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <div class="w-14 h-14 gradient-accent rounded-[20px] flex items-center justify-center card-premium hover-scale">
+                                <i class="fas fa-user text-lg" style="color: white;"></i>
+                            </div>
+                            <div class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center badge-glow">
+                                <span class="text-xs font-bold" style="color: white;">3</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Premium Search Bar -->
+                    <div class="relative">
+                        <div class="absolute left-5 top-1/2 transform -translate-y-1/2 flex items-center gap-3">
+                            <i class="fas fa-search text-lg" style="color: #FF6B6B;"></i>
+                        </div>
+                        <input type="text" 
+                               placeholder="Search dishes, restaurants..." 
+                               class="w-full pl-14 pr-14 py-5 bg-gray-50 rounded-[20px] text-sm font-medium outline-none border-2 border-transparent focus:border-orange-200 transition-all"
+                               style="color: black;">
+                        <button class="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 gradient-accent rounded-xl flex items-center justify-center hover-scale">
+                            <i class="fas fa-sliders-h" style="color: white;"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Content Scrollable Area -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Promo Banner -->
+                    <div class="gradient-accent rounded-[28px] p-6 mb-6 relative overflow-hidden card-premium animate-slide-up">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                        <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+                        <div class="relative z-10">
+                            <p class="text-xs font-bold mb-1 opacity-90" style="color: white;">SPECIAL OFFER</p>
+                            <h3 class="text-2xl font-bold mb-2" style="color: white;">Get 30% Off</h3>
+                            <p class="text-sm opacity-90 mb-4" style="color: white;">On your first order<br>Use code: FOODHUB30</p>
+                            <button class="glass-card px-6 py-2.5 rounded-xl font-bold text-sm hover-scale">
+                                <span class="text-gradient">Claim Now</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Categories -->
+                    <div class="mb-6 animate-slide-up" style="animation-delay: 0.1s;">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold" style="color: black;">Categories</h3>
+                            <button class="text-sm font-semibold text-gradient hover-scale">See All</button>
+                        </div>
+                        <div class="flex gap-4 overflow-x-auto pb-2">
+                            <div class="flex-shrink-0 category-chip">
+                                <div class="w-20 h-20 gradient-accent rounded-[22px] flex items-center justify-center mb-2 card-premium">
+                                    <i class="fas fa-pizza-slice text-2xl" style="color: white;"></i>
+                                </div>
+                                <p class="text-xs font-bold text-center" style="color: black;">Pizza</p>
+                            </div>
+                            <div class="flex-shrink-0 category-chip">
+                                <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-500 rounded-[22px] flex items-center justify-center mb-2 card-premium">
+                                    <i class="fas fa-hamburger text-2xl" style="color: white;"></i>
+                                </div>
+                                <p class="text-xs font-bold text-center" style="color: black;">Burgers</p>
+                            </div>
+                            <div class="flex-shrink-0 category-chip">
+                                <div class="w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-500 rounded-[22px] flex items-center justify-center mb-2 card-premium">
+                                    <i class="fas fa-ice-cream text-2xl" style="color: white;"></i>
+                                </div>
+                                <p class="text-xs font-bold text-center" style="color: black;">Desserts</p>
+                            </div>
+                            <div class="flex-shrink-0 category-chip">
+                                <div class="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-[22px] flex items-center justify-center mb-2 card-premium">
+                                    <i class="fas fa-coffee text-2xl" style="color: white;"></i>
+                                </div>
+                                <p class="text-xs font-bold text-center" style="color: black;">Drinks</p>
+                            </div>
+                            <div class="flex-shrink-0 category-chip">
+                                <div class="w-20 h-20 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-[22px] flex items-center justify-center mb-2 card-premium">
+                                    <i class="fas fa-fish text-2xl" style="color: white;"></i>
+                                </div>
+                                <p class="text-xs font-bold text-center" style="color: black;">Seafood</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Popular Dishes -->
+                    <div class="mb-6 animate-slide-up" style="animation-delay: 0.2s;">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold" style="color: black;">Popular Now</h3>
+                            <button class="text-sm font-semibold text-gradient hover-scale">View All</button>
+                        </div>
+                        
+                        <!-- Premium Food Card 1 -->
+                        <div class="bg-white rounded-[28px] p-4 mb-4 card-premium hover-scale food-card">
+                            <div class="flex gap-4">
+                                <div class="relative flex-shrink-0">
+                                    <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&h=300&fit=crop&q=80" 
+                                         alt="Margherita Pizza"
+                                         class="w-32 h-32 object-cover rounded-[22px] food-card-img">
+                                    <div class="absolute top-2 left-2 glass-card px-3 py-1 rounded-xl">
+                                        <div class="flex items-center gap-1">
+                                            <i class="fas fa-star text-xs" style="color: #FFA500;"></i>
+                                            <span class="text-xs font-bold" style="color: black;">4.8</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1 flex flex-col justify-between py-1">
+                                    <div>
+                                        <div class="flex items-start justify-between mb-1">
+                                            <h4 class="font-bold text-base leading-tight" style="color: black;">Margherita Pizza</h4>
+                                            <button class="hover-scale ml-2">
+                                                <i class="far fa-heart text-xl" style="color: #FF6B6B;"></i>
+                                            </button>
+                                        </div>
+                                        <p class="text-xs opacity-60 mb-3" style="color: black;">Fresh mozzarella, tomato sauce</p>
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex items-center gap-1 bg-orange-50 px-3 py-1 rounded-lg">
+                                                <i class="fas fa-fire text-xs" style="color: #FF6B6B;"></i>
+                                                <span class="text-xs font-semibold" style="color: #FF6B6B;">Hot</span>
+                                            </div>
+                                            <div class="flex items-center gap-1">
+                                                <i class="fas fa-clock text-xs opacity-50" style="color: black;"></i>
+                                                <span class="text-xs opacity-60" style="color: black;">25-30 min</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <div>
+                                            <p class="text-xs opacity-60" style="color: black;">Price</p>
+                                            <span class="text-2xl font-bold text-gradient">$12.99</span>
+                                        </div>
+                                        <button class="w-11 h-11 gradient-accent rounded-[16px] flex items-center justify-center hover-scale card-premium">
+                                            <i class="fas fa-plus" style="color: white;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Premium Food Card 2 -->
+                        <div class="bg-white rounded-[28px] p-4 mb-4 card-premium hover-scale food-card">
+                            <div class="flex gap-4">
+                                <div class="relative flex-shrink-0">
+                                    <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=300&fit=crop&q=80" 
+                                         alt="Cheese Burger"
+                                         class="w-32 h-32 object-cover rounded-[22px] food-card-img">
+                                    <div class="absolute top-2 left-2 glass-card px-3 py-1 rounded-xl">
+                                        <div class="flex items-center gap-1">
+                                            <i class="fas fa-star text-xs" style="color: #FFA500;"></i>
+                                            <span class="text-xs font-bold" style="color: black;">4.9</span>
+                                        </div>
+                                    </div>
+                                    <button class="absolute top-2 right-2 w-8 h-8 glass-card rounded-xl flex items-center justify-center hover-scale">
+                                        <i class="fas fa-heart text-sm" style="color: #FF6B6B;"></i>
+                                    </button>
+                                </div>
+                                <div class="flex-1 flex flex-col justify-between py-1">
+                                    <div>
+                                        <h4 class="font-bold text-base leading-tight mb-1" style="color: black;">Classic Burger</h4>
+                                        <p class="text-xs opacity-60 mb-3" style="color: black;">Angus beef, lettuce, cheese</p>
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex items-center gap-1 bg-green-50 px-3 py-1 rounded-lg">
+                                                <i class="fas fa-leaf text-xs" style="color: #10b981;"></i>
+                                                <span class="text-xs font-semibold" style="color: #10b981;">Fresh</span>
+                                            </div>
+                                            <div class="flex items-center gap-1">
+                                                <i class="fas fa-clock text-xs opacity-50" style="color: black;"></i>
+                                                <span class="text-xs opacity-60" style="color: black;">15-20 min</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <div>
+                                            <p class="text-xs opacity-60" style="color: black;">Price</p>
+                                            <span class="text-2xl font-bold text-gradient">$9.99</span>
+                                        </div>
+                                        <button class="w-11 h-11 gradient-accent rounded-[16px] flex items-center justify-center hover-scale card-premium">
+                                            <i class="fas fa-plus" style="color: white;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Premium Food Card 3 -->
+                        <div class="bg-white rounded-[28px] p-4 card-premium hover-scale food-card">
+                            <div class="flex gap-4">
+                                <div class="relative flex-shrink-0">
+                                    <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300&h=300&fit=crop&q=80" 
+                                         alt="Pancakes"
+                                         class="w-32 h-32 object-cover rounded-[22px] food-card-img">
+                                    <div class="absolute top-2 left-2 glass-card px-3 py-1 rounded-xl">
+                                        <div class="flex items-center gap-1">
+                                            <i class="fas fa-star text-xs" style="color: #FFA500;"></i>
+                                            <span class="text-xs font-bold" style="color: black;">4.7</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1 flex flex-col justify-between py-1">
+                                    <div>
+                                        <h4 class="font-bold text-base leading-tight mb-1" style="color: black;">Fluffy Pancakes</h4>
+                                        <p class="text-xs opacity-60 mb-3" style="color: black;">With maple syrup & berries</p>
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex items-center gap-1 bg-purple-50 px-3 py-1 rounded-lg">
+                                                <i class="fas fa-crown text-xs" style="color: #a855f7;"></i>
+                                                <span class="text-xs font-semibold" style="color: #a855f7;">Popular</span>
+                                            </div>
+                                            <div class="flex items-center gap-1">
+                                                <i class="fas fa-clock text-xs opacity-50" style="color: black;"></i>
+                                                <span class="text-xs opacity-60" style="color: black;">10-15 min</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <div>
+                                            <p class="text-xs opacity-60" style="color: black;">Price</p>
+                                            <span class="text-2xl font-bold text-gradient">$7.99</span>
+                                        </div>
+                                        <button class="w-11 h-11 gradient-accent rounded-[16px] flex items-center justify-center hover-scale card-premium">
+                                            <i class="fas fa-plus" style="color: white;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Premium Bottom Navigation -->
+                <div class="bg-white px-6 py-5 card-premium">
+                    <div class="flex items-center justify-around">
+                        <button class="flex flex-col items-center gap-1.5 hover-scale">
+                            <div class="w-12 h-12 gradient-accent rounded-[16px] flex items-center justify-center">
+                                <i class="fas fa-home text-lg" style="color: white;"></i>
+                            </div>
+                            <span class="text-xs font-bold text-gradient">Home</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-1.5 hover-scale opacity-40">
+                            <div class="w-12 h-12 bg-gray-100 rounded-[16px] flex items-center justify-center">
+                                <i class="fas fa-heart text-lg" style="color: black;"></i>
+                            </div>
+                            <span class="text-xs font-semibold" style="color: black;">Saved</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-1.5 hover-scale opacity-40 relative">
+                            <div class="w-12 h-12 bg-gray-100 rounded-[16px] flex items-center justify-center">
+                                <i class="fas fa-shopping-bag text-lg" style="color: black;"></i>
+                            </div>
+                            <div class="absolute top-0 right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center badge-glow">
+                                <span class="text-xs font-bold" style="color: white;">2</span>
+                            </div>
+                            <span class="text-xs font-semibold" style="color: black;">Cart</span>
+                        </button>
+                        <button class="flex flex-col items-center gap-1.5 hover-scale opacity-40">
+                            <div class="w-12 h-12 bg-gray-100 rounded-[16px] flex items-center justify-center">
+                                <i class="fas fa-user text-lg" style="color: black;"></i>
+                            </div>
+                            <span class="text-xs font-semibold" style="color: black;">Profile</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 3: Category View -->
+        <div class="mobile-frame">
+            <div class="w-full h-full bg-gray-50 flex flex-col">
+                <!-- Header -->
+                <div class="bg-white px-6 pt-8 pb-6 card-shadow">
+                    <div class="flex items-center gap-4 mb-4">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover-lift">
+                            <i class="fas fa-arrow-left" style="color: black;"></i>
+                        </button>
+                        <h2 class="text-xl font-bold flex-1" style="color: black;">Pizza</h2>
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover-lift">
+                            <i class="fas fa-search" style="color: black;"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Filter Chips -->
+                    <div class="flex gap-2 overflow-x-auto pb-2">
+                        <button class="px-5 py-2 gradient-bg rounded-full text-sm font-medium flex-shrink-0 hover-lift" style="color: white;">
+                            All
+                        </button>
+                        <button class="px-5 py-2 bg-gray-100 rounded-full text-sm font-medium flex-shrink-0 hover-lift" style="color: black;">
+                            Vegetarian
+                        </button>
+                        <button class="px-5 py-2 bg-gray-100 rounded-full text-sm font-medium flex-shrink-0 hover-lift" style="color: black;">
+                            Meat Lovers
+                        </button>
+                        <button class="px-5 py-2 bg-gray-100 rounded-full text-sm font-medium flex-shrink-0 hover-lift" style="color: black;">
+                            Spicy
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Grid View -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Item 1 -->
+                        <div class="bg-white rounded-3xl overflow-hidden card-shadow hover-lift">
+                            <div class="relative">
+                                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=300&h=200&fit=crop" 
+                                     alt="Pizza"
+                                     class="w-full h-36 object-cover">
+                                <button class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center hover-lift">
+                                    <i class="far fa-heart text-sm" style="color: black;"></i>
+                                </button>
+                                <div class="absolute bottom-3 left-3 px-3 py-1 bg-white rounded-full flex items-center gap-1">
+                                    <i class="fas fa-star text-xs" style="color: #FFA500;"></i>
+                                    <span class="text-xs font-semibold" style="color: black;">4.8</span>
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-semibold text-sm mb-1" style="color: black;">Margherita</h4>
+                                <p class="text-xs opacity-60 mb-2" style="color: black;">Classic Italian</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-base font-bold" style="color: black;">$12.99</span>
+                                    <button class="w-7 h-7 gradient-bg rounded-lg flex items-center justify-center hover-lift">
+                                        <i class="fas fa-plus text-xs" style="color: white;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Item 2 -->
+                        <div class="bg-white rounded-3xl overflow-hidden card-shadow hover-lift">
+                            <div class="relative">
+                                <img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=300&h=200&fit=crop" 
+                                     alt="Pizza"
+                                     class="w-full h-36 object-cover">
+                                <button class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center hover-lift">
+                                    <i class="fas fa-heart text-sm" style="color: #f5576c;"></i>
+                                </button>
+                                <div class="absolute bottom-3 left-3 px-3 py-1 bg-white rounded-full flex items-center gap-1">
+                                    <i class="fas fa-star text-xs" style="color: #FFA500;"></i>
+                                    <span class="text-xs font-semibold" style="color: black;">4.9</span>
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-semibold text-sm mb-1" style="color: black;">Pepperoni</h4>
+                                <p class="text-xs opacity-60 mb-2" style="color: black;">Spicy & delicious</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-base font-bold" style="color: black;">$14.99</span>
+                                    <button class="w-7 h-7 gradient-bg rounded-lg flex items-center justify-center hover-lift">
+                                        <i class="fas fa-plus text-xs" style="color: white;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Item 3 -->
+                        <div class="bg-white rounded-3xl overflow-hidden card-shadow hover-lift">
+                            <div class="relative">
+                                <img src="https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=300&h=200&fit=crop" 
+                                     alt="Pizza"
+                                     class="w-full h-36 object-cover">
+                                <button class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center hover-lift">
+                                    <i class="far fa-heart text-sm" style="color: black;"></i>
+                                </button>
+                                <div class="absolute bottom-3 left-3 px-3 py-1 bg-white rounded-full flex items-center gap-1">
+                                    <i class="fas fa-star text-xs" style="color: #FFA500;"></i>
+                                    <span class="text-xs font-semibold" style="color: black;">4.7</span>
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-semibold text-sm mb-1" style="color: black;">Veggie Delight</h4>
+                                <p class="text-xs opacity-60 mb-2" style="color: black;">Fresh vegetables</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-base font-bold" style="color: black;">$11.99</span>
+                                    <button class="w-7 h-7 gradient-bg rounded-lg flex items-center justify-center hover-lift">
+                                        <i class="fas fa-plus text-xs" style="color: white;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Item 4 -->
+                        <div class="bg-white rounded-3xl overflow-hidden card-shadow hover-lift">
+                            <div class="relative">
+                                <img src="https://images.unsplash.com/photo-1595708684082-a173bb3a06c5?w=300&h=200&fit=crop" 
+                                     alt="Pizza"
+                                     class="w-full h-36 object-cover">
+                                <button class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center hover-lift">
+                                    <i class="far fa-heart text-sm" style="color: black;"></i>
+                                </button>
+                                <div class="absolute bottom-3 left-3 px-3 py-1 bg-white rounded-full flex items-center gap-1">
+                                    <i class="fas fa-star text-xs" style="color: #FFA500;"></i>
+                                    <span class="text-xs font-semibold" style="color: black;">4.6</span>
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-semibold text-sm mb-1" style="color: black;">BBQ Chicken</h4>
+                                <p class="text-xs opacity-60 mb-2" style="color: black;">Smoky flavor</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-base font-bold" style="color: black;">$15.99</span>
+                                    <button class="w-7 h-7 gradient-bg rounded-lg flex items-center justify-center hover-lift">
+                                        <i class="fas fa-plus text-xs" style="color: white;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 4: Product Detail -->
+        <div class="mobile-frame">
+            <div class="w-full h-full bg-white flex flex-col">
+                <!-- Hero Image -->
+                <div class="relative">
+                    <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=350&fit=crop" 
+                         alt="Pizza"
+                         class="w-full h-80 object-cover">
+                    <button class="absolute top-8 left-6 w-10 h-10 bg-white rounded-xl flex items-center justify-center hover-lift card-shadow">
+                        <i class="fas fa-arrow-left" style="color: black;"></i>
+                    </button>
+                    <button class="absolute top-8 right-6 w-10 h-10 bg-white rounded-xl flex items-center justify-center hover-lift card-shadow">
+                        <i class="fas fa-heart" style="color: #f5576c;"></i>
+                    </button>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <h2 class="text-2xl font-bold mb-2" style="color: black;">Margherita Pizza</h2>
+                            <p class="text-sm opacity-60" style="color: black;">Classic Italian pizza with fresh ingredients</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Rating & Info -->
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-star" style="color: #FFA500;"></i>
+                            <span class="font-semibold" style="color: black;">4.8</span>
+                            <span class="text-sm opacity-60" style="color: black;">(230)</span>
+                        </div>
+                        <span class="opacity-40" style="color: black;">•</span>
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-fire" style="color: #f5576c;"></i>
+                            <span class="text-sm font-medium" style="color: black;">150 cal</span>
+                        </div>
+                        <span class="opacity-40" style="color: black;">•</span>
+                        <div class="flex items-center gap-1">
+                            <i class="fas fa-clock" style="color: #667eea;"></i>
+                            <span class="text-sm font-medium" style="color: black;">25-30 min</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-6">
+                        <h3 class="font-semibold mb-2" style="color: black;">Description</h3>
+                        <p class="text-sm opacity-70 leading-relaxed" style="color: black;">
+                            A delightful combination of fresh mozzarella, ripe tomatoes, fragrant basil, and our signature tomato sauce on a perfectly crispy crust. Made with authentic Italian ingredients.
+                        </p>
+                    </div>
+                    
+                    <!-- Size Selection -->
+                    <div class="mb-6">
+                        <h3 class="font-semibold mb-3" style="color: black;">Size</h3>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button class="py-3 bg-gray-100 rounded-2xl text-sm font-medium hover-lift" style="color: black;">
+                                Small
+                            </button>
+                            <button class="py-3 gradient-bg rounded-2xl text-sm font-medium hover-lift" style="color: white;">
+                                Medium
+                            </button>
+                            <button class="py-3 bg-gray-100 rounded-2xl text-sm font-medium hover-lift" style="color: black;">
+                                Large
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add-ons -->
+                    <div class="mb-6">
+                        <h3 class="font-semibold mb-3" style="color: black;">Add-ons</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-cheese text-xl" style="color: #FFA500;"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-sm" style="color: black;">Extra Cheese</p>
+                                        <p class="text-xs opacity-60" style="color: black;">+$2.00</p>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="w-5 h-5 accent-purple-600">
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-leaf text-xl" style="color: #4ade80;"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-sm" style="color: black;">Fresh Basil</p>
+                                        <p class="text-xs opacity-60" style="color: black;">+$1.00</p>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="w-5 h-5 accent-purple-600" checked>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Action -->
+                <div class="px-6 py-4 border-t border-gray-100">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-3 bg-gray-100 rounded-2xl px-4 py-3">
+                            <button class="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover-lift">
+                                <i class="fas fa-minus text-sm" style="color: black;"></i>
+                            </button>
+                            <span class="font-semibold w-6 text-center" style="color: black;">1</span>
+                            <button class="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover-lift">
+                                <i class="fas fa-plus text-sm" style="color: black;"></i>
+                            </button>
+                        </div>
+                        <button class="flex-1 gradient-bg py-4 rounded-2xl font-semibold hover-lift flex items-center justify-center gap-2" style="color: white;">
+                            <span>Add to Cart</span>
+                            <span>•</span>
+                            <span>$15.99</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 5: Shopping Cart -->
+        <div class="mobile-frame">
+            <div class="w-full h-full bg-gray-50 flex flex-col">
+                <!-- Header -->
+                <div class="bg-white px-6 pt-8 pb-6 card-shadow">
+                    <div class="flex items-center gap-4">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover-lift">
+                            <i class="fas fa-arrow-left" style="color: black;"></i>
+                        </button>
+                        <h2 class="text-xl font-bold flex-1" style="color: black;">My Cart</h2>
+                        <button class="hover-lift">
+                            <i class="fas fa-trash-alt" style="color: #f5576c;"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Cart Items -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Item 1 -->
+                    <div class="bg-white rounded-3xl p-4 mb-4 card-shadow">
+                        <div class="flex gap-4">
+                            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=200&fit=crop" 
+                                 alt="Pizza"
+                                 class="w-24 h-24 object-cover rounded-2xl flex-shrink-0">
+                            <div class="flex-1">
+                                <h4 class="font-semibold mb-1" style="color: black;">Margherita Pizza</h4>
+                                <p class="text-xs opacity-60 mb-2" style="color: black;">Medium • Extra Cheese, Fresh Basil</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold" style="color: black;">$15.99</span>
+                                    <div class="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-1">
+                                        <button class="hover-lift">
+                                            <i class="fas fa-minus text-xs" style="color: black;"></i>
+                                        </button>
+                                        <span class="text-sm font-semibold w-4 text-center" style="color: black;">1</span>
+                                        <button class="hover-lift">
+                                            <i class="fas fa-plus text-xs" style="color: black;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Item 2 -->
+                    <div class="bg-white rounded-3xl p-4 mb-4 card-shadow">
+                        <div class="flex gap-4">
+                            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&h=200&fit=crop" 
+                                 alt="Burger"
+                                 class="w-24 h-24 object-cover rounded-2xl flex-shrink-0">
+                            <div class="flex-1">
+                                <h4 class="font-semibold mb-1" style="color: black;">Cheese Burger</h4>
+                                <p class="text-xs opacity-60 mb-2" style="color: black;">Regular • No onions</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold" style="color: black;">$9.99</span>
+                                    <div class="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-1">
+                                        <button class="hover-lift">
+                                            <i class="fas fa-minus text-xs" style="color: black;"></i>
+                                        </button>
+                                        <span class="text-sm font-semibold w-4 text-center" style="color: black;">1</span>
+                                        <button class="hover-lift">
+                                            <i class="fas fa-plus text-xs" style="color: black;"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Voucher Section -->
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-3xl p-4 mb-4 border-2 border-dashed border-purple-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-ticket-alt" style="color: white;"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-sm" style="color: black;">Apply Voucher</p>
+                                <p class="text-xs opacity-60" style="color: black;">3 vouchers available</p>
+                            </div>
+                            <i class="fas fa-chevron-right" style="color: black;"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Delivery Instructions -->
+                    <div class="bg-white rounded-3xl p-4 mb-4 card-shadow">
+                        <div class="flex items-center gap-3 mb-3">
+                            <i class="fas fa-file-alt" style="color: #667eea;"></i>
+                            <h4 class="font-semibold" style="color: black;">Delivery Instructions</h4>
+                        </div>
+                        <textarea 
+                            placeholder="Add delivery notes (e.g., ring the doorbell, leave at door)..."
+                            class="w-full p-3 bg-gray-50 rounded-xl text-sm outline-none resize-none"
+                            rows="2"
+                            style="color: black;"></textarea>
+                    </div>
+                    
+                    <!-- Bill Summary -->
+                    <div class="bg-white rounded-3xl p-4 card-shadow">
+                        <h4 class="font-semibold mb-3" style="color: black;">Bill Summary</h4>
+                        <div class="space-y-2 mb-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="opacity-60" style="color: black;">Subtotal</span>
+                                <span class="font-medium" style="color: black;">$25.98</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="opacity-60" style="color: black;">Delivery Fee</span>
+                                <span class="font-medium" style="color: black;">$2.00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="opacity-60" style="color: black;">Tax</span>
+                                <span class="font-medium" style="color: black;">$2.52</span>
+                            </div>
+                            <div class="border-t border-gray-100 pt-2 mt-2 flex justify-between">
+                                <span class="font-semibold" style="color: black;">Total</span>
+                                <span class="font-bold text-lg" style="color: black;">$30.50</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Action -->
+                <div class="bg-white px-6 py-4 card-shadow">
+                    <button class="w-full gradient-bg py-4 rounded-2xl font-semibold hover-lift flex items-center justify-center gap-2" style="color: white;">
+                        <span>Proceed to Checkout</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 6: Checkout & Payment -->
+        <div class="mobile-frame">
+            <div class="w-full h-full bg-gray-50 flex flex-col">
+                <!-- Header -->
+                <div class="bg-white px-6 pt-8 pb-6 card-shadow">
+                    <div class="flex items-center gap-4">
+                        <button class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover-lift">
+                            <i class="fas fa-arrow-left" style="color: black;"></i>
+                        </button>
+                        <h2 class="text-xl font-bold" style="color: black;">Checkout</h2>
+                    </div>
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 overflow-y-auto px-6 py-6">
+                    <!-- Delivery Address -->
+                    <div class="bg-white rounded-3xl p-4 mb-4 card-shadow">
+                        <div class="flex items-start gap-3">
+                            <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-map-marker-alt" style="color: white;"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-semibold" style="color: black;">Delivery Address</h4>
+                                    <button class="text-sm font-medium hover-lift" style="color: #667eea;">Change</button>
+                                </div>
+                                <p class="text-sm font-medium" style="color: black;">Main Street, 123</p>
+                                <p class="text-xs opacity-60" style="color: black;">New York, NY 10001</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delivery Time -->
+                    <div class="bg-white rounded-3xl p-4 mb-4 card-shadow">
+                        <div class="flex items-center gap-3 mb-3">
+                            <i class="fas fa-clock" style="color: #667eea;"></i>
+                            <h4 class="font-semibold" style="color: black;">Delivery Time</h4>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button class="py-3 gradient-bg rounded-2xl text-sm font-medium hover-lift" style="color: white;">
+                                ASAP (30 min)
+                            </button>
+                            <button class="py-3 bg-gray-100 rounded-2xl text-sm font-medium hover-lift" style="color: black;">
+                                Schedule
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Method -->
+                    <div class="mb-4">
+                        <h4 class="font-semibold mb-3 px-1" style="color: black;">Payment Method</h4>
+                        
+                        <!-- Credit Card -->
+                        <div class="bg-white rounded-3xl p-4 mb-3 card-shadow border-2 border-purple-200">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-credit-card" style="color: white;"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-sm" style="color: black;">Credit Card</p>
+                                    <p class="text-xs opacity-60" style="color: black;">**** **** **** 4532</p>
+                                </div>
+                                <div class="w-5 h-5 gradient-bg rounded-full flex items-center justify-center">
+                                    <i class="fas fa-check text-xs" style="color: white;"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- PayPal -->
+                        <div class="bg-white rounded-3xl p-4 mb-3 card-shadow hover-lift">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fab fa-paypal" style="color: white;"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-sm" style="color: black;">PayPal</p>
+                                    <p class="text-xs opacity-60" style="color: black;">user@email.com</p>
+                                </div>
+                                <div class="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cash -->
+                        <div class="bg-white rounded-3xl p-4 card-shadow hover-lift">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-money-bill-wave" style="color: white;"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-sm" style="color: black;">Cash on Delivery</p>
+                                    <p class="text-xs opacity-60" style="color: black;">Pay when you receive</p>
+                                </div>
+                                <div class="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Summary -->
+                    <div class="bg-white rounded-3xl p-4 card-shadow">
+                        <h4 class="font-semibold mb-3" style="color: black;">Order Summary</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="opacity-60" style="color: black;">Items (2)</span>
+                                <span class="font-medium" style="color: black;">$25.98</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="opacity-60" style="color: black;">Delivery</span>
+                                <span class="font-medium" style="color: black;">$2.00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="opacity-60" style="color: black;">Tax</span>
+                                <span class="font-medium" style="color: black;">$2.52</span>
+                            </div>
+                            <div class="flex justify-between text-sm text-green-600">
+                                <span>Discount</span>
+                                <span class="font-medium">-$3.00</span>
+                            </div>
+                            <div class="border-t border-gray-100 pt-2 mt-2 flex justify-between">
+                                <span class="font-semibold" style="color: black;">Total Payment</span>
+                                <span class="font-bold text-lg" style="color: black;">$27.50</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Action -->
+                <div class="bg-white px-6 py-4 card-shadow">
+                    <button class="w-full gradient-bg py-4 rounded-2xl font-semibold hover-lift" style="color: white;">
+                        Place Order
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Page Information -->
+    <div class="max-w-6xl mx-auto mt-8 bg-white rounded-3xl p-8 card-premium">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 gradient-accent rounded-2xl flex items-center justify-center">
+                <i class="fas fa-mobile-alt text-xl" style="color: white;"></i>
+            </div>
+            <div>
+                <h3 class="text-2xl font-bold" style="color: black;">Pages Generated (6/12)</h3>
+                <p class="text-sm opacity-60" style="color: black;">Advanced UI with elegant minimalism & premium interactions</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-5">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 gradient-accent rounded-lg flex items-center justify-center">
+                        <span class="font-bold text-xs" style="color: white;">1</span>
+                    </div>
+                    <p class="font-bold text-sm" style="color: black;">Welcome/Splash</p>
+                </div>
+                <p class="text-xs opacity-70" style="color: black;">Brand intro with CTAs & social login</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-5">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                        <span class="font-bold text-xs" style="color: white;">2</span>
+                    </div>
+                    <p class="font-bold text-sm" style="color: black;">Home/Menu Browse</p>
+                </div>
+                <p class="text-xs opacity-70" style="color: black;">Categories, search & popular dishes</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                        <span class="font-bold text-xs" style="color: white;">3</span>
+                    </div>
+                    <p class="font-bold text-sm" style="color: black;">Category View</p>
+                </div>
+                <p class="text-xs opacity-70" style="color: black;">Grid layout with filters & sorting</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-5">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center">
+                        <span class="font-bold text-xs" style="color: white;">4</span>
+                    </div>
+                    <p class="font-bold text-sm" style="color: black;">Product Detail</p>
+                </div>
+                <p class="text-xs opacity-70" style="color: black;">Full info with size & add-ons</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl p-5">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-lg flex items-center justify-center">
+                        <span class="font-bold text-xs" style="color: white;">5</span>
+                    </div>
+                    <p class="font-bold text-sm" style="color: black;">Shopping Cart</p>
+                </div>
+                <p class="text-xs opacity-70" style="color: black;">Cart management & bill summary</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl p-5">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-lg flex items-center justify-center">
+                        <span class="font-bold text-xs" style="color: white;">6</span>
+                    </div>
+                    <p class="font-bold text-sm" style="color: black;">Checkout & Payment</p>
+                </div>
+                <p class="text-xs opacity-70" style="color: black;">Payment methods & order review</p>
+            </div>
+        </div>
+        
+        <div class="mt-6 bg-gray-50 rounded-2xl p-6">
+            <h4 class="font-bold mb-3 flex items-center gap-2" style="color: black;">
+                <i class="fas fa-sparkles text-gradient"></i>
+                Design Features Applied
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs" style="color: black;">
+                <div class="text-center">
+                    <div class="w-12 h-12 gradient-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-palette" style="color: white;"></i>
+                    </div>
+                    <p class="font-semibold">Gradient Accents</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 gradient-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-circle-notch" style="color: white;"></i>
+                    </div>
+                    <p class="font-semibold">Rounded Corners</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 gradient-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-bolt" style="color: white;"></i>
+                    </div>
+                    <p class="font-semibold">Micro-interactions</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 gradient-accent rounded-xl flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-layer-group" style="color: white;"></i>
+                    </div>
+                    <p class="font-semibold">Card Shadows</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>

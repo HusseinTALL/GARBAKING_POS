@@ -1,8 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ###############################################################################
 # Garbaking POS - Enhanced Spring Boot Backend Startup Script
 # Advanced logging, monitoring, and service management
+# Compatible with Bash 3.2+ (macOS compatible)
 ###############################################################################
 
 set -e
@@ -57,23 +58,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Ports and service definitions
-declare -A SERVICES=(
-    ["config-server"]="8762:config-server:config-server-1.0.0.jar"
-    ["discovery-server"]="8761:discovery-server:discovery-server-1.0.0.jar"
-    ["user-service"]="8081:user-service:user-service-1.0.0.jar"
-    ["order-service"]="8082:order-service:order-service-1.0.0.jar"
-    ["inventory-service"]="8083:inventory-service:inventory-service-1.0.0.jar"
-    ["operations-service"]="8085:operations-service:operations-service-1.0.0.jar"
-    ["analytics-service"]="8086:analytics-service:analytics-service-1.0.0.jar"
-    ["api-gateway"]="8080:api-gateway:api-gateway-1.0.0.jar"
-)
+# Service definitions (Bash 3.2 compatible - using parallel arrays)
+SERVICE_NAMES=(config-server discovery-server user-service order-service inventory-service operations-service analytics-service api-gateway)
+SERVICE_PORTS=(8762 8761 8081 8082 8083 8085 8086 8080)
+SERVICE_MODULES=(config-server discovery-server user-service order-service inventory-service operations-service analytics-service api-gateway)
+SERVICE_JARS=(config-server-1.0.0.jar discovery-server-1.0.0.jar user-service-1.0.0.jar order-service-1.0.0.jar inventory-service-1.0.0.jar operations-service-1.0.0.jar analytics-service-1.0.0.jar api-gateway-1.0.0.jar)
 
 BACKEND_PORTS=(8762 8761 8081 8082 8083 8085 8086 8080)
 
-declare -A SERVICE_PIDS
-declare -A SERVICE_STATUS
-declare -A SERVICE_START_TIME
+# PIDs tracking
+SERVICE_PIDS=()
+SERVICE_STATUS=()
+SERVICE_START_TIME=()
 
 echo -e "${CYAN}"
 echo "╔═══════════════════════════════════════════════════════════════╗"
@@ -113,25 +109,38 @@ archive_old_logs() {
     print_status "Log archival complete"
 }
 
+# Get service index by name
+get_service_index() {
+    local name=$1
+    for i in "${!SERVICE_NAMES[@]}"; do
+        if [ "${SERVICE_NAMES[$i]}" = "$name" ]; then
+            echo "$i"
+            return 0
+        fi
+    done
+    echo "-1"
+}
+
 # Health check function
 check_service_health() {
-    local service=$1
-    local port=$2
-    local pid=${SERVICE_PIDS[$service]}
-    
+    local index=$1
+    local service="${SERVICE_NAMES[$index]}"
+    local port="${SERVICE_PORTS[$index]}"
+    local pid="${SERVICE_PIDS[$index]}"
+
     if ! kill -0 "$pid" 2>/dev/null; then
-        SERVICE_STATUS[$service]="DEAD"
+        SERVICE_STATUS[$index]="DEAD"
         return 1
     fi
-    
+
     if curl -s "http://localhost:$port/actuator/health" | grep -q "UP" 2>/dev/null; then
-        SERVICE_STATUS[$service]="HEALTHY"
+        SERVICE_STATUS[$index]="HEALTHY"
         return 0
     elif nc -z localhost "$port" 2>/dev/null; then
-        SERVICE_STATUS[$service]="RUNNING"
+        SERVICE_STATUS[$index]="RUNNING"
         return 0
     else
-        SERVICE_STATUS[$service]="STARTING"
+        SERVICE_STATUS[$index]="STARTING"
         return 2
     fi
 }
@@ -140,10 +149,10 @@ check_service_health() {
 monitor_service_logs() {
     local service=$1
     local log_file="$CURRENT_LOG_DIR/${service}.log"
-    
+
     # Check for common error patterns
-    if tail -50 "$log_file" | grep -i "error\|exception\|failed" | grep -v "INFO" >/dev/null 2>&1; then
-        local error_count=$(tail -100 "$log_file" | grep -i "error\|exception" | wc -l)
+    if tail -50 "$log_file" 2>/dev/null | grep -i "error\|exception\|failed" | grep -v "INFO" >/dev/null 2>&1; then
+        local error_count=$(tail -100 "$log_file" 2>/dev/null | grep -i "error\|exception" | wc -l)
         if [ "$error_count" -gt 5 ]; then
             print_warn "$service has $error_count errors in recent logs"
         fi
@@ -154,48 +163,46 @@ monitor_service_logs() {
 cleanup() {
     echo
     print_warn "Initiating graceful shutdown..."
-    
+
     # Stop health monitoring
     if [ -n "$MONITOR_PID" ]; then
         kill "$MONITOR_PID" 2>/dev/null || true
     fi
-    
+
     # Stop services in reverse order
-    local services_to_stop=(api-gateway analytics-service operations-service inventory-service order-service user-service discovery-server config-server)
-    
-    for service in "${services_to_stop[@]}"; do
-        if [ -n "${SERVICE_PIDS[$service]}" ]; then
-            local pid=${SERVICE_PIDS[$service]}
-            if kill -0 "$pid" 2>/dev/null; then
-                print_info "Stopping $service (PID: $pid)..."
-                kill -TERM "$pid" 2>/dev/null || true
-                
-                # Wait for graceful shutdown (max 10 seconds)
-                for i in {1..10}; do
-                    if ! kill -0 "$pid" 2>/dev/null; then
-                        print_status "$service stopped gracefully"
-                        break
-                    fi
-                    sleep 1
-                done
-                
-                # Force kill if still running
-                if kill -0 "$pid" 2>/dev/null; then
-                    kill -KILL "$pid" 2>/dev/null || true
-                    print_warn "$service force killed"
+    for ((i=${#SERVICE_NAMES[@]}-1; i>=0; i--)); do
+        local service="${SERVICE_NAMES[$i]}"
+        local pid="${SERVICE_PIDS[$i]}"
+
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            print_info "Stopping $service (PID: $pid)..."
+            kill -TERM "$pid" 2>/dev/null || true
+
+            # Wait for graceful shutdown (max 10 seconds)
+            for j in {1..10}; do
+                if ! kill -0 "$pid" 2>/dev/null; then
+                    print_status "$service stopped gracefully"
+                    break
                 fi
+                sleep 1
+            done
+
+            # Force kill if still running
+            if kill -0 "$pid" 2>/dev/null; then
+                kill -KILL "$pid" 2>/dev/null || true
+                print_warn "$service force killed"
             fi
         fi
     done
-    
+
     # Kill any remaining processes on backend ports
     for port in "${BACKEND_PORTS[@]}"; do
         lsof -ti:"$port" | xargs kill -9 2>/dev/null || true
     done
-    
+
     # Generate shutdown summary
     generate_session_summary
-    
+
     print_status "All backend services stopped"
     exit 0
 }
@@ -205,25 +212,41 @@ trap cleanup SIGINT SIGTERM EXIT
 # Generate session summary
 generate_session_summary() {
     local summary_file="$CURRENT_LOG_DIR/session_summary.txt"
+
+    # Get directory creation time (cross-platform)
+    local session_start
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        session_start=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" "$CURRENT_LOG_DIR" 2>/dev/null || date '+%Y-%m-%d %H:%M:%S')
+    else
+        session_start=$(stat -c "%y" "$CURRENT_LOG_DIR" 2>/dev/null | cut -d'.' -f1 || date '+%Y-%m-%d %H:%M:%S')
+    fi
+
     {
         echo "═══════════════════════════════════════════════════════"
         echo "  GARBAKING POS - SESSION SUMMARY"
         echo "═══════════════════════════════════════════════════════"
-        echo "Session Start: $(date -r "$CURRENT_LOG_DIR" '+%Y-%m-%d %H:%M:%S')"
+        echo "Session Start: $session_start"
         echo "Session End:   $(date '+%Y-%m-%d %H:%M:%S')"
         echo
         echo "Service Status:"
-        for service in "${!SERVICE_PIDS[@]}"; do
-            local uptime=$(($(date +%s) - ${SERVICE_START_TIME[$service]}))
-            printf "  %-20s Status: %-10s Uptime: %02d:%02d:%02d\n" \
-                "$service" "${SERVICE_STATUS[$service]}" \
-                $((uptime/3600)) $((uptime%3600/60)) $((uptime%60))
+        for i in "${!SERVICE_NAMES[@]}"; do
+            local service="${SERVICE_NAMES[$i]}"
+            local status="${SERVICE_STATUS[$i]:-N/A}"
+            local start_time="${SERVICE_START_TIME[$i]:-0}"
+            if [ "$start_time" -gt 0 ]; then
+                local uptime=$(($(date +%s) - $start_time))
+                printf "  %-20s Status: %-10s Uptime: %02d:%02d:%02d\n" \
+                    "$service" "$status" \
+                    $((uptime/3600)) $((uptime%3600/60)) $((uptime%60))
+            else
+                printf "  %-20s Status: %-10s\n" "$service" "$status"
+            fi
         done
         echo
         echo "Logs location: $CURRENT_LOG_DIR"
         echo "═══════════════════════════════════════════════════════"
     } > "$summary_file"
-    
+
     cat "$summary_file"
 }
 
@@ -257,7 +280,7 @@ print_info "Ensuring Docker infrastructure (MySQL, Kafka) is running..."
 cd "$BACKEND_DIR"
 if ! docker ps | grep -q "garbaking-mysql"; then
     print_warn "MySQL container not running. Starting docker-compose services..."
-    docker-compose up -d mysql zookeeper kafka
+    docker-compose up -d mysql zookeeper kafka minio zipkin
     print_info "Waiting for MySQL to initialize..."
     sleep 15
 else
@@ -282,10 +305,11 @@ print_status "Spring Boot services compiled successfully"
 
 # Enhanced service starter
 start_service() {
-    local service=$1
-    local port=$2
-    local module_dir=$3
-    local jar_name=$4
+    local index=$1
+    local service="${SERVICE_NAMES[$index]}"
+    local port="${SERVICE_PORTS[$index]}"
+    local module_dir="${SERVICE_MODULES[$index]}"
+    local jar_name="${SERVICE_JARS[$index]}"
     local extra_args="--spring.cloud.config.enabled=false"
 
     echo
@@ -298,10 +322,10 @@ start_service() {
         print_error "Jar build/libs/$jar_name not found for $service"
         exit 1
     fi
-    
+
     local log_file="$CURRENT_LOG_DIR/${service}.log"
     local pid_file="$CURRENT_LOG_DIR/${service}.pid"
-    
+
     # Start service with enhanced logging
     {
         echo "═══════════════════════════════════════════════════════"
@@ -311,24 +335,28 @@ start_service() {
         echo "PID: Will be updated..."
         echo "═══════════════════════════════════════════════════════"
     } > "$log_file"
-    
+
     java -jar "build/libs/$jar_name" $extra_args >> "$log_file" 2>&1 &
     local pid=$!
     echo "$pid" > "$pid_file"
-    SERVICE_PIDS[$service]=$pid
-    SERVICE_START_TIME[$service]=$(date +%s)
-    SERVICE_STATUS[$service]="STARTING"
-    
+    SERVICE_PIDS[$index]=$pid
+    SERVICE_START_TIME[$index]=$(date +%s)
+    SERVICE_STATUS[$index]="STARTING"
+
     log_with_timestamp "$service" "Started with PID $pid"
-    
-    # Update PID in log file
-    sed -i "s/PID: Will be updated.../PID: $pid/" "$log_file"
-    
+
+    # Update PID in log file (macOS compatible)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/PID: Will be updated.../PID: $pid/" "$log_file"
+    else
+        sed -i "s/PID: Will be updated.../PID: $pid/" "$log_file"
+    fi
+
     sleep 8
 
     if kill -0 "$pid" 2>/dev/null; then
         print_status "$service started (PID: $pid)"
-        
+
         # Check for immediate errors
         if grep -i "error\|exception" "$log_file" | grep -v "INFO" | head -5; then
             print_warn "$service started but has errors. Check $log_file"
@@ -339,39 +367,38 @@ start_service() {
         echo -e "${RED}━━━━━━━━━━━━━━━━━━ ERROR LOG ━━━━━━━━━━━━━━━━━━${NC}"
         tail -30 "$log_file"
         echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        SERVICE_STATUS[$service]="FAILED"
+        SERVICE_STATUS[$index]="FAILED"
         log_with_timestamp "$service" "FAILED TO START"
         exit 1
     fi
 }
 
 # Start services in correct order
-start_service "config-server" 8762 "config-server" "config-server-1.0.0.jar"
-start_service "discovery-server" 8761 "discovery-server" "discovery-server-1.0.0.jar"
+start_service 0  # config-server
+start_service 1  # discovery-server
 
 print_info "Waiting for core services to be ready..."
 sleep 10
 
-start_service "user-service" 8081 "user-service" "user-service-1.0.0.jar"
-start_service "order-service" 8082 "order-service" "order-service-1.0.0.jar"
-start_service "inventory-service" 8083 "inventory-service" "inventory-service-1.0.0.jar"
-start_service "operations-service" 8085 "operations-service" "operations-service-1.0.0.jar"
-start_service "analytics-service" 8086 "analytics-service" "analytics-service-1.0.0.jar"
+start_service 2  # user-service
+start_service 3  # order-service
+start_service 4  # inventory-service
+start_service 5  # operations-service
+start_service 6  # analytics-service
 
 print_info "Waiting for services to register with Eureka..."
 sleep 10
 
-start_service "api-gateway" 8080 "api-gateway" "api-gateway-1.0.0.jar"
+start_service 7  # api-gateway
 
 # Health check monitoring in background
 if [ "$ENABLE_LOG_MONITORING" = true ]; then
     (
         while true; do
             sleep "$HEALTH_CHECK_INTERVAL"
-            for service in "${!SERVICE_PIDS[@]}"; do
-                IFS=':' read -r port module_dir jar_name <<< "${SERVICES[$service]}"
-                check_service_health "$service" "$port"
-                monitor_service_logs "$service"
+            for i in "${!SERVICE_NAMES[@]}"; do
+                check_service_health "$i"
+                monitor_service_logs "${SERVICE_NAMES[$i]}"
             done
         done
     ) &
@@ -406,6 +433,7 @@ echo "  View specific:      tail -f $CURRENT_LOG_DIR/<service>.log"
 echo "  Service status:     ./status-check.sh"
 echo "  Stop services:      Ctrl+C"
 echo
+
 
 # Create status check script
 cat > "$SCRIPT_DIR/status-check.sh" << 'STATUSEOF'

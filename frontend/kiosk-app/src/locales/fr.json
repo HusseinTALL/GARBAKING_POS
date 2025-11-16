@@ -2,7 +2,9 @@
   "welcome": {
     "title": "Bienvenue chez Garbaking",
     "subtitle": "Touchez n'importe où pour commencer votre commande",
-    "touchToStart": "Toucher pour Commencer"
+    "touchToStart": "Toucher pour Commencer",
+    "startOrdering": "Commencer la Commande",
+    "tagline": "Des Saveurs Fraîches Vous Attendent"
   },
   "mode": {
     "title": "Comment souhaitez-vous profiter de votre repas?",

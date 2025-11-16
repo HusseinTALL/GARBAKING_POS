@@ -35,8 +35,8 @@
 
     <div v-else class="flex-1 flex overflow-hidden">
       <!-- Left: Item Image and Info -->
-      <div class="w-2/5 bg-white p-8 flex flex-col">
-        <div class="aspect-square bg-gray-200 rounded-2xl mb-6 overflow-hidden">
+      <div class="w-2/5 bg-white p-8 flex flex-col shadow-lg">
+        <div class="relative aspect-square bg-gray-200 rounded-3xl mb-6 overflow-hidden shadow-card">
           <img
             v-if="item.imageUrl"
             :src="item.imageUrl"
@@ -48,6 +48,8 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
           </div>
+          <!-- Image overlay for depth -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none"></div>
         </div>
 
         <h2 class="text-4xl font-brand font-semibold text-neutral-900 mb-4">{{ item.name }}</h2>
@@ -58,20 +60,20 @@
       <!-- Right: Customizations -->
       <div class="flex-1 overflow-y-auto p-8">
         <!-- Quantity Selector -->
-        <div class="bg-white rounded-2xl p-6 mb-6 shadow-lg">
+        <div class="bg-white rounded-2xl p-6 mb-6 shadow-card border border-neutral-100">
           <h3 class="text-2xl font-brand font-semibold text-neutral-900 mb-4">{{ t('customize.quantity') }}</h3>
           <div class="flex items-center gap-4">
             <button
               @click="decrementQuantity"
               :disabled="quantity <= 1"
-              class="w-16 h-16 rounded-full bg-neutral-200 hover:bg-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed text-3xl font-semibold text-neutral-700 transition-colors"
+              class="w-16 h-16 rounded-full bg-neutral-100 hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed text-3xl font-semibold text-neutral-700 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
             >
               −
             </button>
-            <div class="text-3xl font-brand font-semibold text-neutral-900 w-20 text-center">{{ quantity }}</div>
+            <div class="text-4xl font-brand font-bold text-neutral-900 w-24 text-center">{{ quantity }}</div>
             <button
               @click="incrementQuantity"
-              class="w-16 h-16 rounded-full bg-brand-500 hover:bg-brand-600 text-white text-3xl font-semibold transition-colors"
+              class="w-16 h-16 rounded-full bg-gradient-primary hover:brightness-110 text-white text-3xl font-semibold transition-all shadow-button hover:shadow-button-hover hover:scale-105 active:scale-95"
             >
               +
             </button>
@@ -82,7 +84,7 @@
         <div
           v-for="customization in item.customizations"
           :key="customization.id"
-          class="bg-white rounded-2xl p-6 mb-6 shadow-lg"
+          class="bg-white rounded-2xl p-6 mb-6 shadow-card border border-neutral-100"
         >
           <div class="flex items-center gap-3 mb-2">
             <h3 class="text-2xl font-brand font-semibold text-neutral-900">
@@ -100,8 +102,8 @@
             <label
               v-for="option in customization.options"
               :key="option.id"
-              class="flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer hover:bg-neutral-50 transition-all duration-normal"
-              :class="isOptionSelected(customization.id, option.id) ? 'border-brand-500 bg-brand-50 shadow-md' : 'border-neutral-200 bg-white'"
+              class="flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all duration-normal"
+              :class="isOptionSelected(customization.id, option.id) ? 'border-brand-400 bg-gradient-soft shadow-md hover:shadow-lg scale-[1.02]' : 'border-neutral-200 bg-white hover:bg-neutral-50 hover:border-neutral-300 hover:shadow-sm'"
             >
               <div class="flex items-center gap-4">
                 <input
@@ -126,12 +128,12 @@
         </div>
 
         <!-- Special Instructions -->
-        <div class="bg-white rounded-2xl p-6 shadow-lg">
+        <div class="bg-white rounded-2xl p-6 shadow-card border border-neutral-100">
           <h3 class="text-2xl font-brand font-semibold text-neutral-900 mb-4">{{ t('customize.specialInstructions') }}</h3>
           <textarea
             v-model="notes"
             rows="3"
-            class="w-full p-4 border-2 border-neutral-200 rounded-xl text-lg text-neutral-700 focus:border-brand-500 focus:ring-2 focus:ring-brand-400/40 focus:outline-none"
+            class="w-full p-4 border-2 border-neutral-200 rounded-xl text-lg text-neutral-700 focus:border-brand-400 focus:ring-2 focus:ring-brand-400/40 focus:outline-none transition-all hover:border-neutral-300"
             placeholder="Any special requests..."
           ></textarea>
         </div>
@@ -139,7 +141,7 @@
     </div>
 
     <!-- Professional Bottom Action Bar -->
-    <div v-if="item" class="bg-white/95 border-t border-neutral-200 px-10 py-6 shadow-2xl flex items-center justify-between">
+    <div v-if="item" class="bg-white/95 backdrop-blur-sm border-t-2 border-brand-200/50 px-10 py-6 shadow-2xl flex items-center justify-between" style="box-shadow: 0 -8px 32px rgba(0,0,0,0.1)">
       <div class="flex items-center gap-3">
         <span class="text-2xl font-brand font-semibold text-neutral-900">Total:</span>
         <PriceDisplay :price="totalPrice" size="2xl" color="primary" />

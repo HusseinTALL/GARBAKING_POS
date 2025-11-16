@@ -5,15 +5,17 @@
 -->
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-gray-900 pb-20">
+  <div class="min-h-screen bg-gradient-warm pb-24">
     <!-- Header -->
-    <header class="sticky top-0 z-20 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm">
-      <div class="max-w-md mx-auto px-4 py-4">
-        <div class="flex items-center justify-between mb-4">
+    <header class="sticky top-0 z-20 bg-white/95 backdrop-blur-lg border-b-2 border-primary-100 shadow-lg">
+      <div class="max-w-md mx-auto px-5 py-5">
+        <div class="flex items-center justify-between mb-5">
           <!-- Greeting -->
           <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{{ $t('home.greeting') }}</h1>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ $t('home.subtitle') }}</p>
+            <h1 class="text-3xl font-black text-gray-900 tracking-tight bg-gradient-primary bg-clip-text text-transparent" style="background-image: linear-gradient(135deg, #ffbf00 0%, #ff6b6b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+              {{ $t('home.greeting') }}
+            </h1>
+            <p class="text-sm text-gray-600 mt-1 font-semibold">{{ $t('home.subtitle') }}</p>
           </div>
 
           <!-- Right icons -->
@@ -21,15 +23,15 @@
             <!-- Language switcher -->
             <button
               @click="toggleLanguage"
-              class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-50 to-warning-50 flex items-center justify-center shadow-card hover:shadow-card-hover hover:scale-105 transition-all duration-300 border border-primary-200"
             >
-              <span class="text-lg">{{ currentLocale === 'en' ? '🇺🇸' : '🇫🇷' }}</span>
+              <span class="text-xl">{{ currentLocale === 'en' ? '🇺🇸' : '🇫🇷' }}</span>
             </button>
 
             <!-- Notification bell -->
-            <button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors relative">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            <button class="w-12 h-12 rounded-2xl bg-gradient-to-br from-secondary-50 to-secondary-100 flex items-center justify-center shadow-card hover:shadow-card-hover hover:scale-105 transition-all duration-300 relative border border-secondary-200">
+              <svg class="w-6 h-6 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
               </svg>
               <BaseBadge
                 v-if="notificationCount > 0"
@@ -71,9 +73,9 @@
     />
 
     <!-- Main content -->
-    <main class="max-w-md mx-auto px-4 py-6">
+    <main class="max-w-md mx-auto px-5 py-6">
       <!-- Category Chips -->
-      <div class="flex items-center gap-2 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide mb-6">
+      <div class="flex items-center gap-3 overflow-x-auto pb-4 -mx-5 px-5 scrollbar-hide mb-6">
         <BaseChip
           v-for="category in categories"
           :key="category.id"
@@ -96,13 +98,14 @@
       <SmartSuggestCard class="mb-6" />
 
       <!-- Section heading -->
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black text-gray-900">
           {{ searchQuery ? $t('home.search_results') : $t('home.best_sellers') }}
         </h2>
         <button
           @click="handleSeeAll"
-          class="text-sm text-primary-500 font-semibold hover:text-primary-600 transition-colors"
+          class="px-4 py-2 bg-gradient-primary text-gray-900 text-sm font-bold rounded-xl hover:shadow-button transition-all duration-300 hover:scale-105"
+          style="background-image: linear-gradient(135deg, #ffbf00 0%, #ffd45c 100%);"
         >
           {{ $t('home.see_all') }}
         </button>
@@ -129,7 +132,7 @@
       />
 
       <!-- Menu items grid with ProductCard -->
-      <div v-else-if="filteredMenuItems.length > 0" class="grid grid-cols-2 gap-4">
+      <div v-else-if="filteredMenuItems.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <ProductCard
           v-for="item in filteredMenuItems"
           :key="item.sku"

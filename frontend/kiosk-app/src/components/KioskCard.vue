@@ -23,10 +23,15 @@
         />
       </slot>
 
-      <!-- Image overlay on hover -->
+      <!-- Image overlay - always visible for depth -->
+      <div
+        class="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none"
+      ></div>
+
+      <!-- Interactive overlay on hover -->
       <div
         v-if="clickable"
-        class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        class="absolute inset-0 bg-gradient-to-t from-brand-600/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
       ></div>
 
       <!-- Badges (top-left) -->
@@ -35,7 +40,7 @@
           <span
             v-for="(badge, index) in badges"
             :key="index"
-            class="px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded-full"
+            class="px-3 py-1 text-xs font-semibold uppercase tracking-wide rounded-full shadow-md backdrop-blur-sm"
             :class="getBadgeClasses(badge.variant)"
           >
             {{ badge.text }}
@@ -144,20 +149,22 @@ const cardClasses = computed(() => {
   }
   classes.push(roundedClasses[props.rounded])
 
-  // Shadow
+  // Shadow with enhanced depth
   if (props.elevated) {
-    classes.push('shadow-lg', 'hover:shadow-xl')
+    classes.push('shadow-card', 'hover:shadow-card-hover', 'border', 'border-neutral-100')
   } else {
-    classes.push('border', 'border-neutral-200')
+    classes.push('border-2', 'border-neutral-200', 'hover:border-brand-200')
   }
 
-  // Clickable
+  // Clickable with enhanced interaction
   if (props.clickable) {
     classes.push(
       'cursor-pointer',
       'group',
-      'hover:-translate-y-1',
-      'active:translate-y-0'
+      'hover:-translate-y-2',
+      'hover:scale-[1.02]',
+      'active:translate-y-0',
+      'active:scale-100'
     )
   }
 
@@ -185,11 +192,11 @@ const contentClasses = computed(() => {
 
 const getBadgeClasses = (variant: Badge['variant'] = 'primary'): string => {
   const variantClasses = {
-    primary: 'bg-brand-500 text-white',
-    success: 'bg-success-500 text-white',
-    error: 'bg-error-500 text-white',
-    warning: 'bg-warning-500 text-neutral-900',
-    info: 'bg-info-500 text-white',
+    primary: 'bg-gradient-primary text-white shadow-lg',
+    success: 'bg-gradient-success text-white shadow-lg',
+    error: 'bg-gradient-error text-white shadow-lg',
+    warning: 'bg-warning-500 text-white shadow-lg',
+    info: 'bg-info-500 text-white shadow-lg',
   }
   return variantClasses[variant]
 }

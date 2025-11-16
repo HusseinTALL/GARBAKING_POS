@@ -2,22 +2,35 @@ spring:
   application:
     name: order-service
 
+  # Lifecycle Configuration for Graceful Shutdown
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   # Database Configuration
   datasource:
     url: jdbc:mysql://localhost:3306/garbaking_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: rootpassword
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:rootpassword}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    # HikariCP Connection Pool Configuration
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      max-lifetime: 1800000  # 30 minutes
+      idle-timeout: 600000   # 10 minutes
+      connection-timeout: 20000  # 20 seconds
+      auto-commit: true
+      leak-detection-threshold: 60000  # 1 minute
 
   # JPA Configuration
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false  # Disabled for production performance
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
+        format_sql: false
 
   # Kafka Configuration
   kafka:
@@ -25,14 +38,28 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      retries: 3  # Retry failed sends
+      acks: all  # Wait for all replicas to acknowledge
       properties:
         spring.json.add.type.headers: false
+        enable.idempotence: true  # Ensure exactly-once delivery
     consumer:
       group-id: order-service-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      max-poll-records: 10  # Limit batch size
+      enable-auto-commit: false  # Manual commit for reliability
+      auto-offset-reset: earliest  # Start from beginning if no offset
       properties:
         spring.json.trusted.packages: "*"
+    listener:
+      ack-mode: manual  # Manual acknowledgment for better error handling
+      # Error handling configuration
+      retry:
+        max-attempts: 3
+      dead-letter-topic:
+        enabled: true
+        suffix: .DLT
 
   # Cloud Configuration
   cloud:
@@ -45,6 +72,12 @@ spring:
 # Server Configuration
 server:
   port: 8082
+  shutdown: graceful  # Enable graceful shutdown
+  tomcat:
+    connection-timeout: 20000  # 20 seconds
+    threads:
+      max: 200
+      min-spare: 10
 
 # Eureka Configuration
 eureka:
@@ -113,3 +146,23 @@ security:
     qr-confirm:
       requests: 5  # Max 5 confirmations per minute
       per-seconds: 60
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+  retry:
+    instances:
+      default:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - java.net.SocketTimeoutException

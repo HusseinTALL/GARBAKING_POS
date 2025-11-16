@@ -41,6 +41,12 @@ subprojects {
         implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
         implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
 
+        // Resilience4j for circuit breaker, retry, rate limiting
+        implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.1.0'
+        implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.1.0'
+        implementation 'io.github.resilience4j:resilience4j-retry:2.1.0'
+        implementation 'org.springframework.boot:spring-boot-starter-aop'
+
         // Lombok for reducing boilerplate
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'

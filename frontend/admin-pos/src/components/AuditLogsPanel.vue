@@ -314,7 +314,14 @@ const usersStore = useUsersStore()
 const isLoading = ref(false)
 const showFilters = ref(false)
 const selectedLog = ref<AuditLog | null>(null)
-const filters = ref({
+const filters = ref<{
+  userId: string
+  action: string | AuditAction
+  resource: string
+  severity: string
+  startDate: string
+  endDate: string
+}>({
   userId: '',
   action: '',
   resource: '',
@@ -359,7 +366,13 @@ const refreshLogs = async () => {
 const applyFilters = async () => {
   isLoading.value = true
   try {
-    await usersStore.fetchAuditLogs(filters.value)
+    const filterParams: any = {
+      ...filters.value
+    }
+    if (filterParams.action && !Object.values(AuditAction).includes(filterParams.action as AuditAction)) {
+      delete filterParams.action
+    }
+    await usersStore.fetchAuditLogs(filterParams)
   } finally {
     isLoading.value = false
   }
