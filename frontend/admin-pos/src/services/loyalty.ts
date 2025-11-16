@@ -6,8 +6,9 @@
 import { loyaltyApi } from './api-spring'
 
 // Types for loyalty program entities
+// Updated to match Spring Boot backend (numeric IDs)
 export interface LoyaltyCustomer {
-  id: string
+  id: number | string  // Accept both for backward compatibility, normalize to number
   loyaltyPoints: number
   totalSpent: number
   visitCount: number
@@ -16,8 +17,8 @@ export interface LoyaltyCustomer {
 }
 
 export interface LoyaltyTier {
-  id: string
-  programId: string
+  id: number | string
+  programId: number | string
   name: string
   minSpent: number
   minVisits: number
@@ -34,7 +35,7 @@ export interface LoyaltyTier {
 }
 
 export interface LoyaltyProgram {
-  id: string
+  id: number | string
   name: string
   description?: string
   pointsPerDollar: number
@@ -48,38 +49,38 @@ export interface LoyaltyProgram {
   isActive: boolean
   startDate: string
   endDate?: string
-  storeId: string
+  storeId: number | string
   tiers?: LoyaltyTier[]
   campaigns?: LoyaltyCampaign[]
 }
 
 export interface LoyaltyCampaign {
-  id: string
-  programId: string
+  id: number | string
+  programId: number | string
   name: string
   description?: string
   type: 'DOUBLE_POINTS' | 'BONUS_POINTS' | 'CATEGORY_MULTIPLIER' | 'SPEND_THRESHOLD'
   pointsBonus: number
   multiplier: number
   minSpend?: number
-  categoryId?: string
-  menuItemId?: string
+  categoryId?: number | string
+  menuItemId?: number | string
   maxRedemptions?: number
   usageCount: number
   startDate: string
   endDate: string
   isActive: boolean
-  storeId: string
+  storeId: number | string
 }
 
 export interface LoyaltyReward {
-  id: string
-  customerId: string
+  id: number | string
+  customerId: number | string
   type: string
   points: number
   value?: number
-  orderId?: string
-  campaignId?: string
+  orderId?: number | string
+  campaignId?: number | string
   reason?: string
   description?: string
   expiresAt?: string
@@ -89,9 +90,9 @@ export interface LoyaltyReward {
 }
 
 export interface LoyaltyRedemption {
-  id: string
-  customerId: string
-  orderId?: string
+  id: number | string
+  customerId: number | string
+  orderId?: number | string
   pointsUsed: number
   discountValue: number
   type: 'DISCOUNT' | 'FREE_ITEM' | 'PERCENTAGE_OFF'
